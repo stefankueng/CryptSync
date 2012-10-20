@@ -1,0 +1,59 @@
+How CryptSync should work:
+==========================
+(change title to "How CryptSync works" once everything is done)
+
+1. Syncing folder pairs
+2. Detecting changes
+3. Handling of unencrypted files in the encrypted folder
+4. Handling of missing files
+5. Storing the user password
+
+
+1. Syncing folder pairs
+-----------------------
+CryptSync syncs folder pairs. One folder is kept unencrypted so the
+files in it can be used by any application. This is the folder the
+user usually works with.
+The second folder is kept encrypted, i.e. all files in that folder
+are encrypted with a password the user provides. This folder is the
+one that's used by e.g. SkyDrive, GDrive, DropBox, ...
+
+The two folders are kept in sync, which means a change in a file in
+the unencrypted folder results in that file getting encrypted and
+stored in the encrypted folder. A change in the encrypted folder means
+that the file is decrypted and stored in the unencrypted folder.
+
+2. Detecting changes
+--------------------
+If the application is kept running, it monitors all folders for
+changes. Once a change is detected, that change is synchronized to the
+other folder of its pair. If a change is detected in both folders of
+a pair for the same file at the same time, the change in the
+unencrypted folder takes precedence. But that will happen very very
+rarely if ever.
+
+The 'last write time' of the files is used to detect changes.
+Since at least SkyDrive relies upon this as well, there shouldn't be
+a problem with this.
+
+3. Handling of unencrypted files in the encrypted folder
+--------------------------------------------------------
+If the user saves an unencrypted file in the encrypted folder or the
+cloud tool puts such a file there (in case the user uploaded a file
+using e.g. a web interface), CryptSync will automatically encrypt that
+file and remove the unencrypted file from the encrypted folder.
+The file is of course synchronized to the unencrypted folder as well.
+
+4. Handling of missing files
+----------------------------
+To make sure CryptSync can detect file deletions on both sides of the
+sync pair, it keeps a list of all files that were present in the
+unencrypted folder. That list is saved when CryptSync exits so it can
+detect file deletions when it next runs.
+
+5. Storing the user password
+----------------------------
+To avoid the user having to enter the password every time CryptSync
+starts up, the password can be saved to the registry. The password
+is saved encrypted using the Windows logon credentials.
+
