@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{E5B40A24-5BA9-45FF-B37D-BD5E56662E42}") = "CryptSync", "src\CryptSync.vcxproj", "{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Debug|Win32.Build.0 = Debug|Win32
+		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Debug|x64.ActiveCfg = Debug|x64
+		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Debug|x64.Build.0 = Debug|x64
+		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Release|Win32.ActiveCfg = Release|Win32
+		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Release|Win32.Build.0 = Release|Win32
+		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Release|x64.ActiveCfg = Release|x64
+		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

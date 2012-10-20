@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<project name="CryptSync" default="CryptSync">
+
+    <include buildfile="default.build.user" />
+
+    <property name="configuration" value="release" />
+    <property name="platform" value="win32" />
+    <!-- the signinfo.txt file has to contain one line with parameters for signtool.exe,
+         for example:
+         /t "url/to/timestamp/server" /q
+    -->
+    <loadfile file="signinfo.txt" property="signinfo" failonerror="false" />
+
+    <!-- ====================================================================== -->
+    <!-- Configuration targets                                                    -->
+    <!-- ====================================================================== -->
+    <target name="debug">
+        <description>
+            Sets the environment up to build the debug versions.
+        </description>
+        <property name="configuration" value="debug" />
+    </target>
+
+    <!-- ====================================================================== -->
+    <!-- Project targets                                                        -->
+    <!-- ====================================================================== -->
+    <target name="clean" depends="VSNET">
+        <description>
+            Cleans every subproject.
+        </description>
+        <exec program="devenv.com" >
+            <arg value="CryptSync.sln" />
+            <arg value="/clean" />
+            <arg value="${configuration}|${platform}" />
+        </exec>
+    </target>
+
+    <target name="VersionInfo" depends="VSNET,env">
+        <description>
+            Sets the version information as properties, env variables
+            and sets up the different version specific files.
+        </description>
+        <nant target="versioninfo">
+            <buildfiles>
+                <include name="versioninfo.build" />
+            </buildfiles>
+        </nant>
+        <loadfile file="src\version.in" property="versionheaderfile">
+            <filterchain>
+                <replacetokens begintoken="$" endtoken="$">
+                    <token key="MajorVersion" value="${environment::get-variable('MajorVersion')}" />
+                    <token key="MinorVersion" value="${environment::get-variable('MinorVersion')}" />
+                    <token key="MicroVersion" value="${environment::get-variable('Microversion')}" />
+                    <token key="WCREV" value="${environment::get-variable('WCREV')}" />
+                    <token key="WCDATE" value="${environment::get-variable('WCDATE')}" />
+                </replacetokens>
+            </filterchain>
+        </loadfile>
+        <echo file="src\version.h" message="${versionheaderfile}" />
+    </target>
+
+    <target name="CryptSync" depends="VersionInfo">
+        <description>
+            Builds CryptSync.
+        </description>
+        <exec program="devenv.com" >
+            <arg value="CryptSync.sln" />
+            <arg value="/rebuild" />
+            <arg value="${configuration}|${platform}" />
+        </exec>
+        <if test="${file::exists('signinfo.txt')}">
+          <exec program="signtool">
+            <arg value="sign" />
+            <arg value="${signinfo}" />
+            <arg value="release\CryptSync.exe" />
+          </exec>
+        </if>
+    </target>
+
+
+</project>
