@@ -183,6 +183,7 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                 break;
             case WM_LBUTTONDOWN:
                 {
+                    ::PostMessage(*this, WM_COMMAND, MAKEWPARAM(IDM_OPTIONS, 1), 0);
                 }
                 break;
             case WM_LBUTTONDBLCLK:

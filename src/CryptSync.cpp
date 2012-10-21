@@ -54,6 +54,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     if (trayWindow.RegisterAndCreateWindow())
     {
+        CCmdLineParser parser(lpCmdLine);
+        if (!parser.HasKey(L"tray"))
+        {
+            // show the main dialog immediately
+            ::PostMessage(trayWindow, WM_COMMAND, MAKEWPARAM(IDM_OPTIONS, 1), 0);
+        }
+
         hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CryptSync));
         // Main message loop:
         while (GetMessage(&msg, NULL, 0, 0))
