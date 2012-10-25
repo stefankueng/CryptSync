@@ -25,16 +25,20 @@
 /**
  * class to handle pairs of synced folders
  */
-class CPairs : public std::vector<std::tuple<std::wstring, std::wstring>>
+class CPairs : public std::vector<std::tuple<std::wstring, std::wstring, std::wstring>>
 {
 public:
     CPairs();
     ~CPairs(void);
 
     void                    SavePairs();
-    bool                    AddPair(const std::wstring& orig, const std::wstring& crypt);
+    bool                    AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password);
 protected:
     void                    InitPairList();
 
 private:
+    std::wstring            Decrypt(const std::wstring& pw);
+    std::wstring            Encrypt(const std::wstring& pw);
+
+    friend class CPairsTests;
 };

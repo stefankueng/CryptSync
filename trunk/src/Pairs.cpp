@@ -22,6 +22,10 @@
 #include "Pairs.h"
 #include "Registry.h"
 #include <algorithm>
+#include <assert.h>
+
+
+#pragma comment(lib, "Crypt32.lib")
 
 CPairs::CPairs()
 {
@@ -52,7 +56,14 @@ void CPairs::InitPairList()
         if (cryptpath.empty())
             break;
 
-        auto t = std::make_tuple(origpath, cryptpath);
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
+        CRegStdString passwordreg(key);
+        std::wstring password = passwordreg;
+        if (password.empty())
+            break;
+        password = Decrypt(password);
+
+        auto t = std::make_tuple(origpath, cryptpath, password);
         if (std::find(cbegin(), cend(), t) == cend())
             push_back(t);
         ++p;
@@ -73,6 +84,10 @@ void CPairs::SavePairs()
         CRegStdString cryptpathreg(key);
         cryptpathreg = std::get<1>(*it);
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
+        CRegStdString passwordreg(key);
+        passwordreg = Encrypt(std::get<2>(*it));
+
         ++p;
     }
     // delete all possible remaining registry entries
@@ -91,9 +106,9 @@ void CPairs::SavePairs()
     }
 }
 
-bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt )
+bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password )
 {
-    auto t = std::make_tuple(orig, crypt);
+    auto t = std::make_tuple(orig, crypt, password);
     if (std::find(cbegin(), cend(), t) == cend())
     {
         push_back(t);
@@ -102,3 +117,72 @@ bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt )
 
     return false;
 }
+
+std::wstring CPairs::Decrypt( const std::wstring& pw )
+{
+    DWORD dwLen = 0;
+    if (CryptStringToBinary(pw.c_str(), pw.size(), CRYPT_STRING_HEX, NULL, &dwLen, NULL, NULL)==FALSE)
+        return NULL;
+
+    std::unique_ptr<BYTE[]> strIn(new BYTE[dwLen + 1]);
+    if (CryptStringToBinary(pw.c_str(), pw.size(), CRYPT_STRING_HEX, strIn.get(), &dwLen, NULL, NULL)==FALSE)
+        return NULL;
+
+    DATA_BLOB blobin;
+    blobin.cbData = dwLen;
+    blobin.pbData = strIn.get();
+    LPWSTR descr;
+    DATA_BLOB blobout = {0};
+    if (CryptUnprotectData(&blobin, &descr, NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN, &blobout)==FALSE)
+        return NULL;
+    SecureZeroMemory(blobin.pbData, blobin.cbData);
+
+    wchar_t * result = new wchar_t[blobout.cbData+1];
+    wcsncpy_s(result, blobout.cbData+1, (const wchar_t*)blobout.pbData, blobout.cbData/sizeof(wchar_t));
+    SecureZeroMemory(blobout.pbData, blobout.cbData);
+    LocalFree(blobout.pbData);
+    LocalFree(descr);
+    return result;
+}
+
+std::wstring CPairs::Encrypt( const std::wstring& pw )
+{
+    DATA_BLOB blobin = {0};
+    DATA_BLOB blobout = {0};
+    std::wstring result;
+
+    blobin.cbData = (DWORD)pw.size()*sizeof(wchar_t);
+    blobin.pbData = (BYTE*)pw.c_str();
+    if (CryptProtectData(&blobin, L"CryptSyncRegPWs", NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN, &blobout)==FALSE)
+        return result;
+    DWORD dwLen = 0;
+    if (CryptBinaryToString(blobout.pbData, blobout.cbData, CRYPT_STRING_HEX, NULL, &dwLen)==FALSE)
+        return result;
+    std::unique_ptr<wchar_t[]> strOut(new wchar_t[dwLen + 1]);
+    if (CryptBinaryToString(blobout.pbData, blobout.cbData, CRYPT_STRING_HEX, strOut.get(), &dwLen)==FALSE)
+        return result;
+    LocalFree(blobout.pbData);
+
+    result = strOut.get();
+
+    return result;
+}
+
+
+#if defined(_DEBUG)
+// Some test cases for these classes
+static class CPairsTests
+{
+public:
+    CPairsTests()
+    {
+        CPairs p;
+        std::wstring pw = p.Encrypt(L"password");
+        pw = p.Decrypt(pw);
+        assert(pw == L"password");
+    }
+
+
+} CPairsTestsobject;
+#endif
+
