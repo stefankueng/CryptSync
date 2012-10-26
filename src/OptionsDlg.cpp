@@ -85,7 +85,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             }
             else
                 regStartWithWindows.removeValue();
-            m_pairs.SavePairs();
+            g_pairs.SavePairs();
         }
         // fall through
     case IDCANCEL:
@@ -98,7 +98,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                 {
-                    if (m_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password))
+                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password))
                         InitPairList();
                 }
             }
@@ -114,17 +114,17 @@ LRESULT COptionsDlg::DoCommand(int id)
             std::vector<std::tuple<std::wstring, std::wstring, std::wstring>> sels;
             while ((iItem = ListView_GetNextItem(hListControl, iItem, LVNI_SELECTED)) != (-1))
             {
-                if ((iItem < 0)||(iItem >= (int)m_pairs.size()))
+                if ((iItem < 0)||(iItem >= (int)g_pairs.size()))
                     continue;
-                sels.push_back(m_pairs[iItem]);
+                sels.push_back(g_pairs[iItem]);
             }
 
             for (auto it = sels.cbegin(); it != sels.cend(); ++it)
             {
-                auto foundit = std::find(m_pairs.cbegin(), m_pairs.cend(), *it);
-                if (foundit != m_pairs.end())
+                auto foundit = std::find(g_pairs.cbegin(), g_pairs.cend(), *it);
+                if (foundit != g_pairs.end())
                 {
-                    m_pairs.erase(foundit);
+                    g_pairs.erase(foundit);
                 }
             }
             InitPairList();
@@ -155,7 +155,7 @@ void COptionsDlg::InitPairList()
     ListView_InsertColumn(hListControl, 1, &lvc);
 
 
-    for (auto it = m_pairs.cbegin(); it != m_pairs.cend(); ++it)
+    for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
     {
         std::wstring origpath = std::get<0>(*it);
         std::wstring cryptpath = std::get<1>(*it);
@@ -187,7 +187,7 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
     {
         if (lpNMItemActivate->iItem >= 0)
         {
-            auto t = m_pairs[lpNMItemActivate->iItem];
+            auto t = g_pairs[lpNMItemActivate->iItem];
 
             CPairAddDlg dlg(*this);
             dlg.m_origpath = std::get<0>(t);
@@ -197,8 +197,8 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                 {
-                    m_pairs.erase(m_pairs.begin()+lpNMItemActivate->iItem);
-                    if (m_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password))
+                    g_pairs.erase(g_pairs.begin()+lpNMItemActivate->iItem);
+                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password))
                         InitPairList();
                 }
             }

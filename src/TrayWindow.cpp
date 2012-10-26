@@ -28,8 +28,6 @@
 
 #define TIMER_DETECTCHANGES 100
 
-bool CTrayWindow::threadRunning = false;
-
 static UINT WM_TASKBARCREATED = RegisterWindowMessage(_T("TaskbarCreated"));
 CTrayWindow::PFNCHANGEWINDOWMESSAGEFILTEREX CTrayWindow::m_pChangeWindowMessageFilter = NULL;
 
@@ -158,8 +156,6 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
     case WM_CREATE:
         {
             m_hwnd = hwnd;
-            threadRunning = true;
-            _beginthreadex(NULL, 0, WatcherThread, this, 0, NULL);
         }
         break;
     case WM_COMMAND:
@@ -204,10 +200,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
         }
         break;
     case WM_QUERYENDSESSION:
-        threadRunning = false;
+        watcher.Stop();
         return TRUE;
     case WM_QUIT:
-        threadRunning = false;
+        watcher.Stop();
         break;
     default:
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -222,6 +218,7 @@ LRESULT CTrayWindow::DoCommand(int id)
     {
     case IDM_EXIT:
         Shell_NotifyIcon(NIM_DELETE,&niData);
+        watcher.Stop();
         ::PostQuitMessage(0);
         return 0;
         break;
@@ -235,27 +232,20 @@ LRESULT CTrayWindow::DoCommand(int id)
         {
             COptionsDlg dlg(NULL);
             dlg.DoModal(hResource, IDD_OPTIONS, NULL);
+            watcher.ClearPaths();
+            for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
+            {
+                std::wstring origpath = std::get<0>(*it);
+                std::wstring cryptpath = std::get<1>(*it);
+                watcher.AddPath(origpath);
+                watcher.AddPath(cryptpath);
+            }
         }
         break;
     default:
         break;
     };
     return 1;
-}
-
-unsigned int __stdcall CTrayWindow::WatcherThread( LPVOID lpvParam )
-{
-    CTrayWindow * pThis = (CTrayWindow*)lpvParam;
-
-    DWORD dwWaitStatus;
-    HANDLE dwChangeHandle;
-    std::wstring monitorPath;
-
-    while (pThis->threadRunning)
-    {
-        Sleep(10);
-    }
-    return 0;
 }
 
 

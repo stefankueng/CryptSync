@@ -16,27 +16,8 @@
 // along with this program; if not, write to the Free Software Foundation,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
-
 #pragma once
-#include "BaseDialog.h"
-#include "AeroControls.h"
+#include "stdafx.h"
+#include "DebugOutput.h"
 
-/**
- * options dialog.
- */
-class COptionsDlg : public CDialog
-{
-public:
-    COptionsDlg(HWND hParent);
-    ~COptionsDlg(void);
-
-protected:
-    LRESULT CALLBACK        DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    LRESULT                 DoCommand(int id);
-    void                    InitPairList();
-    void                    DoListNotify(LPNMITEMACTIVATE lpNMItemActivate);
-
-private:
-    HWND                    m_hParent;
-    AeroControlBase         m_aerocontrols;
-};
+CTraceToOutputDebugString* CTraceToOutputDebugString::m_pInstance;
