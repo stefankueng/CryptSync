@@ -21,8 +21,10 @@
 #include "BaseWindow.h"
 #include "resource.h"
 #include "Registry.h"
-#include "shellapi.h"
-#include "shlwapi.h"
+#include "PathWatcher.h"
+
+#include <shellapi.h>
+#include <shlwapi.h>
 #include <commctrl.h>
 
 
@@ -54,13 +56,11 @@ protected:
     void                ShowTrayIcon();
     DWORD               GetDllVersion(LPCTSTR lpszDllName);
 
-    static unsigned int __stdcall WatcherThread(LPVOID lpvParam);
-
 protected:
     NOTIFYICONDATA      niData;
     HWND                hwndNextViewer;
     HWND                foregroundWND;
-    static bool         threadRunning;
+    CPathWatcher        watcher;
 
     typedef BOOL(__stdcall *PFNCHANGEWINDOWMESSAGEFILTEREX)(HWND hWnd, UINT message, DWORD dwFlag, PCHANGEFILTERSTRUCT pChangeFilterStruct);
     static PFNCHANGEWINDOWMESSAGEFILTEREX m_pChangeWindowMessageFilter;

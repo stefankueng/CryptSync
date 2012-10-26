@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="AboutDlg.cpp" />
+    <ClCompile Include="PairAddDlg.cpp" />
+    <ClCompile Include="Pairs.cpp" />
+    <ClCompile Include="TrayWindow.cpp" />
+    <ClCompile Include="OptionsDlg.cpp" />
+    <ClCompile Include="CryptSync.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="AeroControls.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="AeroGlass.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseDialog.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseWindow.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="BrowseFolder.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="CmdLineParser.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDropTarget.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="hyperlink.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Registry.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="UnicodeUtils.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="PathWatcher.cpp" />
+    <ClCompile Include="ReaderWriterLock.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugOutput.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AboutDlg.h" />
+    <ClInclude Include="PairAddDlg.h" />
+    <ClInclude Include="Pairs.h" />
+    <ClInclude Include="TrayWindow.h" />
+    <ClInclude Include="OptionsDlg.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="CryptSync.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="AeroControls.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="AeroGlass.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseDialog.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseWindow.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="BrowseFolder.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="CmdLineParser.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="FileDropTarget.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="hyperlink.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="maxpath.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Registry.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="UnicodeUtils.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="PathWatcher.h" />
+    <ClInclude Include="SmartHandle.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ReaderWriterLock.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugOutput.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="CryptSync.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CryptSync.ico" />
+    <None Include="..\default.build">
+      <Filter>build</Filter>
+    </None>
+    <None Include="..\default.build.user">
+      <Filter>build</Filter>
+    </None>
+    <None Include="..\version.build.in">
+      <Filter>build</Filter>
+    </None>
+    <None Include="..\versioninfo.build">
+      <Filter>build</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{b5532ff0-76ad-4a37-ac00-e3b22eb74cc2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="build">
+      <UniqueIdentifier>{40525aa9-c5c4-4d43-a4bc-7c557feec575}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
