@@ -16,32 +16,29 @@
 // along with this program; if not, write to the Free Software Foundation,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
-
 #pragma once
-#include <vector>
-#include <tuple>
+#include "Pairs.h"
+
 #include <string>
+#include <set>
+#include <map>
 
-typedef std::tuple<std::wstring, std::wstring, std::wstring> PairTuple;
-typedef std::vector<PairTuple>                               PairVector;
-
-/**
- * class to handle pairs of synced folders
- */
-class CPairs : public PairVector
+class CFolderSync
 {
 public:
-    CPairs();
-    ~CPairs(void);
+    CFolderSync(void);
+    ~CFolderSync(void);
 
-    void                    SavePairs();
-    bool                    AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password);
-protected:
-    void                    InitPairList();
+    void SyncFolders(const PairVector& pv);
 
 private:
-    std::wstring            Decrypt(const std::wstring& pw);
-    std::wstring            Encrypt(const std::wstring& pw);
+    static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
+    void                            SyncFolderThread();
+    void                            SyncFolder(const PairTuple& pt);
+    std::map<std::wstring,FILETIME> GetFileList(const std::wstring& path);
+    bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password);
+    bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password);
 
-    friend class CPairsTests;
+    PairVector                      m_pairs;
 };
+
