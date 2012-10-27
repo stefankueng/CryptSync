@@ -183,7 +183,9 @@
     <ClInclude Include="BrowseFolder.h" />
     <ClInclude Include="CmdLineParser.h" />
     <ClInclude Include="DebugOutput.h" />
+    <ClInclude Include="DirFileEnum.h" />
     <ClInclude Include="FileDropTarget.h" />
+    <ClInclude Include="FolderSync.h" />
     <ClInclude Include="hyperlink.h" />
     <ClInclude Include="maxpath.h" />
     <ClInclude Include="PairAddDlg.h" />
@@ -209,7 +211,9 @@
     <ClCompile Include="BrowseFolder.cpp" />
     <ClCompile Include="CmdLineParser.cpp" />
     <ClCompile Include="DebugOutput.cpp" />
+    <ClCompile Include="DirFileEnum.cpp" />
     <ClCompile Include="FileDropTarget.cpp" />
+    <ClCompile Include="FolderSync.cpp" />
     <ClCompile Include="hyperlink.cpp" />
     <ClCompile Include="PairAddDlg.cpp" />
     <ClCompile Include="Pairs.cpp" />

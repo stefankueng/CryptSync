@@ -232,6 +232,7 @@ LRESULT CTrayWindow::DoCommand(int id)
         {
             COptionsDlg dlg(NULL);
             dlg.DoModal(hResource, IDD_OPTIONS, NULL);
+            foldersyncer.SyncFolders(g_pairs);
             watcher.ClearPaths();
             for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
             {

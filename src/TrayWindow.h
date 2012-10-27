@@ -22,6 +22,7 @@
 #include "resource.h"
 #include "Registry.h"
 #include "PathWatcher.h"
+#include "FolderSync.h"
 
 #include <shellapi.h>
 #include <shlwapi.h>
@@ -61,6 +62,7 @@ protected:
     HWND                hwndNextViewer;
     HWND                foregroundWND;
     CPathWatcher        watcher;
+    CFolderSync         foldersyncer;
 
     typedef BOOL(__stdcall *PFNCHANGEWINDOWMESSAGEFILTEREX)(HWND hWnd, UINT message, DWORD dwFlag, PCHANGEFILTERSTRUCT pChangeFilterStruct);
     static PFNCHANGEWINDOWMESSAGEFILTEREX m_pChangeWindowMessageFilter;
