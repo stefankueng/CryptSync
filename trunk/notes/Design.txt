@@ -46,10 +46,10 @@ The file is of course synchronized to the unencrypted folder as well.
 
 4. Handling of missing files
 ----------------------------
-To make sure CryptSync can detect file deletions on both sides of the
-sync pair, it keeps a list of all files that were present in the
-unencrypted folder. That list is saved when CryptSync exits so it can
-detect file deletions when it next runs.
+If a file got missing while CryptSync wasn't running, it can not know
+on the next run whether that file got deleted, or it's pair file got
+added. In that case, CryptSync will always treat the file as added
+and sync it to its pair folder.
 
 5. Storing the user password
 ----------------------------
