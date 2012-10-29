@@ -179,7 +179,8 @@ std::map<std::wstring,FileData> CFolderSync::GetFileList( const std::wstring& pa
             fd.filename = relpath;
 
         std::wstring decryptedFileName = GetDecryptedFilename(fd.filename, password);
-        if (decryptedFileName != fd.filename)
+        fd.filenameEncrypted = (decryptedFileName != fd.filename);
+        if (fd.filenameEncrypted)
         {
             if (slashPos != std::string::npos)
                 relpath = relpath.substr(0, slashPos) + L"\\" + decryptedFileName;
