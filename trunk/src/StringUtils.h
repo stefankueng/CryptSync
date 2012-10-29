@@ -58,6 +58,19 @@ public:
         return s;
     }
 
+    static std::wstring ExpandEnvironmentStrings (const std::wstring& s)
+    {
+        DWORD len = ::ExpandEnvironmentStrings (s.c_str(), NULL, 0);
+        if (len == 0)
+            return s;
+
+        std::unique_ptr<TCHAR[]> buf(new TCHAR[len+1]);
+        if (::ExpandEnvironmentStrings (s.c_str(), buf.get(), len) == 0)
+            return s;
+
+        return buf.get();
+    }
+
     static std::string ToHexString( BYTE* pSrc, int nSrcLen );
 
     static bool FromHexString( const std::string& src, BYTE* pDest );

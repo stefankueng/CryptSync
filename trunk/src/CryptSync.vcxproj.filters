@@ -113,6 +113,9 @@
     <ClInclude Include="StringUtils.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="CreateProcessHelper.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CryptSync.rc" />

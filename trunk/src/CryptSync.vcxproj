@@ -182,6 +182,7 @@
     <ClInclude Include="BaseWindow.h" />
     <ClInclude Include="BrowseFolder.h" />
     <ClInclude Include="CmdLineParser.h" />
+    <ClInclude Include="CreateProcessHelper.h" />
     <ClInclude Include="DebugOutput.h" />
     <ClInclude Include="DirFileEnum.h" />
     <ClInclude Include="FileDropTarget.h" />

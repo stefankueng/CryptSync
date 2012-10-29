@@ -20,13 +20,25 @@
 #include "FolderSync.h"
 #include "DirFileEnum.h"
 #include "StringUtils.h"
+#include "UnicodeUtils.h"
+#include "CreateProcessHelper.h"
+#include "SmartHandle.h"
 #include "DebugOutput.h"
 
 #include <process.h>
+#include <shlobj.h>
 
+#pragma comment(lib, "shell32.lib")
 
 CFolderSync::CFolderSync(void)
 {
+    m_sevenzip = L"%ProgramFiles%\\7-zip\\7z.exe";
+    m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
+    if (!PathFileExists(m_sevenzip.c_str()))
+    {
+        m_sevenzip = L"%ProgramW6432%\\7-zip\\7z.exe";
+        m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
+    }
 }
 
 
@@ -76,7 +88,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
             std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
             cryptpath = cryptpath + L"\\" + cryptname;
             std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
-            EncryptFile(origpath, cryptpath, std::get<2>(pt));
+            EncryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
         }
         else
         {
@@ -85,6 +97,15 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
             {
                 // original file is older than the encrypted file
                 // decrypt the file
+                size_t slashpos = it->first.find_last_of('\\');
+                std::wstring fname = it->first;
+                if (slashpos != std::string::npos)
+                    fname = it->first.substr(slashpos + 1);
+                std::wstring cryptname = GetEncryptedFilename(fname, std::get<2>(pt));
+                std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
+                cryptpath = cryptpath + L"\\" + cryptname;
+                std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
+                DecryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
             }
             else if (cmp > 0)
             {
@@ -99,7 +120,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
                 std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
                 cryptpath = cryptpath + L"\\" + cryptname;
                 std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
-                EncryptFile(origpath, cryptpath, std::get<2>(pt));
+                EncryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
             }
             else if (cmp == 0)
             {
@@ -119,6 +140,15 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
             // file does not exist in the original folder:
             // decrypt the file
             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), std::get<0>(pt).c_str());
+            size_t slashpos = it->first.find_last_of('\\');
+            std::wstring fname = it->first;
+            if (slashpos != std::string::npos)
+                fname = it->first.substr(slashpos + 1);
+            std::wstring cryptname = it->second.filename;
+            std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
+            cryptpath = cryptpath + L"\\" + cryptname;
+            std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
+            DecryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
         }
     }
 }
@@ -163,15 +193,63 @@ std::map<std::wstring,FileData> CFolderSync::GetFileList( const std::wstring& pa
     return filelist;
 }
 
-bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password )
+bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd )
 {
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": encrypt file %s to %s\n"), orig.c_str(), crypt.c_str());
-    return true;
+
+    size_t slashpos = crypt.find_last_of('\\');
+    if (slashpos == std::string::npos)
+        return false;
+    std::wstring targetfolder = crypt.substr(0, slashpos);
+    std::wstring cryptname = crypt.substr(slashpos+1);
+    int buflen = orig.size() + crypt.size() + password.size() + 1000;
+    std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
+    swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z \"%s\" \"%s\" -mx9 -p%s -mhe=on", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str());
+    bool bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
+    if (!bRet)
+    {
+        SHCreateDirectory(NULL, targetfolder.c_str());
+        bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
+    }
+    if (bRet)
+    {
+        // set the file timestamp
+        CAutoFile hFile = CreateFile(crypt.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+        if (hFile.IsValid())
+        {
+            bRet = !!SetFileTime(hFile, &fd.ft, &fd.ft, &fd.ft);
+        }
+
+    }
+    return bRet;
 }
 
-bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password )
+bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd )
 {
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), orig.c_str(), crypt.c_str());
+    size_t slashpos = orig.find_last_of('\\');
+    if (slashpos == std::string::npos)
+        return false;
+    std::wstring targetfolder = orig.substr(0, slashpos);
+    int buflen = orig.size() + crypt.size() + password.size() + 1000;
+    std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
+    swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" e \"%s\" -o\"%s\" -p%s -y", m_sevenzip.c_str(), crypt.c_str(), targetfolder.c_str(), password.c_str());
+    bool bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
+    if (!bRet)
+    {
+        SHCreateDirectory(NULL, targetfolder.c_str());
+        bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
+    }
+    if (bRet)
+    {
+        // set the file timestamp
+        CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+        if (hFile.IsValid())
+        {
+            bRet = !!SetFileTime(hFile, &fd.ft, &fd.ft, &fd.ft);
+        }
+
+    }
     return true;
 }
 
@@ -179,7 +257,12 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
 {
     bool bResult = true;
     std::wstring decryptName = filename;
-    std::wstring fname = filename.substr(0, filename.find_last_of('.'));
+    size_t dotpos = filename.find_last_of('.');
+    std::string fname;
+    if (dotpos != std::string::npos)
+        fname = CUnicodeUtils::StdGetUTF8(filename.substr(0, dotpos));
+    else
+        fname = CUnicodeUtils::StdGetUTF8(filename);
 
     std::unique_ptr<BYTE[]> strIn(new BYTE[fname.size()*sizeof(WCHAR) + 1]);
     if (!CStringUtils::FromHexString(fname, strIn.get()))
@@ -201,15 +284,15 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
                 // Create block cipher session key based on hash of the password.
                 if (CryptDeriveKey(hProv, CALG_RC4, hHash, CRYPT_EXPORTABLE, &hKey))
                 {
-                    dwLength = fname.size() * sizeof(WCHAR) + 1024; // 1024 bytes should be enough for padding
-                    std::unique_ptr<WCHAR[]> tempstring(new WCHAR[dwLength]);
-                    // copy encrypted password to temporary WCHAR
-                    wcscpy_s(tempstring.get(), fname.size()+1024, fname.c_str());
-                    if (!CryptDecrypt(hKey, 0, true, 0, (BYTE *)tempstring.get(), &dwLength))
+                    dwLength = fname.size() + 1024; // 1024 bytes should be enough for padding
+                    std::unique_ptr<BYTE[]> buffer(new BYTE[dwLength]);
+                    // copy encrypted password to temporary buffer
+                    memcpy(buffer.get(), strIn.get(), fname.size());
+                    if (!CryptDecrypt(hKey, 0, true, 0, (BYTE *)buffer.get(), &dwLength))
                         bResult = false;
                     CryptDestroyKey(hKey);  // Release provider handle.
 
-                    decryptName = std::wstring(tempstring.get(), dwLength/sizeof(WCHAR));
+                    decryptName = CUnicodeUtils::StdGetUnicode(std::string((char*)buffer.get(), fname.size()/2));
                 }
                 else
                 {
@@ -261,11 +344,11 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
                 if (CryptDeriveKey(hProv, CALG_RC4, hHash, CRYPT_EXPORTABLE, &hKey))
                 {
                     // Determine number of bytes to encrypt at a time.
-                    dwLength = sizeof(WCHAR)*filename.size();
+                    std::string starname = "*";
+                    starname += CUnicodeUtils::StdGetUTF8(filename);
 
+                    dwLength = starname.size();
                     std::unique_ptr<BYTE[]> buffer(new BYTE[dwLength+1024]);
-                    std::wstring starname = L"*";
-                    starname += filename;
                     memcpy(buffer.get(), starname.c_str(), dwLength);
                     // Encrypt data
                     if (CryptEncrypt(hKey, 0, true, 0, buffer.get(), &dwLength, dwLength+1024))
@@ -299,4 +382,22 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
     if (bResult)
         return encryptFilename;
     return filename;
+}
+
+bool CFolderSync::Run7Zip( LPWSTR cmdline, const std::wstring& cwd ) const
+{
+    PROCESS_INFORMATION pi = {0};
+    if (CCreateProcessHelper::CreateProcess(m_sevenzip.c_str(), cmdline, cwd.c_str(), &pi, true))
+    {
+        // wait until the process terminates
+        WaitForSingleObject(pi.hProcess, INFINITE);
+
+        DWORD exitcode = 0;
+        GetExitCodeProcess(pi.hProcess, &exitcode);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+
+        return (exitcode == 0);
+    }
+    return false;
 }
