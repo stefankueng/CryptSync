@@ -23,6 +23,25 @@
 #include <set>
 #include <map>
 
+class FileData
+{
+public:
+    FileData()
+        : filenameEncrypted(false)
+    {
+        ft.dwHighDateTime = 0;
+        ft.dwLowDateTime  = 0;
+    }
+    ~FileData()
+    {
+
+    }
+
+    std::wstring    filename;               ///< real filename, possibly encrypted
+    FILETIME        ft;
+    bool            filenameEncrypted;      ///< if the filename is encrypted
+};
+
 class CFolderSync
 {
 public:
@@ -35,9 +54,11 @@ private:
     static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
     void                            SyncFolderThread();
     void                            SyncFolder(const PairTuple& pt);
-    std::map<std::wstring,FILETIME> GetFileList(const std::wstring& path);
+    std::map<std::wstring,FileData> GetFileList(const std::wstring& path, const std::wstring& password) const;
     bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password);
     bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password);
+    std::wstring                    GetDecryptedFilename(const std::wstring& filename, const std::wstring& password) const;
+    std::wstring                    GetEncryptedFilename(const std::wstring& filename, const std::wstring& password) const;
 
     PairVector                      m_pairs;
 };

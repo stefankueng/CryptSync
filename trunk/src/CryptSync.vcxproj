@@ -193,6 +193,7 @@
     <ClInclude Include="PathWatcher.h" />
     <ClInclude Include="ReaderWriterLock.h" />
     <ClInclude Include="SmartHandle.h" />
+    <ClInclude Include="StringUtils.h" />
     <ClInclude Include="TrayWindow.h" />
     <ClInclude Include="OptionsDlg.h" />
     <ClInclude Include="Registry.h" />
@@ -219,6 +220,7 @@
     <ClCompile Include="Pairs.cpp" />
     <ClCompile Include="PathWatcher.cpp" />
     <ClCompile Include="ReaderWriterLock.cpp" />
+    <ClCompile Include="StringUtils.cpp" />
     <ClCompile Include="TrayWindow.cpp" />
     <ClCompile Include="OptionsDlg.cpp" />
     <ClCompile Include="Registry.cpp" />
