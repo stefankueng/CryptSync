@@ -21,6 +21,39 @@
 #include <string>
 #include <algorithm>
 
+#ifdef UNICODE
+#define _tcswildcmp wcswildcmp
+#else
+#define _tcswildcmp strwildcmp
+#endif
+
+/**
+ * \ingroup Utils
+ * Performs a wild card compare of two strings.
+ * \param wild the wild card string
+ * \param string the string to compare the wild card to
+ * \return TRUE if the wild card matches the string, 0 otherwise
+ * \par example
+ * \code
+ * if (strwildcmp("bl?hblah.*", "bliblah.jpeg"))
+ *  printf("success\n");
+ * else
+ *  printf("not found\n");
+ * if (strwildcmp("bl?hblah.*", "blabblah.jpeg"))
+ *  printf("success\n");
+ * else
+ *  printf("not found\n");
+ * \endcode
+ * The output of the above code would be:
+ * \code
+ * success
+ * not found
+ * \endcode
+ */
+int strwildcmp(const char * wild, const char * string);
+int wcswildcmp(const wchar_t * wild, const wchar_t * string);
+
+
 class CStringUtils
 {
 public:
