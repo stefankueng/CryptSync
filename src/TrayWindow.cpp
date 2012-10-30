@@ -29,6 +29,8 @@
 
 #define TIMER_DETECTCHANGES 100
 #define TIMER_DETECTCHANGESINTERVAL 10000
+#define TIMER_FULLSCAN 101
+#define TIMER_FULLSCANINTERVAL (60000*15)
 
 static UINT WM_TASKBARCREATED = RegisterWindowMessage(_T("TaskbarCreated"));
 CTrayWindow::PFNCHANGEWINDOWMESSAGEFILTEREX CTrayWindow::m_pChangeWindowMessageFilter = NULL;
@@ -196,21 +198,39 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
         PostQuitMessage(0);
         break;
     case WM_TIMER:
-        if (wParam == TIMER_DETECTCHANGES)
+        switch (wParam)
         {
-            SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
-            auto files = watcher.GetChangedPaths();
-            if (!files.empty())
+        case TIMER_DETECTCHANGES:
             {
-                CIgnores ignores;
-                for (auto it = files.cbegin(); it != files.cend(); ++it)
+                SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
+                auto files = watcher.GetChangedPaths();
+                if (!files.empty())
                 {
-                    if (ignores.IsIgnored(*it))
-                        continue;
+                    CIgnores ignores;
+                    for (auto it = files.cbegin(); it != files.cend(); ++it)
+                    {
+                        if (ignores.IsIgnored(*it))
+                            continue;
 
-                    foldersyncer.SyncFile(*it);
+                        foldersyncer.SyncFile(*it);
+                    }
                 }
             }
+            break;
+        case TIMER_FULLSCAN:
+            {
+                foldersyncer.SyncFolders(g_pairs);
+                watcher.ClearPaths();
+                for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
+                {
+                    std::wstring origpath = std::get<0>(*it);
+                    std::wstring cryptpath = std::get<1>(*it);
+                    watcher.AddPath(origpath);
+                    watcher.AddPath(cryptpath);
+                }
+                SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
+            }
+            break;
         }
         break;
     case WM_QUERYENDSESSION:
@@ -256,6 +276,7 @@ LRESULT CTrayWindow::DoCommand(int id)
                 watcher.AddPath(cryptpath);
             }
             SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
+            SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
         }
         break;
     default:
