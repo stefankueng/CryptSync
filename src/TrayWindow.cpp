@@ -27,6 +27,7 @@
 #define TRAY_WM_MESSAGE     WM_APP+1
 
 #define TIMER_DETECTCHANGES 100
+#define TIMER_DETECTCHANGESINTERVAL 10000
 
 static UINT WM_TASKBARCREATED = RegisterWindowMessage(_T("TaskbarCreated"));
 CTrayWindow::PFNCHANGEWINDOWMESSAGEFILTEREX CTrayWindow::m_pChangeWindowMessageFilter = NULL;
@@ -196,7 +197,16 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
     case WM_TIMER:
         if (wParam == TIMER_DETECTCHANGES)
         {
-            SetTimer(*this, TIMER_DETECTCHANGES, 1000, NULL);
+            SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
+            auto files = watcher.GetChangedPaths();
+            if (!files.empty())
+            {
+                for (auto it = files.cbegin(); it != files.cend(); ++it)
+                {
+                    if (it->find(L".cryptsync.tmp") == std::string::npos)
+                        foldersyncer.SyncFile(*it);
+                }
+            }
         }
         break;
     case WM_QUERYENDSESSION:
@@ -241,6 +251,7 @@ LRESULT CTrayWindow::DoCommand(int id)
                 watcher.AddPath(origpath);
                 watcher.AddPath(cryptpath);
             }
+            SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
         }
         break;
     default:

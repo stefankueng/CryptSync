@@ -49,6 +49,7 @@ public:
     ~CFolderSync(void);
 
     void SyncFolders(const PairVector& pv);
+    void SyncFile(const std::wstring& path);
 
 private:
     static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
