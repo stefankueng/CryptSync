@@ -93,8 +93,12 @@ LRESULT CPairAddDlg::DoCommand(int id)
         {
             auto buf = GetDlgItemText(IDC_ORIGPATH);
             m_origpath = buf.get();
+            m_origpath.erase(m_origpath.find_last_not_of(L" \n\r\t\\")+1);
+
             buf = GetDlgItemText(IDC_CRYPTPATH);
             m_cryptpath = buf.get();
+            m_cryptpath.erase(m_cryptpath.find_last_not_of(L" \n\r\t\\")+1);
+
             buf = GetDlgItemText(IDC_PASSWORD);
             m_password = buf.get();
         }
