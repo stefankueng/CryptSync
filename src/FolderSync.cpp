@@ -271,7 +271,7 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
 
     HCRYPTPROV hProv = NULL;
     // Get handle to user default provider.
-    if (CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL, 0))
+    if (CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT|CRYPT_SILENT))
     {
         HCRYPTHASH hHash = NULL;
         // Create hash object.
@@ -330,7 +330,7 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
 
     HCRYPTPROV hProv = NULL;
     // Get handle to user default provider.
-    if (CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL, 0))
+    if (CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT|CRYPT_SILENT))
     {
         HCRYPTHASH hHash = NULL;
         // Create hash object.
