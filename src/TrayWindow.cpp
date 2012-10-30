@@ -20,6 +20,7 @@
 #include "TrayWindow.h"
 #include "AboutDlg.h"
 #include "OptionsDlg.h"
+#include "Ignores.h"
 
 #include <WindowsX.h>
 #include <process.h>
@@ -201,10 +202,13 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             auto files = watcher.GetChangedPaths();
             if (!files.empty())
             {
+                CIgnores ignores;
                 for (auto it = files.cbegin(); it != files.cend(); ++it)
                 {
-                    if (it->find(L".cryptsync.tmp") == std::string::npos)
-                        foldersyncer.SyncFile(*it);
+                    if (ignores.IsIgnored(*it))
+                        continue;
+
+                    foldersyncer.SyncFile(*it);
                 }
             }
         }
