@@ -311,12 +311,19 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     if (bRet)
     {
         // set the file timestamp
-        CAutoFile hFile = CreateFile(crypt.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-        if (hFile.IsValid())
+        int retry = 5;
+        do 
         {
-            bRet = !!SetFileTime(hFile, &fd.ft, &fd.ft, &fd.ft);
-        }
-
+            CAutoFile hFile = CreateFile(crypt.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+            if (hFile.IsValid())
+            {
+                bRet = !!SetFileTime(hFile, NULL, NULL, &fd.ft);
+            }
+            else
+                bRet = false;
+            if (!bRet)
+                Sleep(200);
+        } while (!bRet && (retry-- > 0));
     }
     return bRet;
 }
@@ -340,12 +347,19 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     if (bRet)
     {
         // set the file timestamp
-        CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-        if (hFile.IsValid())
+        int retry = 5;
+        do 
         {
-            bRet = !!SetFileTime(hFile, &fd.ft, &fd.ft, &fd.ft);
-        }
-
+            CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+            if (hFile.IsValid())
+            {
+                bRet = !!SetFileTime(hFile, NULL, NULL, &fd.ft);
+            }
+            else
+                bRet = false;
+            if (!bRet)
+                Sleep(200);
+        } while (!bRet && (retry-- > 0));
     }
     return true;
 }
