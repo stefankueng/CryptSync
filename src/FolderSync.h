@@ -18,6 +18,7 @@
 //
 #pragma once
 #include "Pairs.h"
+#include "ReaderWriterLock.h"
 
 #include <string>
 #include <set>
@@ -63,6 +64,7 @@ private:
 
     bool                            Run7Zip(LPWSTR cmdline, const std::wstring& cwd) const;
 
+    CReaderWriterLock               m_guard;
     PairVector                      m_pairs;
     std::wstring                    m_sevenzip;
 };
