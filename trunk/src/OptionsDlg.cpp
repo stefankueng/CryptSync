@@ -105,7 +105,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                 {
-                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password))
+                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_encnames))
                         InitPairList();
                 }
             }
@@ -118,7 +118,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             if (nCount == 0)
                 break;
             int iItem = -1;
-            std::vector<std::tuple<std::wstring, std::wstring, std::wstring>> sels;
+            PairVector sels;
             while ((iItem = ListView_GetNextItem(hListControl, iItem, LVNI_SELECTED)) != (-1))
             {
                 if ((iItem < 0)||(iItem >= (int)g_pairs.size()))
@@ -200,12 +200,13 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             dlg.m_origpath = std::get<0>(t);
             dlg.m_cryptpath = std::get<1>(t);
             dlg.m_password = std::get<2>(t);
+            dlg.m_encnames = std::get<3>(t);
             if (dlg.DoModal(hResource, IDD_PAIRADD, *this)==IDOK)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                 {
                     g_pairs.erase(g_pairs.begin()+lpNMItemActivate->iItem);
-                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password))
+                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_encnames))
                         InitPairList();
                 }
             }

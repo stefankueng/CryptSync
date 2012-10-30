@@ -49,6 +49,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(hwndDlg, IDC_ORIGPATH, m_origpath.c_str());
             SetDlgItemText(hwndDlg, IDC_CRYPTPATH, m_cryptpath.c_str());
             SetDlgItemText(hwndDlg, IDC_PASSWORD, m_password.c_str());
+            SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encnames ? BST_CHECKED : BST_UNCHECKED, NULL);
 
             // the path edit control should work as a drop target for files and folders
             HWND hOrigPath = GetDlgItem(hwndDlg, IDC_ORIGPATH);
@@ -101,6 +102,8 @@ LRESULT CPairAddDlg::DoCommand(int id)
 
             buf = GetDlgItemText(IDC_PASSWORD);
             m_password = buf.get();
+
+            m_encnames = !!SendDlgItemMessage(*this, IDC_ENCNAMES, BM_GETCHECK, 0, NULL);
         }
         // fall through
     case IDCANCEL:

@@ -79,7 +79,7 @@ void CFolderSync::SyncFile( const std::wstring& path )
         std::wstring s = std::get<0>(*it);
         if (path.size() > s.size())
         {
-            if (path.substr(0, s.size()) == s)
+            if ((path.substr(0, s.size()) == s)&&(path[s.size()] == '\\'))
             {
                 pt = *it;
                 break;
@@ -88,7 +88,7 @@ void CFolderSync::SyncFile( const std::wstring& path )
         s = std::get<1>(*it);
         if (path.size() > s.size())
         {
-            if (path.substr(0, s.size()) == s)
+            if ((path.substr(0, s.size()) == s)&&(path[s.size()] == '\\'))
             {
                 pt = *it;
                 break;
@@ -104,7 +104,7 @@ void CFolderSync::SyncFile( const std::wstring& path )
     if ((orig.size() < path.size())&&(path.substr(0, orig.size()) == orig))
     {
         std::wstring filename = path.substr(path.find_last_of('\\')+1);
-        filename = GetEncryptedFilename(filename, std::get<2>(pt));
+        filename = GetEncryptedFilename(filename, std::get<2>(pt), std::get<3>(pt));
         crypt = crypt + path.substr(orig.size());
         crypt = crypt.substr(0, crypt.find_last_of('\\')+1) + filename;
         orig = path;
@@ -112,7 +112,7 @@ void CFolderSync::SyncFile( const std::wstring& path )
     else
     {
         std::wstring filename = path.substr(path.find_last_of('\\')+1);
-        filename = GetDecryptedFilename(filename, std::get<2>(pt));
+        filename = GetDecryptedFilename(filename, std::get<2>(pt), std::get<3>(pt));
         orig = orig + path.substr(crypt.size());
         orig = orig.substr(0, orig.find_last_of('\\')+1) + filename;
         crypt = path;
@@ -167,8 +167,8 @@ void CFolderSync::SyncFile( const std::wstring& path )
 void CFolderSync::SyncFolder( const PairTuple& pt )
 {
     CIgnores ignores;
-    std::map<std::wstring,FileData> origFileList  = GetFileList(std::get<0>(pt), std::get<2>(pt));
-    std::map<std::wstring,FileData> cryptFileList = GetFileList(std::get<1>(pt), std::get<2>(pt));
+    std::map<std::wstring,FileData> origFileList  = GetFileList(std::get<0>(pt), std::get<2>(pt), std::get<3>(pt));
+    std::map<std::wstring,FileData> cryptFileList = GetFileList(std::get<1>(pt), std::get<2>(pt), std::get<3>(pt));
 
     for (auto it = origFileList.cbegin(); it != origFileList.cend(); ++it)
     {
@@ -184,7 +184,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
             std::wstring fname = it->first;
             if (slashpos != std::string::npos)
                 fname = it->first.substr(slashpos + 1);
-            std::wstring cryptname = GetEncryptedFilename(fname, std::get<2>(pt));
+            std::wstring cryptname = GetEncryptedFilename(fname, std::get<2>(pt), std::get<3>(pt));
             std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
             cryptpath = cryptpath + L"\\" + cryptname;
             std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
@@ -201,7 +201,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
                 std::wstring fname = it->first;
                 if (slashpos != std::string::npos)
                     fname = it->first.substr(slashpos + 1);
-                std::wstring cryptname = GetEncryptedFilename(fname, std::get<2>(pt));
+                std::wstring cryptname = GetEncryptedFilename(fname, std::get<2>(pt), std::get<3>(pt));
                 std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
                 cryptpath = cryptpath + L"\\" + cryptname;
                 std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
@@ -216,7 +216,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
                 std::wstring fname = it->first;
                 if (slashpos != std::string::npos)
                     fname = it->first.substr(slashpos + 1);
-                std::wstring cryptname = GetEncryptedFilename(fname, std::get<2>(pt));
+                std::wstring cryptname = GetEncryptedFilename(fname, std::get<2>(pt), std::get<3>(pt));
                 std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
                 cryptpath = cryptpath + L"\\" + cryptname;
                 std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
@@ -255,7 +255,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
     }
 }
 
-std::map<std::wstring,FileData> CFolderSync::GetFileList( const std::wstring& path, const std::wstring& password ) const
+std::map<std::wstring,FileData> CFolderSync::GetFileList( const std::wstring& path, const std::wstring& password, bool encnames ) const
 {
     CDirFileEnum enumerator(path);
 
@@ -280,7 +280,7 @@ std::map<std::wstring,FileData> CFolderSync::GetFileList( const std::wstring& pa
         else
             fd.filename = relpath;
 
-        std::wstring decryptedFileName = GetDecryptedFilename(fd.filename, password);
+        std::wstring decryptedFileName = GetDecryptedFilename(fd.filename, password, encnames);
         fd.filenameEncrypted = (decryptedFileName != fd.filename);
         if (fd.filenameEncrypted)
         {
@@ -370,7 +370,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     return true;
 }
 
-std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, const std::wstring& password ) const
+std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, const std::wstring& password, bool encryptname ) const
 {
     bool bResult = true;
     std::wstring decryptName = filename;
@@ -380,6 +380,16 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
         fname = CUnicodeUtils::StdGetUTF8(filename.substr(0, dotpos));
     else
         fname = CUnicodeUtils::StdGetUTF8(filename);
+
+    if (!encryptname)
+    {
+        size_t pos = filename.find(L".cryptsync");
+        if (pos != std::string::npos)
+        {
+            return filename.substr(0, pos);
+        }
+        return filename;
+    }
 
     std::unique_ptr<BYTE[]> strIn(new BYTE[fname.size()*sizeof(WCHAR) + 1]);
     if (!CStringUtils::FromHexString(fname, strIn.get()))
@@ -438,9 +448,14 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
     return decryptName;
 }
 
-std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, const std::wstring& password ) const
+std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, const std::wstring& password, bool encryptname ) const
 {
     std::wstring encryptFilename = filename;
+    if (!encryptname)
+    {
+        encryptFilename += L".cryptsync";
+        return encryptFilename;
+    }
 
     bool bResult = true;
 
