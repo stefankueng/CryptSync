@@ -67,6 +67,102 @@ void CFolderSync::SyncFolderThread()
     }
 }
 
+
+void CFolderSync::SyncFile( const std::wstring& path )
+{
+    if (PathIsDirectory(path.c_str()))
+        return;
+    PairTuple pt;
+    for (auto it = m_pairs.cbegin(); it != m_pairs.cend(); ++it)
+    {
+        std::wstring s = std::get<0>(*it);
+        if (path.size() > s.size())
+        {
+            if (path.substr(0, s.size()) == s)
+            {
+                pt = *it;
+                break;
+            }
+        }
+        s = std::get<1>(*it);
+        if (path.size() > s.size())
+        {
+            if (path.substr(0, s.size()) == s)
+            {
+                pt = *it;
+                break;
+            }
+        }
+    }
+
+    std::wstring orig  = std::get<0>(pt);
+    std::wstring crypt = std::get<1>(pt);
+    if (orig.empty() || crypt.empty())
+        return;
+
+    if ((orig.size() < path.size())&&(path.substr(0, orig.size()) == orig))
+    {
+        std::wstring filename = path.substr(path.find_last_of('\\')+1);
+        filename = GetEncryptedFilename(filename, std::get<2>(pt));
+        crypt = crypt + path.substr(orig.size());
+        crypt = crypt.substr(0, crypt.find_last_of('\\')+1) + filename;
+        orig = path;
+    }
+    else
+    {
+        std::wstring filename = path.substr(path.find_last_of('\\')+1);
+        filename = GetDecryptedFilename(filename, std::get<2>(pt));
+        orig = orig + path.substr(crypt.size());
+        orig = orig.substr(0, orig.find_last_of('\\')+1) + filename;
+        crypt = path;
+    }
+
+    WIN32_FILE_ATTRIBUTE_DATA fdataorig  = {0};
+    WIN32_FILE_ATTRIBUTE_DATA fdatacrypt = {0};
+    GetFileAttributesEx(orig.c_str(),  GetFileExInfoStandard, &fdataorig);
+    GetFileAttributesEx(crypt.c_str(), GetFileExInfoStandard, &fdatacrypt);
+
+    if ((fdataorig.ftLastWriteTime.dwLowDateTime == 0)&&(fdataorig.ftLastWriteTime.dwHighDateTime == 0)&&
+        (orig==path))
+    {
+        // original file got deleted
+        // delete the encrypted file
+        DeleteFile(crypt.c_str());
+        return;
+    }
+    else if ((fdatacrypt.ftLastWriteTime.dwLowDateTime == 0)&&(fdatacrypt.ftLastWriteTime.dwHighDateTime == 0)&&
+             (crypt==path))
+    {
+        // encrypted file got deleted
+        // delete the original file as well
+        DeleteFile(orig.c_str());
+        return;
+    }
+
+    LONG cmp = CompareFileTime(&fdataorig.ftLastWriteTime, &fdatacrypt.ftLastWriteTime);
+    if (cmp < 0)
+    {
+        // original file is older than the encrypted file
+        // decrypt the file
+        FileData fd;
+        fd.ft = fdatacrypt.ftLastWriteTime;
+        DecryptFile(orig, crypt, std::get<2>(pt), fd);
+    }
+    else if (cmp > 0)
+    {
+        // encrypted file is older than the original file
+        // encrypt the file
+        FileData fd;
+        fd.ft = fdataorig.ftLastWriteTime;
+        EncryptFile(orig, crypt, std::get<2>(pt), fd);
+    }
+    else if (cmp == 0)
+    {
+        // files are identical (have the same last-write-time):
+        // nothing to do.
+    }
+}
+
 void CFolderSync::SyncFolder( const PairTuple& pt )
 {
     std::map<std::wstring,FileData> origFileList  = GetFileList(std::get<0>(pt), std::get<2>(pt));
