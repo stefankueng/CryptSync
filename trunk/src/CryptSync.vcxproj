@@ -188,6 +188,7 @@
     <ClInclude Include="FileDropTarget.h" />
     <ClInclude Include="FolderSync.h" />
     <ClInclude Include="hyperlink.h" />
+    <ClInclude Include="Ignores.h" />
     <ClInclude Include="maxpath.h" />
     <ClInclude Include="PairAddDlg.h" />
     <ClInclude Include="Pairs.h" />
@@ -217,6 +218,7 @@
     <ClCompile Include="FileDropTarget.cpp" />
     <ClCompile Include="FolderSync.cpp" />
     <ClCompile Include="hyperlink.cpp" />
+    <ClCompile Include="Ignores.cpp" />
     <ClCompile Include="PairAddDlg.cpp" />
     <ClCompile Include="Pairs.cpp" />
     <ClCompile Include="PathWatcher.cpp" />

@@ -21,6 +21,7 @@
 #include "DirFileEnum.h"
 #include "StringUtils.h"
 #include "UnicodeUtils.h"
+#include "Ignores.h"
 #include "CreateProcessHelper.h"
 #include "SmartHandle.h"
 #include "DebugOutput.h"
@@ -165,11 +166,14 @@ void CFolderSync::SyncFile( const std::wstring& path )
 
 void CFolderSync::SyncFolder( const PairTuple& pt )
 {
+    CIgnores ignores;
     std::map<std::wstring,FileData> origFileList  = GetFileList(std::get<0>(pt), std::get<2>(pt));
     std::map<std::wstring,FileData> cryptFileList = GetFileList(std::get<1>(pt), std::get<2>(pt));
 
     for (auto it = origFileList.cbegin(); it != origFileList.cend(); ++it)
     {
+        if (ignores.IsIgnored(it->first))
+            continue;
         auto cryptit = cryptFileList.find(it->first);
         if (cryptit == cryptFileList.end())
         {
@@ -230,6 +234,8 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
     // decrypt it
     for (auto it = cryptFileList.cbegin(); it != cryptFileList.cend(); ++it)
     {
+        if (ignores.IsIgnored(it->first))
+            continue;
         auto origit = origFileList.find(it->first);
         if (origit == origFileList.end())
         {
