@@ -39,6 +39,16 @@ CFolderSync::CFolderSync(void)
     {
         m_sevenzip = L"%ProgramW6432%\\7-zip\\7z.exe";
         m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
+        if (!PathFileExists(m_sevenzip.c_str()))
+        {
+            // user does not have 7zip installed, use
+            // our own copy
+            wchar_t buf[1024] = {0};
+            GetModuleFileName(NULL, buf, 1024);
+            std::wstring dir = buf;
+            dir = dir.substr(0, dir.find_last_of('\\'));
+            m_sevenzip = dir + L"\\7z.exe";
+        }
     }
 }
 
@@ -49,6 +59,7 @@ CFolderSync::~CFolderSync(void)
 
 void CFolderSync::SyncFolders( const PairVector& pv )
 {
+    CAutoWriteLock locker(m_guard);
     m_pairs = pv;
     unsigned int threadId = 0;
     _beginthreadex(NULL, 0, SyncFolderThreadEntry, this, 0, &threadId);
@@ -62,7 +73,12 @@ unsigned int CFolderSync::SyncFolderThreadEntry(void* pContext)
 
 void CFolderSync::SyncFolderThread()
 {
-    for (auto it = m_pairs.cbegin(); it != m_pairs.cend(); ++it)
+    PairVector pv;
+    {
+        CAutoReadLock locker(m_guard);
+        pv = m_pairs;
+    }
+    for (auto it = pv.cbegin(); it != pv.cend(); ++it)
     {
         SyncFolder(*it);
     }
@@ -74,6 +90,7 @@ void CFolderSync::SyncFile( const std::wstring& path )
     if (PathIsDirectory(path.c_str()))
         return;
     PairTuple pt;
+    CAutoReadLock locker(m_guard);
     for (auto it = m_pairs.cbegin(); it != m_pairs.cend(); ++it)
     {
         std::wstring s = std::get<0>(*it);
