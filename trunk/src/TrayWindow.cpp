@@ -160,6 +160,17 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
     case WM_CREATE:
         {
             m_hwnd = hwnd;
+            foldersyncer.SyncFolders(g_pairs);
+            watcher.ClearPaths();
+            for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
+            {
+                std::wstring origpath = std::get<0>(*it);
+                std::wstring cryptpath = std::get<1>(*it);
+                watcher.AddPath(origpath);
+                watcher.AddPath(cryptpath);
+            }
+            SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
+            SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
         }
         break;
     case WM_COMMAND:
