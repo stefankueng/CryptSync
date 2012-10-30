@@ -67,6 +67,11 @@ public:
     size_t GetNumberOfWatchedPaths() {return watchedPaths.size();}
 
     /**
+     * Returns all changed paths since the last call to GetChangedPaths
+     */
+    std::set<std::wstring> GetChangedPaths();
+
+    /**
      * Stops the watching thread.
      */
     void Stop();
@@ -111,6 +116,6 @@ private:
 
     std::map<HANDLE, CDirWatchInfo *> watchInfoMap;
 
-    HDEVNOTIFY      m_hdev;
-
+    HDEVNOTIFY              m_hdev;
+    std::set<std::wstring>  m_changedPaths;
 };

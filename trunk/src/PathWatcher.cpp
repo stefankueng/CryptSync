@@ -218,7 +218,10 @@ void CPathWatcher::WorkerThread()
                         buf[min(bufferSize-1, pdi->m_DirPath.size()+(pnotify->FileNameLength/sizeof(WCHAR)))] = 0;
                         pnotify = (PFILE_NOTIFY_INFORMATION)((LPBYTE)pnotify + nOffset);
                         CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": change notification for %s\n"), buf);
-                            //m_changedPaths.insert(std::wstring(buf));
+                        {
+                            CAutoWriteLock locker(m_guard);
+                            m_changedPaths.insert(std::wstring(buf));
+                        }
                         if ((ULONG_PTR)pnotify - (ULONG_PTR)pdi->m_Buffer > READ_DIR_CHANGE_BUFFER_SIZE)
                             break;
                     } while (nOffset);
@@ -262,6 +265,14 @@ void CPathWatcher::ClearInfoMap()
     }
     watchInfoMap.clear();
     m_hCompPort.CloseHandle();
+}
+
+std::set<std::wstring> CPathWatcher::GetChangedPaths()
+{
+    CAutoWriteLock locker(m_guard);
+    std::set<std::wstring> ret = m_changedPaths;
+    m_changedPaths.clear();
+    return ret;
 }
 
 CPathWatcher::CDirWatchInfo::CDirWatchInfo(HANDLE hDir, const std::wstring& DirectoryName)
