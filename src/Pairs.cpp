@@ -63,7 +63,11 @@ void CPairs::InitPairList()
             break;
         password = Decrypt(password);
 
-        auto t = std::make_tuple(origpath, cryptpath, password);
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
+        CRegStdWORD encnamesreg(key, TRUE);
+        bool encnames = !!(DWORD)encnamesreg;
+
+        auto t = std::make_tuple(origpath, cryptpath, password, encnames);
         if (std::find(cbegin(), cend(), t) == cend())
             push_back(t);
         ++p;
@@ -77,16 +81,20 @@ void CPairs::SavePairs()
     {
         WCHAR key[MAX_PATH];
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOrig%d", p);
-        CRegStdString origpathreg(key);
+        CRegStdString origpathreg(key, L"", true);
         origpathreg = std::get<0>(*it);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCrypt%d", p);
-        CRegStdString cryptpathreg(key);
+        CRegStdString cryptpathreg(key, L"", true);
         cryptpathreg = std::get<1>(*it);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
-        CRegStdString passwordreg(key);
+        CRegStdString passwordreg(key, L"", true);
         passwordreg = Encrypt(std::get<2>(*it));
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
+        CRegStdWORD encnamesreg(key, TRUE, true);
+        encnamesreg = (DWORD)std::get<3>(*it);
 
         ++p;
     }
@@ -102,13 +110,21 @@ void CPairs::SavePairs()
         CRegStdString cryptpathreg(key);
         cryptpathreg.removeValue();
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
+        CRegStdString passwordreg(key);
+        passwordreg.removeValue();
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
+        CRegStdWORD encnamesreg(key);
+        encnamesreg.removeValue();
+
         ++p;
     }
 }
 
-bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password )
+bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, bool encryptnames )
 {
-    auto t = std::make_tuple(orig, crypt, password);
+    auto t = std::make_tuple(orig, crypt, password, encryptnames);
     if (std::find(cbegin(), cend(), t) == cend())
     {
         push_back(t);

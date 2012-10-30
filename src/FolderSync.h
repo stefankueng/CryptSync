@@ -55,11 +55,11 @@ private:
     static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
     void                            SyncFolderThread();
     void                            SyncFolder(const PairTuple& pt);
-    std::map<std::wstring,FileData> GetFileList(const std::wstring& path, const std::wstring& password) const;
+    std::map<std::wstring,FileData> GetFileList(const std::wstring& path, const std::wstring& password, bool encnames) const;
     bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd);
     bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd);
-    std::wstring                    GetDecryptedFilename(const std::wstring& filename, const std::wstring& password) const;
-    std::wstring                    GetEncryptedFilename(const std::wstring& filename, const std::wstring& password) const;
+    std::wstring                    GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname) const;
+    std::wstring                    GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname) const;
 
     bool                            Run7Zip(LPWSTR cmdline, const std::wstring& cwd) const;
 
