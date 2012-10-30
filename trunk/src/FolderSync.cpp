@@ -68,6 +68,7 @@ void CFolderSync::SyncFolders( const PairVector& pv )
 unsigned int CFolderSync::SyncFolderThreadEntry(void* pContext)
 {
     ((CFolderSync*)pContext)->SyncFolderThread();
+    _endthreadex(0);
     return 0;
 }
 
