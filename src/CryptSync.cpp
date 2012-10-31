@@ -39,17 +39,49 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
+std::wstring GetMutexID()
+{
+    std::wstring t;
+    CAutoGeneralHandle token;
+    BOOL result = OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, token.GetPointer());
+    if(result)
+    {
+        DWORD len = 0;
+        GetTokenInformation(token, TokenStatistics, NULL, 0, &len);
+        if (len >= sizeof (TOKEN_STATISTICS))
+        {
+            std::unique_ptr<BYTE[]> data (new BYTE[len]);
+            GetTokenInformation(token, TokenStatistics, data.get(), len, &len);
+            LUID uid = ((PTOKEN_STATISTICS)data.get())->AuthenticationId;
+            wchar_t buf[100] = {0};
+            swprintf_s(buf, L"{81C34844-03AC-4DAA-865B-BC51F07F7F9E}-%08x%08x", uid.HighPart, uid.LowPart);
+            t = buf;
+        }
+    }
+    return t;
+}
+
+
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      LPTSTR    lpCmdLine,
                      int       nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
     UNREFERENCED_PARAMETER(nCmdShow);
+
+    SetDllDirectory(L"");
 
     MSG msg;
     HACCEL hAccelTable;
+
+    HANDLE hReloadProtection = ::CreateMutex(NULL, FALSE, GetMutexID().c_str());
+    if ((!hReloadProtection) || (GetLastError() == ERROR_ALREADY_EXISTS))
+    {
+        // An instance of CryptSync is already running
+        return 0;
+    }
+
 
     CTrayWindow trayWindow(hInstance);
 
