@@ -160,8 +160,12 @@ void CFolderSync::SyncFile( const std::wstring& path )
 
     WIN32_FILE_ATTRIBUTE_DATA fdataorig  = {0};
     WIN32_FILE_ATTRIBUTE_DATA fdatacrypt = {0};
-    GetFileAttributesEx(orig.c_str(),  GetFileExInfoStandard, &fdataorig);
-    GetFileAttributesEx(crypt.c_str(), GetFileExInfoStandard, &fdatacrypt);
+    if ((!GetFileAttributesEx(orig.c_str(),  GetFileExInfoStandard, &fdataorig)) &&
+        (GetLastError() == ERROR_ACCESS_DENIED))
+        return;
+    if ((!GetFileAttributesEx(crypt.c_str(), GetFileExInfoStandard, &fdatacrypt)) &&
+        (GetLastError() == ERROR_ACCESS_DENIED))
+        return;
 
     if ((fdataorig.ftLastWriteTime.dwLowDateTime == 0)&&(fdataorig.ftLastWriteTime.dwHighDateTime == 0)&&
         (orig==path))
