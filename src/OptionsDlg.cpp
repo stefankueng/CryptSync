@@ -22,12 +22,15 @@
 #include "OptionsDlg.h"
 #include "Registry.h"
 #include "PairAddDlg.h"
+#include "UpdateDlg.h"
+
 #include <string>
 #include <algorithm>
 #include <Commdlg.h>
 
 COptionsDlg::COptionsDlg(HWND hParent)
     : m_hParent(hParent)
+    , m_bNewerVersionAvailable(false)
 {
 }
 
@@ -53,6 +56,13 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(*this, IDC_IGNORE, sIgnores.c_str());
 
             InitPairList();
+
+            if (m_bNewerVersionAvailable)
+            {
+                CUpdateDlg dlg(*this);
+                dlg.DoModal(hResource, IDD_NEWERNOTIFYDLG, *this);
+                m_bNewerVersionAvailable = false;
+            }
         }
         return TRUE;
     case WM_COMMAND:

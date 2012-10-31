@@ -19,29 +19,26 @@
 
 #pragma once
 #include "BaseDialog.h"
+#include "hyperlink.h"
 #include "AeroControls.h"
-#include "FolderSync.h"
 
 /**
- * options dialog.
+ * about dialog.
  */
-class COptionsDlg : public CDialog
+class CUpdateDlg : public CDialog
 {
 public:
-    COptionsDlg(HWND hParent);
-    ~COptionsDlg(void);
+    CUpdateDlg(HWND hParent);
+    ~CUpdateDlg(void);
 
-    void                    SetUpdateAvailable(bool bUpdate) {m_bNewerVersionAvailable = bUpdate;}
-
+    static bool             CheckNewer();
 protected:
     LRESULT CALLBACK        DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
     LRESULT                 DoCommand(int id);
-    void                    InitPairList();
-    void                    DoListNotify(LPNMITEMACTIVATE lpNMItemActivate);
+    static std::wstring     GetTempFilePath();
 
 private:
     HWND                    m_hParent;
+    CHyperLink              m_link;
     AeroControlBase         m_aerocontrols;
-    CFolderSync             m_foldersync;
-    bool                    m_bNewerVersionAvailable;
 };
