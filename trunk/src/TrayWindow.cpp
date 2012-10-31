@@ -283,7 +283,7 @@ LRESULT CTrayWindow::DoCommand(int id)
             COptionsDlg dlg(NULL);
             dlg.SetUpdateAvailable(m_bNewerVersionAvailable);
             INT_PTR ret = dlg.DoModal(hResource, IDD_OPTIONS, NULL);
-            if (ret == IDOK)
+            if ((ret == IDOK)||(ret == IDCANCEL))
             {
                 foldersyncer.SyncFolders(g_pairs);
                 watcher.ClearPaths();
