@@ -168,7 +168,15 @@ void CFolderSync::SyncFile( const std::wstring& path )
     {
         // original file got deleted
         // delete the encrypted file
-        DeleteFile(crypt.c_str());
+        SHFILEOPSTRUCT fop = {0};
+        fop.wFunc = FO_DELETE;
+        fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
+        std::unique_ptr<wchar_t[]> delbuf(new wchar_t[crypt.size()+2]);
+        wcscpy_s(delbuf.get(), crypt.size()+2, crypt.c_str());
+        delbuf[crypt.size()] = 0;
+        delbuf[crypt.size()+1] = 0;
+        fop.pFrom = delbuf.get();
+        SHFileOperation(&fop);
         return;
     }
     else if ((fdatacrypt.ftLastWriteTime.dwLowDateTime == 0)&&(fdatacrypt.ftLastWriteTime.dwHighDateTime == 0)&&
@@ -176,7 +184,15 @@ void CFolderSync::SyncFile( const std::wstring& path )
     {
         // encrypted file got deleted
         // delete the original file as well
-        DeleteFile(orig.c_str());
+        SHFILEOPSTRUCT fop = {0};
+        fop.wFunc = FO_DELETE;
+        fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
+        std::unique_ptr<wchar_t[]> delbuf(new wchar_t[orig.size()+2]);
+        wcscpy_s(delbuf.get(), orig.size()+2, orig.c_str());
+        delbuf[orig.size()] = 0;
+        delbuf[orig.size()+1] = 0;
+        fop.pFrom = delbuf.get();
+        SHFileOperation(&fop);
         return;
     }
 
