@@ -37,6 +37,7 @@ public:
         , hwndNextViewer(NULL)
         , foregroundWND(NULL)
         , m_bNewerVersionAvailable(false)
+        , m_bTrayMode(true)
     {
         SetWindowTitle((LPCTSTR)ResString(hResource, IDS_APP_TITLE));
     };
@@ -47,6 +48,7 @@ public:
 
     bool                RegisterAndCreateWindow();
 
+    void                ShowDialogImmediately(bool show) { m_bTrayMode = !show; }
 protected:
     /// the message handler for this window
     LRESULT CALLBACK    WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -68,6 +70,7 @@ protected:
     CPathWatcher        watcher;
     CFolderSync         foldersyncer;
     bool                m_bNewerVersionAvailable;
+    bool                m_bTrayMode;
 
     typedef BOOL(__stdcall *PFNCHANGEWINDOWMESSAGEFILTEREX)(HWND hWnd, UINT message, DWORD dwFlag, PCHANGEFILTERSTRUCT pChangeFilterStruct);
     static PFNCHANGEWINDOWMESSAGEFILTEREX m_pChangeWindowMessageFilter;
