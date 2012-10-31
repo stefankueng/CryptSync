@@ -144,6 +144,12 @@
     <None Include="..\versioninfo.build">
       <Filter>build</Filter>
     </None>
+    <None Include="Setup\setup.build">
+      <Filter>build</Filter>
+    </None>
+    <None Include="Setup\Setup.wxs">
+      <Filter>build</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utils">
