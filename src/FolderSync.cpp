@@ -449,7 +449,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
                 Sleep(200);
         } while (!bRet && (retry-- > 0));
     }
-    return true;
+    return bRet;
 }
 
 std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, const std::wstring& password, bool encryptname ) const
