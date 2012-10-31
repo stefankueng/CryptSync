@@ -71,7 +71,7 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
     case WM_COMMAND:
         return DoCommand(LOWORD(wParam));
     case WM_THREADENDED:
-        EndDialog(*this, IDCANCEL);
+        EndDialog(*this, IDEXIT);
         return TRUE;
     case WM_NOTIFY:
         {
@@ -112,6 +112,7 @@ LRESULT COptionsDlg::DoCommand(int id)
         }
         // fall through
     case IDCANCEL:
+    case IDEXIT:
         EndDialog(*this, id);
         break;
     case IDC_SYNCEXIT:
