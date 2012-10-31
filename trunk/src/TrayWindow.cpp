@@ -21,6 +21,7 @@
 #include "AboutDlg.h"
 #include "OptionsDlg.h"
 #include "Ignores.h"
+#include "UpdateDlg.h"
 
 #include <WindowsX.h>
 #include <process.h>
@@ -171,6 +172,8 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             }
             SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
             SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
+            unsigned int threadId = 0;
+            _beginthreadex(NULL, 0, UpdateCheckThreadEntry, this, 0, &threadId);
         }
         break;
     case WM_COMMAND:
@@ -276,6 +279,7 @@ LRESULT CTrayWindow::DoCommand(int id)
     case IDM_OPTIONS:
         {
             COptionsDlg dlg(NULL);
+            dlg.SetUpdateAvailable(m_bNewerVersionAvailable);
             INT_PTR ret = dlg.DoModal(hResource, IDD_OPTIONS, NULL);
             if (ret == IDOK)
             {
@@ -306,4 +310,14 @@ LRESULT CTrayWindow::DoCommand(int id)
     return 1;
 }
 
+unsigned int CTrayWindow::UpdateCheckThreadEntry(void* pContext)
+{
+    ((CTrayWindow*)pContext)->UpdateCheckThread();
+    _endthreadex(0);
+    return 0;
+}
 
+void CTrayWindow::UpdateCheckThread()
+{
+    m_bNewerVersionAvailable = CUpdateDlg::CheckNewer();
+}

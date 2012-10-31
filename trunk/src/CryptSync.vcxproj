@@ -205,6 +205,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="UnicodeUtils.h" />
+    <ClInclude Include="UpdateDlg.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AboutDlg.cpp" />
@@ -237,6 +238,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="UnicodeUtils.cpp" />
+    <ClCompile Include="UpdateDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CryptSync.rc" />

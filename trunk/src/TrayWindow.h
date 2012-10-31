@@ -36,6 +36,7 @@ public:
         : CWindow(hInst, wcx)
         , hwndNextViewer(NULL)
         , foregroundWND(NULL)
+        , m_bNewerVersionAvailable(false)
     {
         SetWindowTitle((LPCTSTR)ResString(hResource, IDS_APP_TITLE));
     };
@@ -57,12 +58,16 @@ protected:
     void                ShowTrayIcon();
     DWORD               GetDllVersion(LPCTSTR lpszDllName);
 
+    static unsigned int __stdcall UpdateCheckThreadEntry(void* pContext);
+    void                UpdateCheckThread();
+
 protected:
     NOTIFYICONDATA      niData;
     HWND                hwndNextViewer;
     HWND                foregroundWND;
     CPathWatcher        watcher;
     CFolderSync         foldersyncer;
+    bool                m_bNewerVersionAvailable;
 
     typedef BOOL(__stdcall *PFNCHANGEWINDOWMESSAGEFILTEREX)(HWND hWnd, UINT message, DWORD dwFlag, PCHANGEFILTERSTRUCT pChangeFilterStruct);
     static PFNCHANGEWINDOWMESSAGEFILTEREX m_pChangeWindowMessageFilter;

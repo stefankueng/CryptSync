@@ -56,6 +56,7 @@
     <ClCompile Include="ProgressDlg.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="UpdateDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AboutDlg.h" />
@@ -124,6 +125,7 @@
     <ClInclude Include="ProgressDlg.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="UpdateDlg.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CryptSync.rc" />
