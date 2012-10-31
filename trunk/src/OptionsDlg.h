@@ -21,6 +21,7 @@
 #include "BaseDialog.h"
 #include "AeroControls.h"
 #include "FolderSync.h"
+#include "hyperlink.h"
 
 /**
  * options dialog.
@@ -42,6 +43,7 @@ protected:
 private:
     HWND                    m_hParent;
     AeroControlBase         m_aerocontrols;
+    CHyperLink              m_link;
     CFolderSync             m_foldersync;
     bool                    m_bNewerVersionAvailable;
 };

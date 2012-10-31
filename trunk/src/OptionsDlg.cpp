@@ -23,6 +23,7 @@
 #include "Registry.h"
 #include "PairAddDlg.h"
 #include "UpdateDlg.h"
+#include "AboutDlg.h"
 
 #include <string>
 #include <algorithm>
@@ -46,6 +47,8 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
     case WM_INITDIALOG:
         {
             InitDialog(hwndDlg, IDI_CryptSync);
+
+            m_link.ConvertStaticToHyperlink(hwndDlg, IDC_ABOUT, _T(""));
 
             AddToolTip(IDC_AUTOSTART, _T("Starts CryptSync automatically when Windows starts up."));
 
@@ -153,6 +156,12 @@ LRESULT COptionsDlg::DoCommand(int id)
                 }
             }
             InitPairList();
+        }
+        break;
+    case IDC_ABOUT:
+        {
+            CAboutDlg dlgAbout(*this);
+            dlgAbout.DoModal(hResource, IDD_ABOUTBOX, *this);
         }
         break;
     }
