@@ -72,7 +72,7 @@
           <exec program="signtool">
             <arg value="sign" />
             <arg value="${signinfo}" />
-            <arg value="release\CryptSync.exe" />
+            <arg value="release\Win32\CryptSync.exe" />
           </exec>
         </if>
     </target>
