@@ -57,6 +57,9 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
         return TRUE;
     case WM_COMMAND:
         return DoCommand(LOWORD(wParam));
+    case WM_THREADENDED:
+        EndDialog(*this, IDCANCEL);
+        return TRUE;
     case WM_NOTIFY:
         {
             if (wParam == IDC_SYNCPAIRS)
@@ -97,6 +100,11 @@ LRESULT COptionsDlg::DoCommand(int id)
         // fall through
     case IDCANCEL:
         EndDialog(*this, id);
+        break;
+    case IDC_SYNCEXIT:
+        {
+            m_foldersync.SyncFolders(g_pairs, *this);
+        }
         break;
     case IDC_CREATEPAIR:
         {

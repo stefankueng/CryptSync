@@ -32,6 +32,8 @@
 #pragma comment(lib, "shell32.lib")
 
 CFolderSync::CFolderSync(void)
+    : m_parentWnd(NULL)
+    , m_pProgDlg(NULL)
 {
     m_sevenzip = L"%ProgramFiles%\\7-zip\\7z.exe";
     m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
@@ -57,10 +59,11 @@ CFolderSync::~CFolderSync(void)
 {
 }
 
-void CFolderSync::SyncFolders( const PairVector& pv )
+void CFolderSync::SyncFolders( const PairVector& pv, HWND hWnd )
 {
     CAutoWriteLock locker(m_guard);
     m_pairs = pv;
+    m_parentWnd = hWnd;
     unsigned int threadId = 0;
     _beginthreadex(NULL, 0, SyncFolderThreadEntry, this, 0, &threadId);
 }
@@ -79,10 +82,29 @@ void CFolderSync::SyncFolderThread()
         CAutoReadLock locker(m_guard);
         pv = m_pairs;
     }
+    if (m_parentWnd)
+    {
+        CoInitializeEx(0, COINIT_APARTMENTTHREADED);
+        m_progress = 0;
+        m_progressTotal = 1;
+        m_pProgDlg = new CProgressDlg();
+        m_pProgDlg->SetTitle(L"Syncing folders");
+        m_pProgDlg->SetLine(0, L"scanning...");
+        m_pProgDlg->SetProgress(m_progress, m_progressTotal);
+        m_pProgDlg->ShowModal(m_parentWnd);
+    }
     for (auto it = pv.cbegin(); it != pv.cend(); ++it)
     {
         SyncFolder(*it);
     }
+    if (m_pProgDlg)
+    {
+        delete m_pProgDlg;
+        m_pProgDlg = NULL;
+        CoUninitialize();
+    }
+    PostMessage(m_parentWnd, WM_THREADENDED, 0, 0);
+    m_parentWnd = NULL;
 }
 
 
@@ -185,11 +207,28 @@ void CFolderSync::SyncFile( const std::wstring& path )
 void CFolderSync::SyncFolder( const PairTuple& pt )
 {
     CIgnores ignores;
+    if (m_pProgDlg)
+    {
+        m_pProgDlg->SetLine(0, L"scanning...");
+        m_pProgDlg->SetLine(2, L"");
+        m_pProgDlg->SetProgress(m_progress, m_progressTotal);
+    }
     std::map<std::wstring,FileData> origFileList  = GetFileList(std::get<0>(pt), std::get<2>(pt), std::get<3>(pt));
     std::map<std::wstring,FileData> cryptFileList = GetFileList(std::get<1>(pt), std::get<2>(pt), std::get<3>(pt));
 
+    m_progressTotal += (origFileList.size() + cryptFileList.size());
+
     for (auto it = origFileList.cbegin(); it != origFileList.cend(); ++it)
     {
+        if (m_pProgDlg)
+        {
+            m_pProgDlg->SetLine(0, L"syncing files");
+            m_pProgDlg->SetLine(2, it->first.c_str(), true);
+            m_pProgDlg->SetProgress(m_progress++, m_progressTotal);
+            if (m_pProgDlg->HasUserCancelled())
+                break;
+        }
+
         if (ignores.IsIgnored(it->first))
             continue;
         auto cryptit = cryptFileList.find(it->first);
@@ -252,6 +291,15 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
     // decrypt it
     for (auto it = cryptFileList.cbegin(); it != cryptFileList.cend(); ++it)
     {
+        if (m_pProgDlg)
+        {
+            m_pProgDlg->SetLine(0, L"syncing files");
+            m_pProgDlg->SetLine(2, it->first.c_str(), true);
+            m_pProgDlg->SetProgress(m_progress++, m_progressTotal);
+            if (m_pProgDlg->HasUserCancelled())
+                break;
+        }
+
         if (ignores.IsIgnored(it->first))
             continue;
         auto origit = origFileList.find(it->first);

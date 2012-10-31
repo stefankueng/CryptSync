@@ -19,6 +19,7 @@
 #pragma once
 #include "Pairs.h"
 #include "ReaderWriterLock.h"
+#include "ProgressDlg.h"
 
 #include <string>
 #include <set>
@@ -49,7 +50,7 @@ public:
     CFolderSync(void);
     ~CFolderSync(void);
 
-    void SyncFolders(const PairVector& pv);
+    void SyncFolders(const PairVector& pv, HWND hWnd = NULL);
     void SyncFile(const std::wstring& path);
 
 private:
@@ -67,5 +68,9 @@ private:
     CReaderWriterLock               m_guard;
     PairVector                      m_pairs;
     std::wstring                    m_sevenzip;
+    HWND                            m_parentWnd;
+    CProgressDlg *                  m_pProgDlg;
+    DWORD                           m_progress;
+    DWORD                           m_progressTotal;
 };
 
