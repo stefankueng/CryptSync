@@ -20,6 +20,7 @@
 #include "Pairs.h"
 #include "ReaderWriterLock.h"
 #include "ProgressDlg.h"
+#include "SmartHandle.h"
 
 #include <string>
 #include <set>
@@ -52,6 +53,7 @@ public:
 
     void SyncFolders(const PairVector& pv, HWND hWnd = NULL);
     void SyncFile(const std::wstring& path);
+    void Stop();
 
 private:
     static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
@@ -72,5 +74,8 @@ private:
     CProgressDlg *                  m_pProgDlg;
     DWORD                           m_progress;
     DWORD                           m_progressTotal;
+    volatile LONG                   m_bRunning;
+    CAutoGeneralHandle              m_hThread;
+    PairTuple                       m_currentPath;
 };
 

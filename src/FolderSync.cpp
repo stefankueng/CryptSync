@@ -59,13 +59,29 @@ CFolderSync::~CFolderSync(void)
 {
 }
 
+
+void CFolderSync::Stop()
+{
+    InterlockedExchange(&m_bRunning, FALSE);
+    if (m_hThread)
+    {
+        WaitForSingleObject(m_hThread, INFINITE);
+        m_hThread.CloseHandle();
+    }
+}
+
 void CFolderSync::SyncFolders( const PairVector& pv, HWND hWnd )
 {
+    if (m_bRunning)
+    {
+        Stop();
+    }
     CAutoWriteLock locker(m_guard);
     m_pairs = pv;
     m_parentWnd = hWnd;
     unsigned int threadId = 0;
-    _beginthreadex(NULL, 0, SyncFolderThreadEntry, this, 0, &threadId);
+    InterlockedExchange(&m_bRunning, TRUE);
+    m_hThread = (HANDLE)_beginthreadex(NULL, 0, SyncFolderThreadEntry, this, 0, &threadId);
 }
 
 unsigned int CFolderSync::SyncFolderThreadEntry(void* pContext)
@@ -93,9 +109,17 @@ void CFolderSync::SyncFolderThread()
         m_pProgDlg->SetProgress(m_progress, m_progressTotal);
         m_pProgDlg->ShowModal(m_parentWnd);
     }
-    for (auto it = pv.cbegin(); it != pv.cend(); ++it)
+    for (auto it = pv.cbegin(); (it != pv.cend()) && m_bRunning; ++it)
     {
+        {
+            CAutoWriteLock locker(m_guard);
+            m_currentPath = *it;
+        }
         SyncFolder(*it);
+        {
+            CAutoWriteLock locker(m_guard);
+            m_currentPath = PairTuple();
+        }
     }
     if (m_pProgDlg)
     {
@@ -105,11 +129,24 @@ void CFolderSync::SyncFolderThread()
     }
     PostMessage(m_parentWnd, WM_THREADENDED, 0, 0);
     m_parentWnd = NULL;
+    InterlockedExchange(&m_bRunning, FALSE);
 }
 
 
 void CFolderSync::SyncFile( const std::wstring& path )
 {
+    // check if the path notification comes from a folder that's
+    // currently synced in the sync thread
+    {
+        std::wstring s = std::get<0>(m_currentPath);
+        if ((path.size() > s.size()) &&
+            (s == path.substr(0, s.size())))
+            return;
+        s = std::get<1>(m_currentPath);
+        if ((path.size() > s.size()) &&
+            (s == path.substr(0, s.size())))
+            return;
+    }
     if (PathIsDirectory(path.c_str()))
         return;
     PairTuple pt;
@@ -238,7 +275,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
 
     m_progressTotal += (origFileList.size() + cryptFileList.size());
 
-    for (auto it = origFileList.cbegin(); it != origFileList.cend(); ++it)
+    for (auto it = origFileList.cbegin(); (it != origFileList.cend()) && m_bRunning; ++it)
     {
         if (m_pProgDlg)
         {
@@ -309,7 +346,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
     }
     // now go through the encrypted file list and if there's a file that's not in the original file list,
     // decrypt it
-    for (auto it = cryptFileList.cbegin(); it != cryptFileList.cend(); ++it)
+    for (auto it = cryptFileList.cbegin(); (it != cryptFileList.cend()) && m_bRunning; ++it)
     {
         if (m_pProgDlg)
         {
@@ -359,6 +396,9 @@ std::map<std::wstring,FileData> CFolderSync::GetFileList( const std::wstring& pa
         if (isDir)
             continue;
 
+        if (!m_bRunning)
+            break;
+
         FileData fd;
 
         fd.ft = enumerator.GetLastWriteTime();
@@ -399,7 +439,7 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     std::wstring cryptname = crypt.substr(slashpos+1);
     int buflen = orig.size() + crypt.size() + password.size() + 1000;
     std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
-    swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z \"%s\" \"%s\" -mx9 -p%s -mhe=on", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str());
+    swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z \"%s\" \"%s\" -mx9 -p%s -mhe=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str());
     bool bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
     if (!bRet)
     {
@@ -530,6 +570,8 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
         }
         CryptReleaseContext(hProv, 0);
     }
+    else
+        DebugBreak();
     if (bResult)
     {
         if (decryptName.empty() || (decryptName[0] != '*'))
@@ -603,6 +645,8 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
         }
         CryptReleaseContext(hProv, 0);
     }
+    else
+        DebugBreak();
     if (bResult)
         return encryptFilename;
     return filename;
