@@ -97,8 +97,9 @@ LRESULT COptionsDlg::DoCommand(int id)
             {
                 TCHAR buf[MAX_PATH*4];
                 GetModuleFileName(NULL, buf, MAX_PATH*4);
-                std::wstring cmd = std::wstring(buf);
-                cmd += L" /tray";
+                std::wstring cmd = L"\"";
+                cmd += std::wstring(buf);
+                cmd += L"\" /tray";
                 regStartWithWindows = cmd;
             }
             else
