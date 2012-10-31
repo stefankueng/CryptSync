@@ -332,7 +332,13 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
             std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
             cryptpath = cryptpath + L"\\" + cryptname;
             std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
-            DecryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
+            if (!DecryptFile(origpath, cryptpath, std::get<2>(pt), it->second))
+            {
+                if (!it->second.filenameEncrypted)
+                {
+                    MoveFileEx(cryptpath.c_str(), origpath.c_str(), MOVEFILE_COPY_ALLOWED);
+                }
+            }
         }
     }
 }
