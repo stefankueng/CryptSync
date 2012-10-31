@@ -20,6 +20,7 @@
 #pragma once
 #include "BaseDialog.h"
 #include "AeroControls.h"
+#include "FolderSync.h"
 
 /**
  * options dialog.
@@ -39,4 +40,5 @@ protected:
 private:
     HWND                    m_hParent;
     AeroControlBase         m_aerocontrols;
+    CFolderSync             m_foldersync;
 };

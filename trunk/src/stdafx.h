@@ -26,3 +26,5 @@
 
 extern CPairs g_pairs;
 
+#define WM_THREADENDED (WM_APP+1)
+

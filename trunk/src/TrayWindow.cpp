@@ -276,18 +276,28 @@ LRESULT CTrayWindow::DoCommand(int id)
     case IDM_OPTIONS:
         {
             COptionsDlg dlg(NULL);
-            dlg.DoModal(hResource, IDD_OPTIONS, NULL);
-            foldersyncer.SyncFolders(g_pairs);
-            watcher.ClearPaths();
-            for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
+            INT_PTR ret = dlg.DoModal(hResource, IDD_OPTIONS, NULL);
+            if (ret == IDOK)
             {
-                std::wstring origpath = std::get<0>(*it);
-                std::wstring cryptpath = std::get<1>(*it);
-                watcher.AddPath(origpath);
-                watcher.AddPath(cryptpath);
+                foldersyncer.SyncFolders(g_pairs);
+                watcher.ClearPaths();
+                for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
+                {
+                    std::wstring origpath = std::get<0>(*it);
+                    std::wstring cryptpath = std::get<1>(*it);
+                    watcher.AddPath(origpath);
+                    watcher.AddPath(cryptpath);
+                }
+                SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
+                SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
             }
-            SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
-            SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
+            else
+            {
+                Shell_NotifyIcon(NIM_DELETE,&niData);
+                watcher.Stop();
+                ::PostQuitMessage(0);
+                return 0;
+            }
         }
         break;
     default:
