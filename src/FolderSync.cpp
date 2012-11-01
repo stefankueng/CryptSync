@@ -524,7 +524,7 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
     if (!encryptname)
     {
         size_t pos = filename.find(L".cryptsync");
-        if (pos != std::string::npos)
+        if ((pos != std::string::npos) && (pos == (filename.size() - 10)))
         {
             return filename.substr(0, pos);
         }
