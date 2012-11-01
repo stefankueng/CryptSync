@@ -219,11 +219,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
         case TIMER_DETECTCHANGES:
             {
                 SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
-                auto files = watcher.GetChangedPaths();
-                if (!files.empty())
+                if (!m_lastChangedPaths.empty())
                 {
                     CIgnores ignores;
-                    for (auto it = files.cbegin(); it != files.cend(); ++it)
+                    for (auto it = m_lastChangedPaths.cbegin(); it != m_lastChangedPaths.cend(); ++it)
                     {
                         if (ignores.IsIgnored(*it))
                             continue;
@@ -231,6 +230,7 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                         foldersyncer.SyncFile(*it);
                     }
                 }
+                m_lastChangedPaths = watcher.GetChangedPaths();
             }
             break;
         case TIMER_FULLSCAN:

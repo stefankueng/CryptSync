@@ -73,6 +73,7 @@ protected:
     bool                m_bNewerVersionAvailable;
     bool                m_bTrayMode;
     bool                m_bOptionsDialogShown;
+    std::set<std::wstring> m_lastChangedPaths;
 
     typedef BOOL(__stdcall *PFNCHANGEWINDOWMESSAGEFILTEREX)(HWND hWnd, UINT message, DWORD dwFlag, PCHANGEFILTERSTRUCT pChangeFilterStruct);
     static PFNCHANGEWINDOWMESSAGEFILTEREX m_pChangeWindowMessageFilter;
