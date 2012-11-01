@@ -280,9 +280,13 @@ LRESULT CTrayWindow::DoCommand(int id)
         break;
     case IDM_OPTIONS:
         {
+            if (m_bOptionsDialogShown)
+                break;
+            m_bOptionsDialogShown = true;
             COptionsDlg dlg(NULL);
             dlg.SetUpdateAvailable(m_bNewerVersionAvailable);
             INT_PTR ret = dlg.DoModal(hResource, IDD_OPTIONS, NULL);
+            m_bOptionsDialogShown = false;
             if ((ret == IDOK)||(ret == IDCANCEL))
             {
                 foldersyncer.SyncFolders(g_pairs);

@@ -38,6 +38,7 @@ public:
         , foregroundWND(NULL)
         , m_bNewerVersionAvailable(false)
         , m_bTrayMode(true)
+        , m_bOptionsDialogShown(false)
     {
         SetWindowTitle((LPCTSTR)ResString(hResource, IDS_APP_TITLE));
     };
@@ -71,6 +72,7 @@ protected:
     CFolderSync         foldersyncer;
     bool                m_bNewerVersionAvailable;
     bool                m_bTrayMode;
+    bool                m_bOptionsDialogShown;
 
     typedef BOOL(__stdcall *PFNCHANGEWINDOWMESSAGEFILTEREX)(HWND hWnd, UINT message, DWORD dwFlag, PCHANGEFILTERSTRUCT pChangeFilterStruct);
     static PFNCHANGEWINDOWMESSAGEFILTEREX m_pChangeWindowMessageFilter;
