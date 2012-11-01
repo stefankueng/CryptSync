@@ -445,6 +445,8 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     std::wstring cryptname = crypt.substr(slashpos+1);
     int buflen = orig.size() + crypt.size() + password.size() + 1000;
     std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
+    if ((!cryptname.empty()) && (cryptname[0] == '-'))
+        cryptname = L".\\" + cryptname;
     swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z \"%s\" \"%s\" -mx9 -p%s -mhe=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str());
     bool bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
     if (!bRet)
