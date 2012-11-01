@@ -139,13 +139,19 @@ void CFolderSync::SyncFile( const std::wstring& path )
     // currently synced in the sync thread
     {
         std::wstring s = std::get<0>(m_currentPath);
-        if ((path.size() > s.size()) &&
-            (s == path.substr(0, s.size())))
-            return;
+        if (!s.empty())
+        {
+            if ((path.size() > s.size()) &&
+                (s == path.substr(0, s.size())))
+                return;
+        }
         s = std::get<1>(m_currentPath);
-        if ((path.size() > s.size()) &&
-            (s == path.substr(0, s.size())))
-            return;
+        if (!s.empty())
+        {
+            if ((path.size() > s.size()) &&
+                (s == path.substr(0, s.size())))
+                return;
+        }
     }
     if (PathIsDirectory(path.c_str()))
         return;
