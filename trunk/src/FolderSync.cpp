@@ -458,7 +458,7 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     {
         // set the file timestamp
         int retry = 5;
-        do 
+        do
         {
             CAutoFile hFile = CreateFile(crypt.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
             if (hFile.IsValid())
@@ -494,7 +494,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     {
         // set the file timestamp
         int retry = 5;
-        do 
+        do
         {
             CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
             if (hFile.IsValid())
