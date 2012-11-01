@@ -317,6 +317,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
             {
                 // original file is older than the encrypted file
                 // decrypt the file
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s is older than its encrypted partner\n"), it->first.c_str());
                 size_t slashpos = it->first.find_last_of('\\');
                 std::wstring fname = it->first;
                 if (slashpos != std::string::npos)
@@ -346,7 +347,6 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
             {
                 // files are identical (have the same last-write-time):
                 // nothing to do.
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": nothing to do for file %s\n"), it->first.c_str());
             }
         }
     }
