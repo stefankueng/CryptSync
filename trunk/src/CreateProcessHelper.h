@@ -30,25 +30,30 @@ public:
                     LPTSTR lpCommandLine,
                     LPCTSTR lpCurrentDirectory,
                     LPPROCESS_INFORMATION lpProcessInformation,
-                    bool hidden = false);
+                    bool hidden = false,
+                    DWORD dwCreationFlags = CREATE_UNICODE_ENVIRONMENT);
     static bool CreateProcess(LPCTSTR lpApplicationName,
                     LPTSTR lpCommandLine,
                     LPPROCESS_INFORMATION lpProcessInformation,
-                    bool hidden = false);
+                    bool hidden = false,
+                    DWORD dwCreationFlags = CREATE_UNICODE_ENVIRONMENT);
 
     static bool CreateProcessDetached(LPCTSTR lpApplicationName,
                     LPTSTR lpCommandLine,
                     LPCTSTR lpCurrentDirectory,
-                    bool hidden = false);
+                    bool hidden = false,
+                    DWORD dwCreationFlags = CREATE_UNICODE_ENVIRONMENT);
     static bool CreateProcessDetached(LPCTSTR lpApplicationName,
                     LPTSTR lpCommandLine,
-                    bool hidden = false);
+                    bool hidden = false,
+                    DWORD dwCreationFlags = CREATE_UNICODE_ENVIRONMENT);
 };
 
 inline bool CCreateProcessHelper::CreateProcess(LPCTSTR applicationName,
     LPTSTR commandLine, LPCTSTR currentDirectory,
     LPPROCESS_INFORMATION processInfo,
-    bool hidden)
+    bool hidden,
+    DWORD dwCreationFlags)
 {
     STARTUPINFO startupInfo;
     memset(&startupInfo, 0, sizeof(STARTUPINFO));
@@ -61,22 +66,22 @@ inline bool CCreateProcessHelper::CreateProcess(LPCTSTR applicationName,
 
     memset(processInfo, 0, sizeof(PROCESS_INFORMATION));
     const BOOL result = ::CreateProcess( applicationName,
-                    commandLine, NULL, NULL, FALSE, CREATE_UNICODE_ENVIRONMENT, 0, currentDirectory,
+                    commandLine, NULL, NULL, FALSE, dwCreationFlags, 0, currentDirectory,
                     &startupInfo, processInfo );
     return result != 0;
 }
 
 inline bool CCreateProcessHelper::CreateProcess(LPCTSTR applicationName,
-    LPTSTR commandLine, LPPROCESS_INFORMATION processInformation, bool hidden)
+    LPTSTR commandLine, LPPROCESS_INFORMATION processInformation, bool hidden, DWORD dwCreationFlags)
 {
-    return CreateProcess( applicationName, commandLine, 0, processInformation, hidden );
+    return CreateProcess( applicationName, commandLine, 0, processInformation, hidden, dwCreationFlags );
 }
 
 inline bool CCreateProcessHelper::CreateProcessDetached(LPCTSTR lpApplicationName,
-    LPTSTR lpCommandLine, LPCTSTR lpCurrentDirectory, bool hidden)
+    LPTSTR lpCommandLine, LPCTSTR lpCurrentDirectory, bool hidden, DWORD dwCreationFlags)
 {
     PROCESS_INFORMATION process;
-    if (!CreateProcess(lpApplicationName, lpCommandLine, lpCurrentDirectory, &process, hidden))
+    if (!CreateProcess(lpApplicationName, lpCommandLine, lpCurrentDirectory, &process, hidden, dwCreationFlags))
         return false;
 
     CloseHandle(process.hThread);
@@ -85,7 +90,7 @@ inline bool CCreateProcessHelper::CreateProcessDetached(LPCTSTR lpApplicationNam
 }
 
 inline bool CCreateProcessHelper::CreateProcessDetached(LPCTSTR lpApplicationName,
-    LPTSTR lpCommandLine, bool hidden)
+    LPTSTR lpCommandLine, bool hidden, DWORD dwCreationFlags)
 {
-    return CreateProcessDetached(lpApplicationName, lpCommandLine, 0, hidden);
+    return CreateProcessDetached(lpApplicationName, lpCommandLine, 0, hidden, dwCreationFlags);
 }

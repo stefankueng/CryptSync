@@ -663,7 +663,7 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
 bool CFolderSync::Run7Zip( LPWSTR cmdline, const std::wstring& cwd ) const
 {
     PROCESS_INFORMATION pi = {0};
-    if (CCreateProcessHelper::CreateProcess(m_sevenzip.c_str(), cmdline, cwd.c_str(), &pi, true))
+    if (CCreateProcessHelper::CreateProcess(m_sevenzip.c_str(), cmdline, cwd.c_str(), &pi, true, BELOW_NORMAL_PRIORITY_CLASS|CREATE_UNICODE_ENVIRONMENT))
     {
         // wait until the process terminates
         WaitForSingleObject(pi.hProcess, INFINITE);
