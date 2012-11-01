@@ -56,7 +56,7 @@ void stringtok(Container &container, const std::wstring  &in, bool trim,
 
 CIgnores::CIgnores(void)
 {
-    sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", L"*.tmp|~*.*");
+    sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", L"*.tmp*|~*.*");
     stringtok(ignores, sIgnores, true);
 }
 
