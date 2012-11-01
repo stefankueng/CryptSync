@@ -23,6 +23,8 @@
 #include "BrowseFolder.h"
 #include <string>
 #include <Commdlg.h>
+#include <cctype>
+#include <algorithm>
 
 CPairAddDlg::CPairAddDlg(HWND hParent)
     : m_hParent(hParent)
@@ -108,6 +110,24 @@ LRESULT CPairAddDlg::DoCommand(int id)
             if (m_password != retype)
             {
                 ::MessageBox(*this, L"password do not match!\nPlease reenter the password.", L"Password mismatch", MB_ICONERROR);
+                return 0;
+            }
+
+            std::wstring origpath = m_origpath;
+            std::wstring cryptpath = m_cryptpath;
+            std::transform(origpath.begin(), origpath.end(), origpath.begin(), std::tolower);
+            std::transform(cryptpath.begin(), cryptpath.end(), cryptpath.begin(), std::tolower);
+
+            if (origpath == cryptpath)
+            {
+                ::MessageBox(*this, L"source and destination are identical!\nPlease choose different folders.", L"Paths invalid", MB_ICONERROR);
+                return 0;
+            }
+
+            if ( ((origpath.size() > cryptpath.size()) && (origpath.substr(0, cryptpath.size()) == cryptpath) && (origpath[cryptpath.size()] == '\\')) ||
+                 ((cryptpath.size() > origpath.size()) && (cryptpath.substr(0, origpath.size()) == origpath) && (cryptpath[origpath.size()] == '\\')))
+            {
+                ::MessageBox(*this, L"source and destination point to the same tree\nmake sure that one folder is not part of the other.", L"Paths invalid", MB_ICONERROR);
                 return 0;
             }
 
