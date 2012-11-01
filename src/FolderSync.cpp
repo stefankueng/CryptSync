@@ -165,7 +165,8 @@ void CFolderSync::SyncFile( const std::wstring& path )
             if ((path.substr(0, s.size()) == s)&&(path[s.size()] == '\\'))
             {
                 pt = *it;
-                break;
+                SyncFile(path, pt);
+                continue;
             }
         }
         s = std::get<1>(*it);
@@ -174,11 +175,15 @@ void CFolderSync::SyncFile( const std::wstring& path )
             if ((path.substr(0, s.size()) == s)&&(path[s.size()] == '\\'))
             {
                 pt = *it;
-                break;
+                SyncFile(path, pt);
+                continue;
             }
         }
     }
+}
 
+void CFolderSync::SyncFile( const std::wstring& path, const PairTuple& pt )
+{
     std::wstring orig  = std::get<0>(pt);
     std::wstring crypt = std::get<1>(pt);
     if (orig.empty() || crypt.empty())
@@ -227,7 +232,7 @@ void CFolderSync::SyncFile( const std::wstring& path )
         return;
     }
     else if ((fdatacrypt.ftLastWriteTime.dwLowDateTime == 0)&&(fdatacrypt.ftLastWriteTime.dwHighDateTime == 0)&&
-             (crypt==path))
+        (crypt==path))
     {
         // encrypted file got deleted
         // delete the original file as well

@@ -57,6 +57,7 @@ public:
 
 private:
     static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
+    void                            SyncFile(const std::wstring& path, const PairTuple& pt);
     void                            SyncFolderThread();
     void                            SyncFolder(const PairTuple& pt);
     std::map<std::wstring,FileData> GetFileList(const std::wstring& path, const std::wstring& password, bool encnames) const;
