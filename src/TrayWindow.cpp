@@ -235,6 +235,23 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             break;
         case TIMER_FULLSCAN:
             {
+                // first handle the notifications
+                for (int i = 0; i < 2; ++i)
+                {
+                    if (!m_lastChangedPaths.empty())
+                    {
+                        CIgnores ignores;
+                        for (auto it = m_lastChangedPaths.cbegin(); it != m_lastChangedPaths.cend(); ++it)
+                        {
+                            if (ignores.IsIgnored(*it))
+                                continue;
+
+                            foldersyncer.SyncFile(*it);
+                        }
+                    }
+                    m_lastChangedPaths = watcher.GetChangedPaths();
+                }
+                // now start the full scan
                 foldersyncer.SyncFolders(g_pairs);
                 watcher.ClearPaths();
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
