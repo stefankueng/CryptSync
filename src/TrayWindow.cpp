@@ -267,9 +267,13 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
         }
         break;
     case WM_QUERYENDSESSION:
+        foldersyncer.Stop();
         watcher.Stop();
         return TRUE;
+    case WM_CLOSE:
+    case WM_ENDSESSION:
     case WM_QUIT:
+        foldersyncer.Stop();
         watcher.Stop();
         break;
     default:
