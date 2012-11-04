@@ -22,8 +22,8 @@
 #include <tuple>
 #include <string>
 
-typedef std::tuple<std::wstring, std::wstring, std::wstring, bool> PairTuple;
-typedef std::vector<PairTuple>                                     PairVector;
+typedef std::tuple<std::wstring, std::wstring, std::wstring, bool, bool> PairTuple;
+typedef std::vector<PairTuple>                                           PairVector;
 
 /**
  * class to handle pairs of synced folders
@@ -35,7 +35,7 @@ public:
     ~CPairs(void);
 
     void                    SavePairs();
-    bool                    AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, bool encryptnames);
+    bool                    AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, bool encryptnames, bool oneway);
 protected:
     void                    InitPairList();
 

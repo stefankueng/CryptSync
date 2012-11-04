@@ -67,7 +67,11 @@ void CPairs::InitPairList()
         CRegStdWORD encnamesreg(key, TRUE);
         bool encnames = !!(DWORD)encnamesreg;
 
-        auto t = std::make_tuple(origpath, cryptpath, password, encnames);
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
+        CRegStdWORD onewayreg(key, TRUE);
+        bool oneway = !!(DWORD)onewayreg;
+
+        auto t = std::make_tuple(origpath, cryptpath, password, encnames, oneway);
         if (std::find(cbegin(), cend(), t) == cend())
             push_back(t);
         ++p;
@@ -96,6 +100,10 @@ void CPairs::SavePairs()
         CRegStdWORD encnamesreg(key, TRUE, true);
         encnamesreg = (DWORD)std::get<3>(*it);
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
+        CRegStdWORD onewayreg(key, TRUE, true);
+        onewayreg = (DWORD)std::get<4>(*it);
+
         ++p;
     }
     // delete all possible remaining registry entries
@@ -118,13 +126,16 @@ void CPairs::SavePairs()
         CRegStdWORD encnamesreg(key);
         encnamesreg.removeValue();
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
+        CRegStdWORD onewayreg(key);
+        onewayreg.removeValue();
         ++p;
     }
 }
 
-bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, bool encryptnames )
+bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, bool encryptnames, bool oneway )
 {
-    auto t = std::make_tuple(orig, crypt, password, encryptnames);
+    auto t = std::make_tuple(orig, crypt, password, encryptnames, oneway);
     if (std::find(cbegin(), cend(), t) == cend())
     {
         push_back(t);

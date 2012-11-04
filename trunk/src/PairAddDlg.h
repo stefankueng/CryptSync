@@ -35,6 +35,7 @@ public:
     std::wstring            m_cryptpath;
     std::wstring            m_password;
     bool                    m_encnames;
+    bool                    m_oneway;
 protected:
     LRESULT CALLBACK        DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
     LRESULT                 DoCommand(int id);

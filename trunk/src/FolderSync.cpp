@@ -359,36 +359,39 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
     }
     // now go through the encrypted file list and if there's a file that's not in the original file list,
     // decrypt it
-    for (auto it = cryptFileList.cbegin(); (it != cryptFileList.cend()) && m_bRunning; ++it)
+    if (!std::get<4>(pt) || origFileList.empty())
     {
-        if (m_pProgDlg)
+        for (auto it = cryptFileList.cbegin(); (it != cryptFileList.cend()) && m_bRunning; ++it)
         {
-            m_pProgDlg->SetLine(0, L"syncing files");
-            m_pProgDlg->SetLine(2, it->first.c_str(), true);
-            m_pProgDlg->SetProgress(m_progress++, m_progressTotal);
-            if (m_pProgDlg->HasUserCancelled())
-                break;
-        }
-
-        if (ignores.IsIgnored(it->first))
-            continue;
-        auto origit = origFileList.find(it->first);
-        if (origit == origFileList.end())
-        {
-            // file does not exist in the original folder:
-            // decrypt the file
-            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), std::get<0>(pt).c_str());
-            size_t slashpos = it->first.find_last_of('\\');
-            std::wstring fname = it->first;
-            if (slashpos != std::string::npos)
-                fname = it->first.substr(slashpos + 1);
-            std::wstring cryptpath = std::get<1>(pt) + L"\\" + it->second.filerelpath;
-            std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
-            if (!DecryptFile(origpath, cryptpath, std::get<2>(pt), it->second))
+            if (m_pProgDlg)
             {
-                if (!it->second.filenameEncrypted)
+                m_pProgDlg->SetLine(0, L"syncing files");
+                m_pProgDlg->SetLine(2, it->first.c_str(), true);
+                m_pProgDlg->SetProgress(m_progress++, m_progressTotal);
+                if (m_pProgDlg->HasUserCancelled())
+                    break;
+            }
+
+            if (ignores.IsIgnored(it->first))
+                continue;
+            auto origit = origFileList.find(it->first);
+            if (origit == origFileList.end())
+            {
+                // file does not exist in the original folder:
+                // decrypt the file
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), std::get<0>(pt).c_str());
+                size_t slashpos = it->first.find_last_of('\\');
+                std::wstring fname = it->first;
+                if (slashpos != std::string::npos)
+                    fname = it->first.substr(slashpos + 1);
+                std::wstring cryptpath = std::get<1>(pt) + L"\\" + it->second.filerelpath;
+                std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
+                if (!DecryptFile(origpath, cryptpath, std::get<2>(pt), it->second))
                 {
-                    MoveFileEx(cryptpath.c_str(), origpath.c_str(), MOVEFILE_COPY_ALLOWED);
+                    if (!it->second.filenameEncrypted)
+                    {
+                        MoveFileEx(cryptpath.c_str(), origpath.c_str(), MOVEFILE_COPY_ALLOWED);
+                    }
                 }
             }
         }

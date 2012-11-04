@@ -168,7 +168,8 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                 std::wstring origpath = std::get<0>(*it);
                 std::wstring cryptpath = std::get<1>(*it);
                 watcher.AddPath(origpath);
-                watcher.AddPath(cryptpath);
+                if (!std::get<4>(*it))
+                    watcher.AddPath(cryptpath);
             }
             SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
             SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
@@ -259,7 +260,8 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     std::wstring origpath = std::get<0>(*it);
                     std::wstring cryptpath = std::get<1>(*it);
                     watcher.AddPath(origpath);
-                    watcher.AddPath(cryptpath);
+                    if (!std::get<4>(*it))
+                        watcher.AddPath(cryptpath);
                 }
                 SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
             }
@@ -317,7 +319,8 @@ LRESULT CTrayWindow::DoCommand(int id)
                     std::wstring origpath = std::get<0>(*it);
                     std::wstring cryptpath = std::get<1>(*it);
                     watcher.AddPath(origpath);
-                    watcher.AddPath(cryptpath);
+                    if (!std::get<4>(*it))
+                        watcher.AddPath(cryptpath);
                 }
                 SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
                 SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
