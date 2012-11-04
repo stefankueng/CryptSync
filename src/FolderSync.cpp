@@ -191,18 +191,12 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairTuple& pt )
 
     if ((orig.size() < path.size())&&(path.substr(0, orig.size()) == orig))
     {
-        std::wstring filename = path.substr(path.find_last_of('\\')+1);
-        filename = GetEncryptedFilename(filename, std::get<2>(pt), std::get<3>(pt));
-        crypt = crypt + path.substr(orig.size());
-        crypt = crypt.substr(0, crypt.find_last_of('\\')+1) + filename;
+        crypt = crypt + L"\\" + GetEncryptedFilename(path.substr(orig.size()), std::get<2>(pt), std::get<3>(pt));
         orig = path;
     }
     else
     {
-        std::wstring filename = path.substr(path.find_last_of('\\')+1);
-        filename = GetDecryptedFilename(filename, std::get<2>(pt), std::get<3>(pt));
-        orig = orig + path.substr(crypt.size());
-        orig = orig.substr(0, orig.find_last_of('\\')+1) + filename;
+        orig = orig + L"\\" + GetDecryptedFilename(path.substr(crypt.size()), std::get<2>(pt), std::get<3>(pt));
         crypt = path;
     }
 
@@ -284,6 +278,32 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
     std::map<std::wstring,FileData> origFileList  = GetFileList(std::get<0>(pt), std::get<2>(pt), std::get<3>(pt));
     std::map<std::wstring,FileData> cryptFileList = GetFileList(std::get<1>(pt), std::get<2>(pt), std::get<3>(pt));
 
+    {
+        // upgrade code: in case users had "encrypt filenames" active but were using version 1.0.0
+        // then we have to rename the folders since foldernames weren't encrypted back then
+        std::set<std::wstring> directories;
+        for (auto it = cryptFileList.cbegin(); (it != cryptFileList.cend()) && m_bRunning; ++it)
+        {
+            std::wstring fenc = GetEncryptedFilename(it->first, std::get<2>(pt), std::get<3>(pt));
+            if (fenc == it->second.filerelpath)
+                break;
+            std::wstring srcPath = std::get<1>(pt) + L"\\" + it->second.filerelpath;
+            std::wstring destPath = std::get<1>(pt) + L"\\" + fenc;
+            std::wstring srcDir = srcPath.substr(0, srcPath.find_last_of('\\'));
+            if (!MoveFileEx(srcPath.c_str(), destPath.c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING))
+            {
+                std::wstring targetfolder = destPath.substr(0, destPath.find_last_of('\\'));
+                SHCreateDirectory(NULL, targetfolder.c_str());
+                MoveFileEx(srcPath.c_str(), destPath.c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING);
+            }
+            directories.insert(srcDir);
+        }
+        for (auto srcDir = directories.crbegin(); srcDir != directories.crend(); ++srcDir)
+        {
+            RemoveDirectory(srcDir->c_str());
+        }
+    }
+
     m_progressTotal += (origFileList.size() + cryptFileList.size());
 
     for (auto it = origFileList.cbegin(); (it != origFileList.cend()) && m_bRunning; ++it)
@@ -305,13 +325,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
             // file does not exist in the encrypted folder:
             // encrypt the file
             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist in encrypted folder\n"), it->first.c_str());
-            size_t slashpos = it->first.find_last_of('\\');
-            std::wstring fname = it->first;
-            if (slashpos != std::string::npos)
-                fname = it->first.substr(slashpos + 1);
-            std::wstring cryptname = GetEncryptedFilename(fname, std::get<2>(pt), std::get<3>(pt));
-            std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
-            cryptpath = cryptpath + L"\\" + cryptname;
+            std::wstring cryptpath = std::get<1>(pt) + L"\\" + GetEncryptedFilename(it->first, std::get<2>(pt), std::get<3>(pt));
             std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
             EncryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
         }
@@ -323,13 +337,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
                 // original file is older than the encrypted file
                 // decrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s is older than its encrypted partner\n"), it->first.c_str());
-                size_t slashpos = it->first.find_last_of('\\');
-                std::wstring fname = it->first;
-                if (slashpos != std::string::npos)
-                    fname = it->first.substr(slashpos + 1);
-                std::wstring cryptname = GetEncryptedFilename(fname, std::get<2>(pt), std::get<3>(pt));
-                std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
-                cryptpath = cryptpath + L"\\" + cryptname;
+                std::wstring cryptpath = std::get<1>(pt) + L"\\" + GetEncryptedFilename(it->first, std::get<2>(pt), std::get<3>(pt));
                 std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
                 DecryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
             }
@@ -338,13 +346,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
                 // encrypted file is older than the original file
                 // encrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s is newer than its encrypted partner\n"), it->first.c_str());
-                size_t slashpos = it->first.find_last_of('\\');
-                std::wstring fname = it->first;
-                if (slashpos != std::string::npos)
-                    fname = it->first.substr(slashpos + 1);
-                std::wstring cryptname = GetEncryptedFilename(fname, std::get<2>(pt), std::get<3>(pt));
-                std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
-                cryptpath = cryptpath + L"\\" + cryptname;
+                std::wstring cryptpath = std::get<1>(pt) + L"\\" + GetEncryptedFilename(it->first, std::get<2>(pt), std::get<3>(pt));
                 std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
                 EncryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
             }
@@ -380,9 +382,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
             std::wstring fname = it->first;
             if (slashpos != std::string::npos)
                 fname = it->first.substr(slashpos + 1);
-            std::wstring cryptname = it->second.filename;
-            std::wstring cryptpath = std::get<1>(pt) + L"\\" + ((slashpos != std::string::npos) ? it->first.substr(0, slashpos) : L"");
-            cryptpath = cryptpath + L"\\" + cryptname;
+            std::wstring cryptpath = std::get<1>(pt) + L"\\" + it->second.filerelpath;
             std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
             if (!DecryptFile(origpath, cryptpath, std::get<2>(pt), it->second))
             {
@@ -417,20 +417,13 @@ std::map<std::wstring,FileData> CFolderSync::GetFileList( const std::wstring& pa
             fd.ft = enumerator.GetCreateTime();
 
         std::wstring relpath = filepath.substr(path.size()+1);
-        size_t slashPos = relpath.find_last_of('\\');
-        if (slashPos != std::string::npos)
-            fd.filename = relpath.substr(slashPos+1);
-        else
-            fd.filename = relpath;
+        fd.filerelpath = relpath;
 
-        std::wstring decryptedFileName = GetDecryptedFilename(fd.filename, password, encnames);
-        fd.filenameEncrypted = (decryptedFileName != fd.filename);
+        std::wstring decryptedRelPath = GetDecryptedFilename(relpath, password, encnames);
+        fd.filenameEncrypted = (decryptedRelPath != fd.filerelpath);
         if (fd.filenameEncrypted)
         {
-            if (slashPos != std::string::npos)
-                relpath = relpath.substr(0, slashPos) + L"\\" + decryptedFileName;
-            else
-                relpath = decryptedFileName;
+            relpath = decryptedRelPath;
         }
 
         filelist[relpath] = fd;
@@ -520,11 +513,11 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
     bool bResult = true;
     std::wstring decryptName = filename;
     size_t dotpos = filename.find_last_of('.');
-    std::string fname;
+    std::wstring fname;
     if (dotpos != std::string::npos)
-        fname = CUnicodeUtils::StdGetUTF8(filename.substr(0, dotpos));
+        fname = filename.substr(0, dotpos);
     else
-        fname = CUnicodeUtils::StdGetUTF8(filename);
+        fname = filename;
 
     if (!encryptname)
     {
@@ -535,10 +528,6 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
         }
         return filename;
     }
-
-    std::unique_ptr<BYTE[]> strIn(new BYTE[fname.size()*sizeof(WCHAR) + 1]);
-    if (!CStringUtils::FromHexString(fname, strIn.get()))
-        return filename;
 
     HCRYPTPROV hProv = NULL;
     // Get handle to user default provider.
@@ -556,15 +545,48 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
                 // Create block cipher session key based on hash of the password.
                 if (CryptDeriveKey(hProv, CALG_RC4, hHash, CRYPT_EXPORTABLE, &hKey))
                 {
-                    dwLength = fname.size() + 1024; // 1024 bytes should be enough for padding
-                    std::unique_ptr<BYTE[]> buffer(new BYTE[dwLength]);
-                    // copy encrypted password to temporary buffer
-                    memcpy(buffer.get(), strIn.get(), fname.size());
-                    if (!CryptDecrypt(hKey, 0, true, 0, (BYTE *)buffer.get(), &dwLength))
-                        bResult = false;
-                    CryptDestroyKey(hKey);  // Release provider handle.
+                    std::vector<std::wstring> names;
+                    std::vector<std::wstring> decryptnames;
+                    stringtok(names, fname, true, L"\\/");
+                    for (auto it = names.cbegin(); it != names.cend(); ++it)
+                    {
+                        std::string name = CUnicodeUtils::StdGetUTF8(*it);
+                        dwLength = name.size() + 1024; // 1024 bytes should be enough for padding
+                        std::unique_ptr<BYTE[]> buffer(new BYTE[dwLength]);
 
-                    decryptName = CUnicodeUtils::StdGetUnicode(std::string((char*)buffer.get(), fname.size()/2));
+                        std::unique_ptr<BYTE[]> strIn(new BYTE[name.size()*sizeof(WCHAR) + 1]);
+                        if (CStringUtils::FromHexString(name, strIn.get()))
+                        {
+                            // copy encrypted password to temporary buffer
+                            memcpy(buffer.get(), strIn.get(), name.size());
+                            if (!CryptDecrypt(hKey, 0, true, 0, (BYTE *)buffer.get(), &dwLength))
+                                bResult = false;
+                            decryptName = CUnicodeUtils::StdGetUnicode(std::string((char*)buffer.get(), name.size()/2));
+                        }
+                        else
+                            decryptName = *it;
+                        if (decryptName.empty() || (decryptName[0] != '*'))
+                        {
+                            if ((dotpos != std::string::npos)&&((it+1)==names.cend()))
+                            {
+                                std::wstring s = *it;
+                                s += filename.substr(dotpos);
+                                decryptnames.push_back(s);
+                            }
+                            else
+                                decryptnames.push_back(*it);
+                        }
+                        else
+                            decryptnames.push_back(decryptName.substr(1));    // cut off the starting '*'
+                    }
+                    CryptDestroyKey(hKey);  // Release provider handle.
+                    decryptName.clear();
+                    for (auto it = decryptnames.cbegin(); it != decryptnames.cend(); ++it)
+                    {
+                        if (!decryptName.empty())
+                            decryptName += L"\\";
+                        decryptName += *it;
+                    }
                 }
                 else
                 {
@@ -585,12 +607,6 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
     }
     else
         DebugBreak();
-    if (bResult)
-    {
-        if (decryptName.empty() || (decryptName[0] != '*'))
-            return filename;
-        decryptName = decryptName.substr(1);    // cut off the starting '*'
-    }
 
     return decryptName;
 }
@@ -622,23 +638,39 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
                 HCRYPTKEY hKey = NULL;
                 if (CryptDeriveKey(hProv, CALG_RC4, hHash, CRYPT_EXPORTABLE, &hKey))
                 {
-                    // Determine number of bytes to encrypt at a time.
-                    std::string starname = "*";
-                    starname += CUnicodeUtils::StdGetUTF8(filename);
+                    std::vector<std::wstring> names;
+                    std::vector<std::wstring> encryptnames;
+                    stringtok(names, filename, true, L"\\/");
+                    for (auto it = names.cbegin(); it != names.cend(); ++it)
+                    {
+                        // Determine number of bytes to encrypt at a time.
+                        std::string starname = "*";
+                        starname += CUnicodeUtils::StdGetUTF8(*it);
 
-                    dwLength = starname.size();
-                    std::unique_ptr<BYTE[]> buffer(new BYTE[dwLength+1024]);
-                    memcpy(buffer.get(), starname.c_str(), dwLength);
-                    // Encrypt data
-                    if (CryptEncrypt(hKey, 0, true, 0, buffer.get(), &dwLength, dwLength+1024))
-                    {
-                        encryptFilename = CStringUtils::ToHexWString(buffer.get(), dwLength);
-                        encryptFilename += L".cryptsync";
+                        dwLength = starname.size();
+                        std::unique_ptr<BYTE[]> buffer(new BYTE[dwLength+1024]);
+                        memcpy(buffer.get(), starname.c_str(), dwLength);
+                        // Encrypt data
+                        if (CryptEncrypt(hKey, 0, true, 0, buffer.get(), &dwLength, dwLength+1024))
+                        {
+                            encryptFilename = CStringUtils::ToHexWString(buffer.get(), dwLength);
+                            encryptnames.push_back(encryptFilename);
+                        }
+                        else
+                        {
+                            encryptnames.push_back(*it);
+                            bResult = false;
+                        }
                     }
-                    else
+                    encryptFilename.clear();
+                    for (auto it = encryptnames.cbegin(); it != encryptnames.cend(); ++it)
                     {
-                        bResult = false;
+                        if (!encryptFilename.empty())
+                            encryptFilename += L"\\";
+                        encryptFilename += *it;
                     }
+                    encryptFilename += L".cryptsync";
+
                     CryptDestroyKey(hKey);  // Release provider handle.
                 }
                 else

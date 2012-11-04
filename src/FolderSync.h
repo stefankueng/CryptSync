@@ -40,7 +40,7 @@ public:
 
     }
 
-    std::wstring    filename;               ///< real filename, possibly encrypted
+    std::wstring    filerelpath;               ///< real filename, possibly encrypted
     FILETIME        ft;
     bool            filenameEncrypted;      ///< if the filename is encrypted
 };
