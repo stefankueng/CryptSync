@@ -130,6 +130,7 @@ LRESULT COptionsDlg::DoCommand(int id)
                 {
                     if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_encnames))
                         InitPairList();
+                    g_pairs.SavePairs();
                 }
             }
         }
@@ -237,6 +238,7 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
                     g_pairs.erase(g_pairs.begin()+lpNMItemActivate->iItem);
                     if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_encnames))
                         InitPairList();
+                    g_pairs.SavePairs();
                 }
             }
         }
