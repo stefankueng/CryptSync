@@ -205,6 +205,19 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                 {
                 }
                 break;
+            case WM_MOUSEMOVE:
+                {
+                    int count = (int)foldersyncer.GetFailureCount();
+                    WCHAR buf[200] = {0};
+                    if (count)
+                        swprintf_s(buf, L"%d items failed to synchronize", count);
+                    else
+                        wcscpy_s(buf, L"synchronization ok");
+                    niData.uFlags = NIF_TIP;
+                    wcsncpy_s( niData.szTip, sizeof( niData.szTip ), buf, sizeof( niData.szTip ) );
+                    Shell_NotifyIcon( NIM_MODIFY, &niData );
+                }
+                break;
             }
         }
         break;
