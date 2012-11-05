@@ -45,15 +45,24 @@ public:
     bool            filenameEncrypted;      ///< if the filename is encrypted
 };
 
+enum SyncOp
+{
+    None,
+    Encrypt,
+    Decrypt,
+};
+
 class CFolderSync
 {
 public:
     CFolderSync(void);
     ~CFolderSync(void);
 
-    void SyncFolders(const PairVector& pv, HWND hWnd = NULL);
-    void SyncFile(const std::wstring& path);
-    void Stop();
+    void                            SyncFolders(const PairVector& pv, HWND hWnd = NULL);
+    void                            SyncFile(const std::wstring& path);
+    void                            Stop();
+    std::map<std::wstring, SyncOp>  GetFailures();
+    size_t                          GetFailureCount();
 
 private:
     static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
@@ -69,6 +78,7 @@ private:
     bool                            Run7Zip(LPWSTR cmdline, const std::wstring& cwd) const;
 
     CReaderWriterLock               m_guard;
+    CReaderWriterLock               m_failureguard;
     PairVector                      m_pairs;
     std::wstring                    m_sevenzip;
     HWND                            m_parentWnd;
@@ -78,5 +88,6 @@ private:
     volatile LONG                   m_bRunning;
     CAutoGeneralHandle              m_hThread;
     PairTuple                       m_currentPath;
+    std::map<std::wstring, SyncOp>  m_failures;
 };
 
