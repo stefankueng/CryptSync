@@ -475,6 +475,13 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
             if (!bRet)
                 Sleep(200);
         } while (!bRet && (retry-- > 0));
+        CAutoWriteLock locker(m_failureguard);
+        m_failures.erase(orig);
+    }
+    else
+    {
+        CAutoWriteLock locker(m_failureguard);
+        m_failures[orig] = Encrypt;
     }
     return bRet;
 }
@@ -511,6 +518,13 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
             if (!bRet)
                 Sleep(200);
         } while (!bRet && (retry-- > 0));
+        CAutoWriteLock locker(m_failureguard);
+        m_failures.erase(orig);
+    }
+    else
+    {
+        CAutoWriteLock locker(m_failureguard);
+        m_failures[orig] = Decrypt;
     }
     return bRet;
 }
@@ -720,4 +734,16 @@ bool CFolderSync::Run7Zip( LPWSTR cmdline, const std::wstring& cwd ) const
         return (exitcode == 0);
     }
     return false;
+}
+
+std::map<std::wstring, SyncOp> CFolderSync::GetFailures()
+{
+    CAutoReadLock locker(m_failureguard);
+    return m_failures;
+}
+
+size_t CFolderSync::GetFailureCount()
+{
+    CAutoReadLock locker(m_failureguard);
+    return m_failures.size();
 }
