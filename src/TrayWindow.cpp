@@ -26,8 +26,6 @@
 #include <WindowsX.h>
 #include <process.h>
 
-#define TRAY_WM_MESSAGE     WM_APP+1
-
 #define TIMER_DETECTCHANGES 100
 #define TIMER_DETECTCHANGESINTERVAL 10000
 #define TIMER_FULLSCAN 101
