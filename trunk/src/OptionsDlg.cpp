@@ -218,7 +218,6 @@ void COptionsDlg::InitPairList()
             WCHAR buf[10] = {0};
             lv.pszText = buf;
             int failures = GetFailuresFor(origpath);
-            failures += GetFailuresFor(cryptpath);
             if (failures)
                 swprintf_s(buf, L"%d", failures);
             else
