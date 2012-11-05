@@ -33,17 +33,19 @@ public:
     ~COptionsDlg(void);
 
     void                    SetUpdateAvailable(bool bUpdate) {m_bNewerVersionAvailable = bUpdate;}
-
+    void                    SetFailures(std::map<std::wstring, SyncOp> failures) {m_failures = failures;}
 protected:
     LRESULT CALLBACK        DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
     LRESULT                 DoCommand(int id);
     void                    InitPairList();
     void                    DoListNotify(LPNMITEMACTIVATE lpNMItemActivate);
 
+    int                     GetFailuresFor(const std::wstring& path);
 private:
     HWND                    m_hParent;
     AeroControlBase         m_aerocontrols;
     CHyperLink              m_link;
     CFolderSync             m_foldersync;
     bool                    m_bNewerVersionAvailable;
+    std::map<std::wstring, SyncOp> m_failures;
 };

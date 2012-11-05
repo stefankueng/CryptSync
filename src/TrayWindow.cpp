@@ -319,6 +319,7 @@ LRESULT CTrayWindow::DoCommand(int id)
             m_bOptionsDialogShown = true;
             COptionsDlg dlg(NULL);
             dlg.SetUpdateAvailable(m_bNewerVersionAvailable);
+            dlg.SetFailures(foldersyncer.GetFailures());
             INT_PTR ret = dlg.DoModal(hResource, IDD_OPTIONS, NULL);
             m_bOptionsDialogShown = false;
             if ((ret == IDOK)||(ret == IDCANCEL))

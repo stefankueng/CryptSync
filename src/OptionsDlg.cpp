@@ -190,6 +190,8 @@ void COptionsDlg::InitPairList()
     ListView_InsertColumn(hListControl, 0, &lvc);
     lvc.pszText = _T("Encrypted");
     ListView_InsertColumn(hListControl, 1, &lvc);
+    lvc.pszText = _T("Sync failures");
+    ListView_InsertColumn(hListControl, 2, &lvc);
 
 
     for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
@@ -211,11 +213,23 @@ void COptionsDlg::InitPairList()
             lv.pszText = varbuf.get();
             _tcscpy_s(lv.pszText, cryptpath.size()+1, cryptpath.c_str());
             ListView_SetItem(hListControl, &lv);
+
+            lv.iSubItem = 2;
+            WCHAR buf[10] = {0};
+            lv.pszText = buf;
+            int failures = GetFailuresFor(origpath);
+            failures += GetFailuresFor(cryptpath);
+            if (failures)
+                swprintf_s(buf, L"%d", failures);
+            else
+                wcscpy_s(buf, L"ok");
+            ListView_SetItem(hListControl, &lv);
         }
     }
 
     ListView_SetColumnWidth(hListControl, 0, LVSCW_AUTOSIZE_USEHEADER);
     ListView_SetColumnWidth(hListControl, 1, LVSCW_AUTOSIZE_USEHEADER);
+    ListView_SetColumnWidth(hListControl, 2, LVSCW_AUTOSIZE_USEHEADER);
 }
 
 void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
@@ -248,4 +262,22 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
         HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
         DialogEnableWindow(IDC_DELETEPAIR, (ListView_GetSelectedCount(hListControl)) > 0);
     }
+}
+
+int COptionsDlg::GetFailuresFor( const std::wstring& path )
+{
+    int failures = 0;
+
+    for (auto it = m_failures.cbegin(); it != m_failures.cend(); ++it)
+    {
+        if (it->first.size() > path.size())
+        {
+            if (it->first.substr(0, path.size()) == path)
+            {
+                if (it->first[path.size()] == '\\')
+                    failures++;
+            }
+        }
+    }
+    return failures;
 }
