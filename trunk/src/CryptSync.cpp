@@ -72,6 +72,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     SetDllDirectory(L"");
 
+    LoadLibrary(L"riched32.dll");
+
     MSG msg;
     HACCEL hAccelTable;
 

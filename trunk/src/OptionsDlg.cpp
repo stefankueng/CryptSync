@@ -24,6 +24,7 @@
 #include "PairAddDlg.h"
 #include "UpdateDlg.h"
 #include "AboutDlg.h"
+#include "TextDlg.h"
 
 #include <string>
 #include <algorithm>
@@ -59,6 +60,8 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(*this, IDC_IGNORE, sIgnores.c_str());
 
             InitPairList();
+
+            DialogEnableWindow(IDC_SHOWFAILURES, m_failures.size()>0);
 
             if (m_bNewerVersionAvailable)
             {
@@ -165,6 +168,23 @@ LRESULT COptionsDlg::DoCommand(int id)
         {
             CAboutDlg dlgAbout(*this);
             dlgAbout.DoModal(hResource, IDD_ABOUTBOX, *this);
+        }
+        break;
+    case IDC_SHOWFAILURES:
+        {
+            std::wstring sFailures = L"the following paths failed to sync:\r\n";
+            for (auto it = m_failures.cbegin(); it != m_failures.cend(); ++it)
+            {
+                if (it->second == SyncOp::Encrypt)
+                    sFailures += L"Encrypting : ";
+                else
+                    sFailures += L"Decrypting : ";
+                sFailures += it->first;
+                sFailures += L"\r\n";
+            }
+            CTextDlg dlg(*this);
+            dlg.m_text = sFailures;
+            dlg.DoModal(hResource, IDD_TEXTDLG, *this);
         }
         break;
     }
