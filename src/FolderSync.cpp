@@ -109,6 +109,10 @@ void CFolderSync::SyncFolderThread()
         m_pProgDlg->SetProgress(m_progress, m_progressTotal);
         m_pProgDlg->ShowModal(m_parentWnd);
     }
+    {
+        CAutoWriteLock locker(m_failureguard);
+        m_failures.clear();
+    }
     for (auto it = pv.cbegin(); (it != pv.cend()) && m_bRunning; ++it)
     {
         {
