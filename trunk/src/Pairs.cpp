@@ -210,6 +210,10 @@ public:
         std::wstring pw = p.Encrypt(L"password");
         pw = p.Decrypt(pw);
         assert(pw == L"password");
+
+        std::wstring pw2 = p.Encrypt(L"");
+        pw2 = p.Decrypt(pw2);
+        assert(pw2 == L"");
     }
 
 
