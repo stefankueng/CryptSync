@@ -264,6 +264,7 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             dlg.m_cryptpath = std::get<1>(t);
             dlg.m_password = std::get<2>(t);
             dlg.m_encnames = std::get<3>(t);
+            dlg.m_oneway = std::get<4>(t);
             if (dlg.DoModal(hResource, IDD_PAIRADD, *this)==IDOK)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
