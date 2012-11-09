@@ -76,10 +76,12 @@ void CPairs::InitPairList()
             push_back(t);
         ++p;
     }
+    std::sort(begin(), end());
 }
 
 void CPairs::SavePairs()
 {
+    std::sort(begin(), end());
     int p = 0;
     for (auto it = cbegin(); (it != cend()) && (p < 200); ++it)
     {
@@ -139,6 +141,7 @@ bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const
     if (std::find(cbegin(), cend(), t) == cend())
     {
         push_back(t);
+        std::sort(begin(), end());
         return true;
     }
 
