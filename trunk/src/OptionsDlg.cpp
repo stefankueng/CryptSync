@@ -255,7 +255,7 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
 {
     if (lpNMItemActivate->hdr.code == NM_DBLCLK)
     {
-        if (lpNMItemActivate->iItem >= 0)
+        if ((lpNMItemActivate->iItem >= 0) && (lpNMItemActivate->iItem < (int)g_pairs.size()))
         {
             auto t = g_pairs[lpNMItemActivate->iItem];
 
