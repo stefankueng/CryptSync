@@ -175,7 +175,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             std::wstring sFailures = L"the following paths failed to sync:\r\n";
             for (auto it = m_failures.cbegin(); it != m_failures.cend(); ++it)
             {
-                if (it->second == SyncOp::Encrypt)
+                if (it->second == Encrypt)
                     sFailures += L"Encrypting : ";
                 else
                     sFailures += L"Decrypting : ";
