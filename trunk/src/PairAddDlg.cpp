@@ -30,11 +30,15 @@ CPairAddDlg::CPairAddDlg(HWND hParent)
     : m_hParent(hParent)
     , m_encnames(false)
     , m_oneway(false)
+    , m_pDropTargetOrig(nullptr)
+    , m_pDropTargetCrypt(nullptr)
 {
 }
 
 CPairAddDlg::~CPairAddDlg(void)
 {
+    delete m_pDropTargetOrig;
+    delete m_pDropTargetCrypt;
 }
 
 LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -81,7 +85,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             ftetc.lindex = -1;
             ftetc.tymed = TYMED_HGLOBAL;
             m_pDropTargetCrypt->AddSuportedFormat(ftetc);
-            ftetc.cfFormat=CF_HDROP;
+            ftetc.cfFormat = CF_HDROP;
             m_pDropTargetCrypt->AddSuportedFormat(ftetc);
             SHAutoComplete(GetDlgItem(*this, IDC_CRYPTPATH), SHACF_FILESYSTEM|SHACF_AUTOSUGGEST_FORCE_ON);
 
