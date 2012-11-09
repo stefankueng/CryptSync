@@ -52,6 +52,14 @@ enum SyncOp
     Decrypt,
 };
 
+struct ci_less
+{
+    bool operator() (const std::wstring & s1, const std::wstring & s2) const
+    {
+        return _wcsicmp(s1.c_str(), s2.c_str()) < 0;
+    }
+};
+
 class CFolderSync
 {
 public:
@@ -69,7 +77,7 @@ private:
     void                            SyncFile(const std::wstring& path, const PairTuple& pt);
     void                            SyncFolderThread();
     void                            SyncFolder(const PairTuple& pt);
-    std::map<std::wstring,FileData> GetFileList(const std::wstring& path, const std::wstring& password, bool encnames) const;
+    std::map<std::wstring,FileData, ci_less> GetFileList(const std::wstring& path, const std::wstring& password, bool encnames) const;
     bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd);
     bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd);
     std::wstring                    GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname) const;
