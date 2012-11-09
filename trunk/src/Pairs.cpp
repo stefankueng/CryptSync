@@ -149,11 +149,11 @@ std::wstring CPairs::Decrypt( const std::wstring& pw )
 {
     DWORD dwLen = 0;
     if (CryptStringToBinary(pw.c_str(), pw.size(), CRYPT_STRING_HEX, NULL, &dwLen, NULL, NULL)==FALSE)
-        return NULL;
+        return L"";
 
     std::unique_ptr<BYTE[]> strIn(new BYTE[dwLen + 1]);
     if (CryptStringToBinary(pw.c_str(), pw.size(), CRYPT_STRING_HEX, strIn.get(), &dwLen, NULL, NULL)==FALSE)
-        return NULL;
+        return L"";
 
     DATA_BLOB blobin;
     blobin.cbData = dwLen;
@@ -161,7 +161,7 @@ std::wstring CPairs::Decrypt( const std::wstring& pw )
     LPWSTR descr;
     DATA_BLOB blobout = {0};
     if (CryptUnprotectData(&blobin, &descr, NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN, &blobout)==FALSE)
-        return NULL;
+        return L"";
     SecureZeroMemory(blobin.pbData, blobin.cbData);
 
     wchar_t * result = new wchar_t[blobout.cbData+1];
