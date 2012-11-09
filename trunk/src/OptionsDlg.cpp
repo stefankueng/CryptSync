@@ -241,7 +241,7 @@ void COptionsDlg::InitPairList()
             if (failures)
                 swprintf_s(buf, L"%d", failures);
             else
-                wcscpy_s(buf, L"ok");
+                wcscpy_s(buf, L"none");
             ListView_SetItem(hListControl, &lv);
         }
     }
