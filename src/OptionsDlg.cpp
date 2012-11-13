@@ -162,6 +162,7 @@ LRESULT COptionsDlg::DoCommand(int id)
                 }
             }
             InitPairList();
+            g_pairs.SavePairs();
         }
         break;
     case IDC_ABOUT:
