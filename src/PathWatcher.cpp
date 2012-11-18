@@ -209,7 +209,7 @@ void CPathWatcher::WorkerThread()
                         nOffset = pnotify->NextEntryOffset;
                         SecureZeroMemory(buf, bufferSize*sizeof(TCHAR));
                         wcsncpy_s(buf, bufferSize, pdi->m_DirPath.c_str(), bufferSize);
-                        errno_t err = wcsncat_s(buf+pdi->m_DirPath.size(), (bufferSize)-pdi->m_DirPath.size(), pnotify->FileName, _TRUNCATE);
+                        errno_t err = wcsncat_s(buf+pdi->m_DirPath.size(), bufferSize-pdi->m_DirPath.size(), pnotify->FileName, min(pnotify->FileNameLength/sizeof(WCHAR), bufferSize-pdi->m_DirPath.size()));
                         if (err == STRUNCATE)
                         {
                             pnotify = (PFILE_NOTIFY_INFORMATION)((LPBYTE)pnotify + nOffset);
