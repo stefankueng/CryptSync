@@ -159,8 +159,7 @@ void CFolderSync::SyncFile( const std::wstring& path )
                 return;
         }
     }
-    if (PathIsDirectory(path.c_str()))
-        return;
+
     PairTuple pt;
     CAutoReadLock locker(m_guard);
     for (auto it = m_pairs.cbegin(); it != m_pairs.cend(); ++it)
@@ -228,7 +227,18 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairTuple& pt )
         delbuf[crypt.size()] = 0;
         delbuf[crypt.size()+1] = 0;
         fop.pFrom = delbuf.get();
-        SHFileOperation(&fop);
+        if (SHFileOperation(&fop))
+        {
+            // in case the notification was for a folder that got removed,
+            // the GetDecryptedFilename() call above added the .cryptsync extension which
+            // folders don't have. Remove that extension and try deleting again.
+            crypt = crypt.substr(0, crypt.find_last_of('.'));
+            wcscpy_s(delbuf.get(), crypt.size()+2, crypt.c_str());
+            delbuf[crypt.size()] = 0;
+            delbuf[crypt.size()+1] = 0;
+            fop.pFrom = delbuf.get();
+            SHFileOperation(&fop);
+        }
         return;
     }
     else if ((fdatacrypt.ftLastWriteTime.dwLowDateTime == 0)&&(fdatacrypt.ftLastWriteTime.dwHighDateTime == 0)&&
@@ -247,6 +257,11 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairTuple& pt )
         SHFileOperation(&fop);
         return;
     }
+
+    if (fdataorig.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        return;
+    if (fdatacrypt.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        return;
 
     LONG cmp = CompareFileTime(&fdataorig.ftLastWriteTime, &fdatacrypt.ftLastWriteTime);
     if (cmp < 0)
