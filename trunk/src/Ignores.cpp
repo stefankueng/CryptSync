@@ -26,7 +26,7 @@
 
 CIgnores::CIgnores(void)
 {
-    sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", L"*.tmp*|~*.*|thumbs.db|desktop.ini");
+    sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
     stringtok(ignores, sIgnores, true);
     for (auto it = ignores.begin(); it != ignores.end(); ++it)
     {

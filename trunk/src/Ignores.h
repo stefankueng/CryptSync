@@ -17,6 +17,9 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 #pragma once
+
+#define DEFAULT_IGNORES L"*.tmp*|~*.*|thumbs.db|desktop.ini"
+
 class CIgnores
 {
 public:
