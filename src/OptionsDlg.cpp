@@ -51,7 +51,9 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 
             m_link.ConvertStaticToHyperlink(hwndDlg, IDC_ABOUT, _T(""));
 
-            AddToolTip(IDC_AUTOSTART, _T("Starts CryptSync automatically when Windows starts up."));
+            AddToolTip(IDC_AUTOSTART, L"Starts CryptSync automatically when Windows starts up.");
+            AddToolTip(IDC_IGNORELABEL, L"Ignore masks, separated by '|' example: *.tmp|~*.*");
+            AddToolTip(IDC_IGNORE, L"Ignore masks, separated by '|' example: *.tmp|~*.*");
 
             // initialize the controls
             bool bStartWithWindows = !std::wstring(CRegStdString(_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run\\CryptSync"))).empty();
