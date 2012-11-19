@@ -25,6 +25,7 @@
 #include "UpdateDlg.h"
 #include "AboutDlg.h"
 #include "TextDlg.h"
+#include "Ignores.h"
 
 #include <string>
 #include <algorithm>
