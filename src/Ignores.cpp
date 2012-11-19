@@ -21,11 +21,17 @@
 #include "Registry.h"
 #include "StringUtils.h"
 
+#include <cctype>
+#include <algorithm>
 
 CIgnores::CIgnores(void)
 {
     sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", L"*.tmp*|~*.*");
     stringtok(ignores, sIgnores, true);
+    for (auto it = ignores.begin(); it != ignores.end(); ++it)
+    {
+        std::transform(it->begin(), it->end(), it->begin(), std::tolower);
+    }
 }
 
 
@@ -38,6 +44,7 @@ bool CIgnores::IsIgnored( const std::wstring& s )
     bool bIgnored = false;
 
     std::wstring scmp = s;
+    std::transform(scmp.begin(), scmp.end(), scmp.begin(), std::tolower);
     size_t slashpos = s.find_last_of('\\');
     if (slashpos != std::string::npos)
         scmp = s.substr(slashpos+1);
