@@ -121,6 +121,14 @@ LRESULT CPairAddDlg::DoCommand(int id)
                 ::MessageBox(*this, L"password do not match!\nPlease reenter the password.", L"Password mismatch", MB_ICONERROR);
                 return 0;
             }
+            if ( (m_password.find_first_of(L"\"") != std::string::npos) ||
+                 (m_password.find_first_of(L"\'") != std::string::npos) ||
+                 (m_password.find_first_of(L"\\") != std::string::npos) ||
+                 (m_password.find_first_of(L"/") != std::string::npos) )
+            {
+                ::MessageBox(*this, L"password must not contain the following chars:\n\" \' / \\", L"Illegal Password char", MB_ICONERROR);
+                return 0;
+            }
 
             std::wstring origpath = m_origpath;
             std::wstring cryptpath = m_cryptpath;
