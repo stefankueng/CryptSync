@@ -58,7 +58,7 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             // initialize the controls
             bool bStartWithWindows = !std::wstring(CRegStdString(_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run\\CryptSync"))).empty();
             SendDlgItemMessage(*this, IDC_AUTOSTART, BM_SETCHECK, bStartWithWindows ? BST_CHECKED : BST_UNCHECKED, NULL);
-            std::wstring sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", L"*.tmp*|~*.*");
+            std::wstring sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", L"*.tmp*|~*.*|thumbs.db|desktop.ini");
             SetDlgItemText(*this, IDC_IGNORE, sIgnores.c_str());
 
             InitPairList();
@@ -110,7 +110,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             else
                 regStartWithWindows.removeValue();
 
-            CRegStdString regIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", L"*.tmp*|~*.*");
+            CRegStdString regIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", L"*.tmp*|~*.*|thumbs.db|desktop.ini");
             auto ignoreText = GetDlgItemText(IDC_IGNORE);
             regIgnores = ignoreText.get();
 
