@@ -298,32 +298,6 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
     auto origFileList  = GetFileList(std::get<0>(pt), std::get<2>(pt), std::get<3>(pt));
     auto cryptFileList = GetFileList(std::get<1>(pt), std::get<2>(pt), std::get<3>(pt));
 
-    {
-        // upgrade code: in case users had "encrypt filenames" active but were using version 1.0.0
-        // then we have to rename the folders since foldernames weren't encrypted back then
-        std::set<std::wstring, ci_less> directories;
-        for (auto it = cryptFileList.cbegin(); (it != cryptFileList.cend()) && m_bRunning; ++it)
-        {
-            std::wstring fenc = GetEncryptedFilename(it->first, std::get<2>(pt), std::get<3>(pt));
-            if (_wcsicmp(fenc.c_str(), it->second.filerelpath.c_str())==0)
-                break;
-            std::wstring srcPath = std::get<1>(pt) + L"\\" + it->second.filerelpath;
-            std::wstring destPath = std::get<1>(pt) + L"\\" + fenc;
-            std::wstring srcDir = srcPath.substr(0, srcPath.find_last_of('\\'));
-            if (!MoveFileEx(srcPath.c_str(), destPath.c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING))
-            {
-                std::wstring targetfolder = destPath.substr(0, destPath.find_last_of('\\'));
-                SHCreateDirectory(NULL, targetfolder.c_str());
-                MoveFileEx(srcPath.c_str(), destPath.c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING);
-            }
-            directories.insert(srcDir);
-        }
-        for (auto srcDir = directories.crbegin(); srcDir != directories.crend(); ++srcDir)
-        {
-            RemoveDirectory(srcDir->c_str());
-        }
-    }
-
     m_progressTotal += (origFileList.size() + cryptFileList.size());
 
     for (auto it = origFileList.cbegin(); (it != origFileList.cend()) && m_bRunning; ++it)
