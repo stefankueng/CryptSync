@@ -79,7 +79,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 
             HWND hCryptPath = GetDlgItem(hwndDlg, IDC_CRYPTPATH);
             m_pDropTargetCrypt = new CFileDropTarget(hCryptPath);
-            RegisterDragDrop(hCryptPath, m_pDropTargetOrig);
+            RegisterDragDrop(hCryptPath, m_pDropTargetCrypt);
             ftetc.cfFormat = CF_TEXT;
             ftetc.dwAspect = DVASPECT_CONTENT;
             ftetc.lindex = -1;
