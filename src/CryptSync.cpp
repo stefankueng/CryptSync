@@ -71,6 +71,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(nCmdShow);
 
     SetDllDirectory(L"");
+    OleInitialize(NULL);
     CoInitializeEx(0, COINIT_APARTMENTTHREADED);
     LoadLibrary(L"riched32.dll");
 
@@ -82,6 +83,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     {
         // An instance of CryptSync is already running
         CoUninitialize();
+        OleUninitialize();
         return 0;
     }
 
@@ -105,5 +107,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         return (int) msg.wParam;
     }
     CoUninitialize();
+    OleUninitialize();
     return 1;
 }
