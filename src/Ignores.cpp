@@ -24,23 +24,22 @@
 #include <cctype>
 #include <algorithm>
 
+CIgnores* CIgnores::m_pInstance;
+
 CIgnores::CIgnores(void)
 {
-    sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
-    stringtok(ignores, sIgnores, true);
-    for (auto it = ignores.begin(); it != ignores.end(); ++it)
-    {
-        std::transform(it->begin(), it->end(), it->begin(), std::tolower);
-    }
+    Reload();
 }
 
 
 CIgnores::~CIgnores(void)
 {
+    delete m_pInstance;
 }
 
 bool CIgnores::IsIgnored( const std::wstring& s )
 {
+    CAutoReadLock locker(m_guard);
     bool bIgnored = false;
 
     std::wstring scmp = s;
@@ -57,4 +56,23 @@ bool CIgnores::IsIgnored( const std::wstring& s )
         }
     }
     return bIgnored;
+}
+
+void CIgnores::Reload()
+{
+    CAutoWriteLock locker(m_guard);
+    ignores.clear();
+    sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
+    stringtok(ignores, sIgnores, true);
+    for (auto it = ignores.begin(); it != ignores.end(); ++it)
+    {
+        std::transform(it->begin(), it->end(), it->begin(), std::tolower);
+    }
+}
+
+CIgnores& CIgnores::Instance()
+{
+    if (m_pInstance == NULL)
+        m_pInstance = new CIgnores();
+    return *m_pInstance;
 }

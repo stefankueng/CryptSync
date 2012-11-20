@@ -17,19 +17,25 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 #pragma once
+#include "ReaderWriterLock.h"
 
 #define DEFAULT_IGNORES L"*.tmp*|~*.*|thumbs.db|desktop.ini"
 
 class CIgnores
 {
 public:
+    static CIgnores& Instance();
+    bool IsIgnored(const std::wstring& s);
+    void Reload();
+private:
     CIgnores(void);
     ~CIgnores(void);
 
-    bool IsIgnored(const std::wstring& s);
 
 private:
-    std::wstring sIgnores;
-    std::vector<std::wstring> ignores;
+    static CIgnores *               m_pInstance;
+    CReaderWriterLock               m_guard;
+    std::wstring                    sIgnores;
+    std::vector<std::wstring>       ignores;
 };
 

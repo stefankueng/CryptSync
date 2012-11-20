@@ -116,14 +116,17 @@ LRESULT COptionsDlg::DoCommand(int id)
             regIgnores = ignoreText.get();
 
             g_pairs.SavePairs();
+            CIgnores::Instance().Reload();
         }
         // fall through
     case IDCANCEL:
     case IDEXIT:
+        CIgnores::Instance().Reload();
         EndDialog(*this, id);
         break;
     case IDC_SYNCEXIT:
         {
+            CIgnores::Instance().Reload();
             m_foldersync.SyncFolders(g_pairs, *this);
         }
         break;
