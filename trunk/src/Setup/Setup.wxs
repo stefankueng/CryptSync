@@ -21,9 +21,11 @@
       <UpgradeVersion Property="PREVIOUSVERSIONSINSTALLED" Maximum="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion)" IncludeMaximum="no" />
     </Upgrade>
 
-    <Media Id='1' Cabinet='CryptSync.cab' EmbedCab='yes' />
+    <Media Id='1' Cabinet='CryptSync.cab' EmbedCab='yes' CompressionLevel='high' />
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
-    <Condition Message='This application only runs on Windows 2000 and later.'>VersionNT &gt;= 500</Condition>
+    <Condition Message="This application only runs on Windows XP with Service Pack 3 and later.">
+      <![CDATA[Installed OR ((VersionNT > 501) OR ((VersionNT = 501) AND (ServicePackLevel >= 3)))]]>
+    </Condition>
 
     <Property Id="INSTALLDIR">
       <RegistrySearch Id="PreviousInstallLocationRegistrySearch" Root="HKLM" Key="Software\CryptSync" Name="installDir" Type="raw" />
