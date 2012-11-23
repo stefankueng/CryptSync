@@ -21,6 +21,7 @@
 #include <ole2.h>
 #include <ShellApi.h>
 #include <ShlObj.h>
+#include <memory>
 #include "UnicodeUtils.h"
 #include "maxpath.h"
 
