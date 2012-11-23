@@ -66,6 +66,7 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)obj\$(Configuration)_$(Platform)\</IntDir>
     <OutDir>$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -78,6 +79,7 @@
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)obj\$(Configuration)_$(Platform)\</IntDir>
     <OutDir>$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
