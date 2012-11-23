@@ -20,6 +20,8 @@
 #pragma once
 #include <string>
 #include <algorithm>
+#include <functional>
+#include <memory>
 
 #ifdef UNICODE
 #define _tcswildcmp wcswildcmp
