@@ -8,13 +8,13 @@
     Id="*"
     Language="1033"
     Codepage="1252"
-    Version="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion)"
+    Version="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion) (64-bit)"
     Manufacturer="Stefans Tools">
 
     <Package Id="*" Keywords="Installer"
-          Description="Stefans CryptSync"
+          Description="Stefans CryptSync (64-bit)"
           Comments="http://tools.tortoisesvn.net" Manufacturer="Stefans Tools"
-          InstallerVersion="200" Languages="1033" Compressed="yes" SummaryCodepage="1252" />
+          InstallerVersion="200" Languages="1033" Compressed="yes" SummaryCodepage="1252" Platform="x64" />
 
     <Upgrade Id="409CCD06-15F2-4211-B3EE-3BA03265597F" >
       <!-- flag is set if the install will trigger an upgrade of an existing install -->
@@ -25,22 +25,20 @@
     <Icon Id="CryptSyncIcon" SourceFile="..\CryptSync.ico" />
     <Property Id="ARPPRODUCTICON">CryptSyncIcon</Property>
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
-    <Condition Message="This application only runs on Windows XP with Service Pack 3 and later.">
-      <![CDATA[Installed OR ((VersionNT > 501) OR ((VersionNT = 501) AND (ServicePackLevel >= 3)))]]>
-    </Condition>
+    <Condition Message="This application requires an 64-bit OS">VersionNT64</Condition>
 
     <Property Id="INSTALLDIR">
-      <RegistrySearch Id="PreviousInstallLocationRegistrySearch" Root="HKLM" Key="Software\CryptSync" Name="installDir" Type="raw" />
+      <RegistrySearch Id="PreviousInstallLocationRegistrySearch" Root="HKLM" Key="Software\CryptSync" Name="installDir" Type="raw" Win64="yes" />
     </Property>
 
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder" Name="PFiles">
+      <Directory Id="ProgramFiles64Folder" Name="PFiles">
         <Directory Id="INSTALLDIR" Name="CryptSync">
 
-          <Component Id="MainEXE" Guid="186BFEE2-AD6A-46A4-9928-45D243AEBF4C">
+          <Component Id="MainEXE" Guid="186BFEE2-AD6A-46A4-9928-45D243AEBF4C" Win64="yes">
             <File Id="CryptSync.EXE" Name="CryptSync.exe" DiskId="1" Source="../../bin/${configuration}/${platform}/CryptSync.exe" Vital="yes" />
-            <File Id="Z7Z.EXE" Name="7z.exe" DiskId="1" Source="../../tools/7z.exe" Vital="yes" />
-            <File Id="Z7Z.DLL" Name="7z.dll" DiskId="1" Source="../../tools/7z.dll" Vital="yes" />
+            <File Id="Z7Z.EXE" Name="7z.exe" DiskId="1" Source="../../tools/x64/7z.exe" Vital="yes" />
+            <File Id="Z7Z.DLL" Name="7z.dll" DiskId="1" Source="../../tools/x64/7z.dll" Vital="yes" />
             <RegistryValue Root="HKLM" Key="Software\CryptSync" Name="installDir" Value="[INSTALLDIR]" Type="string" />
           </Component>
 
@@ -52,7 +50,7 @@
 
     </Directory>
     <DirectoryRef Id="ProgramMenuDir">
-      <Component Id="StartMenuShortCut" Guid="BE51529C-81C0-4F79-B163-FA577319D9B5">
+      <Component Id="StartMenuShortCut" Guid="BE51529C-81C0-4F79-B163-FA577319D9B5" Win64="yes">
         <Shortcut Id="startMenuCryptSync" Directory="ProgramMenuDir" Name="CryptSync" Target="[INSTALLDIR]CryptSync.exe" Description="Synchronizes multiple folders with each other, keeping them up-to-date" />
         <RemoveFolder Id="ProgramMenuDir" On="uninstall" />
         <RegistryValue Root="HKCU" Key="Software\CryptSync" Name="installed" Type="integer" Value="1" KeyPath="yes" />
@@ -61,7 +59,7 @@
       </Component>
     </DirectoryRef>
 
-    <Feature Id="Complete" Title="CryptSync" Description="The complete package."
+    <Feature Id="Complete" Title="CryptSync (64-bit)" Description="The complete package."
           Display="expand" Level="1" ConfigurableDirectory="INSTALLDIR">
       <Feature Id="MainEXE" Title="Program" Description="The main executable." Level="1">
         <ComponentRef Id="MainEXE" />

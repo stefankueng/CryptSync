@@ -1,1 +1,0 @@
-/I "Certum Level III CA" /a /t "http://time.certum.pl/" /d "CryptSync" /du "http://tools.tortoisesvn.net" /q

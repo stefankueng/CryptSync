@@ -1,13 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="AboutDlg.cpp" />
-    <ClCompile Include="PairAddDlg.cpp" />
-    <ClCompile Include="Pairs.cpp" />
-    <ClCompile Include="TrayWindow.cpp" />
-    <ClCompile Include="OptionsDlg.cpp" />
-    <ClCompile Include="CryptSync.cpp" />
-    <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="AeroControls.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
@@ -38,7 +31,6 @@
     <ClCompile Include="UnicodeUtils.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="PathWatcher.cpp" />
     <ClCompile Include="ReaderWriterLock.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
@@ -48,30 +40,53 @@
     <ClCompile Include="DirFileEnum.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="FolderSync.cpp" />
     <ClCompile Include="StringUtils.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Ignores.cpp" />
     <ClCompile Include="ProgressDlg.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="UpdateDlg.cpp" />
-    <ClCompile Include="TextDlg.cpp" />
     <ClCompile Include="DlgResizer.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="AboutDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CryptSync.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FolderSync.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Ignores.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OptionsDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PairAddDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Pairs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PathWatcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TextDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TrayWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UpdateDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AboutDlg.h" />
-    <ClInclude Include="PairAddDlg.h" />
-    <ClInclude Include="Pairs.h" />
-    <ClInclude Include="TrayWindow.h" />
-    <ClInclude Include="OptionsDlg.h" />
-    <ClInclude Include="Resource.h" />
-    <ClInclude Include="CryptSync.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
     <ClInclude Include="AeroControls.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -105,7 +120,6 @@
     <ClInclude Include="UnicodeUtils.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="PathWatcher.h" />
     <ClInclude Include="SmartHandle.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -118,32 +132,63 @@
     <ClInclude Include="DirFileEnum.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="FolderSync.h" />
     <ClInclude Include="StringUtils.h">
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="CreateProcessHelper.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Ignores.h" />
     <ClInclude Include="ProgressDlg.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="UpdateDlg.h" />
-    <ClInclude Include="TextDlg.h" />
     <ClInclude Include="DlgResizer.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="AboutDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CryptSync.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FolderSync.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Ignores.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OptionsDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PairAddDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Pairs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PathWatcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TrayWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdateDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="CryptSync.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="CryptSync.ico" />
     <None Include="..\default.build">
-      <Filter>build</Filter>
-    </None>
-    <None Include="..\default.build.user">
       <Filter>build</Filter>
     </None>
     <None Include="..\version.build.in">
@@ -158,13 +203,33 @@
     <None Include="Setup\Setup.wxs">
       <Filter>build</Filter>
     </None>
+    <None Include="CryptSync.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="CryptSync.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Utils">
-      <UniqueIdentifier>{b5532ff0-76ad-4a37-ac00-e3b22eb74cc2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="build">
       <UniqueIdentifier>{40525aa9-c5c4-4d43-a4bc-7c557feec575}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{5e260696-c1f1-4809-bb48-6ab70057e3d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{47f90456-6a9e-4d6f-a690-2333627ad0bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{b5532ff0-76ad-4a37-ac00-e3b22eb74cc2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{c83d6671-f2d2-40c1-95e5-dbe3bb8ad452}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="CryptSync.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
