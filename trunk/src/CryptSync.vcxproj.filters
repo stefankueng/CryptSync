@@ -209,6 +209,9 @@
     <None Include="CryptSync.rc2">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Setup\Setup64.wxs">
+      <Filter>build</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="build">
