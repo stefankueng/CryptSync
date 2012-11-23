@@ -8,7 +8,7 @@
     Id="*"
     Language="1033"
     Codepage="1252"
-    Version="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion) (64-bit)"
+    Version="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion)"
     Manufacturer="Stefans Tools">
 
     <Package Id="*" Keywords="Installer"
@@ -36,7 +36,7 @@
         <Directory Id="INSTALLDIR" Name="CryptSync">
 
           <Component Id="MainEXE" Guid="186BFEE2-AD6A-46A4-9928-45D243AEBF4C" Win64="yes">
-            <File Id="CryptSync.EXE" Name="CryptSync.exe" DiskId="1" Source="../../bin/${configuration}/${platform}/CryptSync.exe" Vital="yes" />
+            <File Id="CryptSync.EXE" Name="CryptSync.exe" DiskId="1" Source="../../bin/release/x64/CryptSync64.exe" Vital="yes" />
             <File Id="Z7Z.EXE" Name="7z.exe" DiskId="1" Source="../../tools/x64/7z.exe" Vital="yes" />
             <File Id="Z7Z.DLL" Name="7z.dll" DiskId="1" Source="../../tools/x64/7z.dll" Vital="yes" />
             <RegistryValue Root="HKLM" Key="Software\CryptSync" Name="installDir" Value="[INSTALLDIR]" Type="string" />
