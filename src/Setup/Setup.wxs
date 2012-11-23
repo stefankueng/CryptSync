@@ -38,9 +38,9 @@
         <Directory Id="INSTALLDIR" Name="CryptSync">
 
           <Component Id="MainEXE" Guid="186BFEE2-AD6A-46A4-9928-45D243AEBF4C">
-            <File Id="CryptSync.EXE" Name="CryptSync.exe" DiskId="1" Source="../../bin/${configuration}/${platform}/CryptSync.exe" Vital="yes" />
-            <File Id="Z7Z.EXE" Name="7z.exe" DiskId="1" Source="../../tools/7z.exe" Vital="yes" />
-            <File Id="Z7Z.DLL" Name="7z.dll" DiskId="1" Source="../../tools/7z.dll" Vital="yes" />
+            <File Id="CryptSync.EXE" Name="CryptSync.exe" DiskId="1" Source="../../bin/release/win32/CryptSync.exe" Vital="yes" />
+            <File Id="Z7Z.EXE" Name="7z.exe" DiskId="1" Source="../../tools/win32/7z.exe" Vital="yes" />
+            <File Id="Z7Z.DLL" Name="7z.dll" DiskId="1" Source="../../tools/win32/7z.dll" Vital="yes" />
             <RegistryValue Root="HKLM" Key="Software\CryptSync" Name="installDir" Value="[INSTALLDIR]" Type="string" />
           </Component>
 
