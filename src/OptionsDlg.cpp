@@ -64,7 +64,7 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 
             InitPairList();
 
-            DialogEnableWindow(IDC_SHOWFAILURES, m_failures.size()>0);
+            DialogEnableWindow(IDC_SHOWFAILURES, !m_failures.empty());
 
             if (m_bNewerVersionAvailable)
             {

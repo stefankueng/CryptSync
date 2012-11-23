@@ -88,7 +88,7 @@ void CDlgResizer::AddControl(HWND hWndDlg, UINT ctrlId, UINT resizeType)
 void CDlgResizer::DoResize(int width, int height)
 {
     UpdateGripPos();
-    if (m_controls.size() == 0)
+    if (m_controls.empty())
         return;
 
     InvalidateRect(m_hDlg, NULL, true);
