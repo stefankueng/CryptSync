@@ -214,7 +214,7 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     else
                         wcscpy_s(buf, L"synchronization ok");
                     niData.uFlags = NIF_TIP;
-                    wcsncpy_s( niData.szTip, sizeof( niData.szTip ), buf, sizeof( niData.szTip ) );
+                    wcsncpy_s( niData.szTip, _countof( niData.szTip ), buf, _countof( niData.szTip ) );
                     Shell_NotifyIcon( NIM_MODIFY, &niData );
                 }
                 break;
