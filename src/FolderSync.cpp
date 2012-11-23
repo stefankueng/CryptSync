@@ -298,7 +298,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
     auto origFileList  = GetFileList(std::get<0>(pt), std::get<2>(pt), std::get<3>(pt));
     auto cryptFileList = GetFileList(std::get<1>(pt), std::get<2>(pt), std::get<3>(pt));
 
-    m_progressTotal += (origFileList.size() + cryptFileList.size());
+    m_progressTotal += DWORD(origFileList.size() + cryptFileList.size());
 
     for (auto it = origFileList.cbegin(); (it != origFileList.cend()) && m_bRunning; ++it)
     {
@@ -438,7 +438,7 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
         return false;
     std::wstring targetfolder = crypt.substr(0, slashpos);
     std::wstring cryptname = crypt.substr(slashpos+1);
-    int buflen = orig.size() + crypt.size() + password.size() + 1000;
+    size_t buflen = orig.size() + crypt.size() + password.size() + 1000;
     std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
     if ((!cryptname.empty()) && (cryptname[0] == '-'))
         cryptname = L".\\" + cryptname;
@@ -487,7 +487,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     if (slashpos == std::string::npos)
         return false;
     std::wstring targetfolder = orig.substr(0, slashpos);
-    int buflen = orig.size() + crypt.size() + password.size() + 1000;
+    size_t buflen = orig.size() + crypt.size() + password.size() + 1000;
     std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
     swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" e \"%s\" -o\"%s\" -p\"%s\" -y", m_sevenzip.c_str(), crypt.c_str(), targetfolder.c_str(), password.c_str());
     bool bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
@@ -555,7 +555,7 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
         if (CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
         {
             // Hash password string.
-            DWORD dwLength = sizeof(WCHAR)*password.size();
+            DWORD dwLength = DWORD(sizeof(WCHAR)*password.size());
             if (CryptHashData(hHash, (BYTE *)password.c_str(), dwLength, 0))
             {
                 HCRYPTKEY hKey = NULL;
@@ -568,7 +568,7 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
                     for (auto it = names.cbegin(); it != names.cend(); ++it)
                     {
                         std::string name = CUnicodeUtils::StdGetUTF8(*it);
-                        dwLength = name.size() + 1024; // 1024 bytes should be enough for padding
+                        dwLength = DWORD(name.size() + 1024); // 1024 bytes should be enough for padding
                         std::unique_ptr<BYTE[]> buffer(new BYTE[dwLength]);
 
                         std::unique_ptr<BYTE[]> strIn(new BYTE[name.size()*sizeof(WCHAR) + 1]);
@@ -652,7 +652,7 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
         if (CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
         {
             // Hash password string.
-            DWORD dwLength = sizeof(WCHAR)*password.size();
+            DWORD dwLength = DWORD(sizeof(WCHAR)*password.size());
             if (CryptHashData(hHash, (BYTE *)password.c_str(), dwLength, 0))
             {
                 // Create block cipher session key based on hash of the password.
@@ -668,7 +668,7 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
                         std::string starname = "*";
                         starname += CUnicodeUtils::StdGetUTF8(*it);
 
-                        dwLength = starname.size();
+                        dwLength = (DWORD)starname.size();
                         std::unique_ptr<BYTE[]> buffer(new BYTE[dwLength+1024]);
                         memcpy(buffer.get(), starname.c_str(), dwLength);
                         // Encrypt data
