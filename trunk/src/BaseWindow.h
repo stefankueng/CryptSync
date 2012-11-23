@@ -16,6 +16,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
+
 #pragma once
 #include <string>
 
@@ -34,6 +35,7 @@ private:
 };
 
 /**
+ * \ingroup Utils
  * A base window class.
  * Provides separate window message handlers for every window object based on
  * this class.
@@ -107,4 +109,3 @@ protected:
         return (CWindow *)GetWindowLongPtr(hWnd, GWLP_USERDATA);
     }
 };
-

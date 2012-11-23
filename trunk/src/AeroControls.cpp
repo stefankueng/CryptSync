@@ -413,8 +413,7 @@ LRESULT AeroControlBase::ButtonWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 
                             m_theme.DetermineGlowSize(&DttOpts.iGlowSize);
 
-                            Pen*         myPen;
-                            Graphics*    myGraphics;
+                            Pen* myPen;
                             COLORREF cr = RGB(0x00, 0x00, 0x00);
                             GetEditBorderColor(hWnd, &cr);
 
@@ -426,7 +425,7 @@ LRESULT AeroControlBase::ButtonWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
                             myPen = new Pen(Color(cr), 1);
                             if(myPen)
                             {
-                                myGraphics = new Graphics(hdcPaint);
+                                Graphics* myGraphics = new Graphics(hdcPaint);
                                 if(myGraphics)
                                 {
                                     int iY = RECTHEIGHT(rcDraw)/2;
@@ -854,12 +853,11 @@ LRESULT AeroControlBase::ProgressbarWindowProc(HWND hWnd, UINT uMsg, WPARAM wPar
 
 void AeroControlBase::FillRect(LPRECT prc, HDC hdcPaint, Color clr)
 {
-    Graphics*    myGraphics;
     SolidBrush *pBrush = new SolidBrush(clr);
 
     if(pBrush)
     {
-        myGraphics = new Graphics(hdcPaint);
+        Graphics* myGraphics = new Graphics(hdcPaint);
         if(myGraphics)
         {
             myGraphics->FillRectangle(pBrush, prc->left, prc->top,
@@ -966,13 +964,12 @@ int AeroControlBase::GetStateFromBtnState(LONG_PTR dwStyle, BOOL bHot, BOOL bFoc
 
 void AeroControlBase::DrawRect(LPRECT prc, HDC hdcPaint, DashStyle dashStyle, Color clr, REAL width)
 {
-    Pen*         myPen;
-    Graphics*    myGraphics;
+    Pen* myPen;
     myPen = new Pen(clr, width);
     if(myPen)
     {
         myPen->SetDashStyle(dashStyle);
-        myGraphics = new Graphics(hdcPaint);
+        Graphics* myGraphics = new Graphics(hdcPaint);
         if(myGraphics)
         {
             myGraphics->DrawRectangle(myPen, prc->left, prc->top,

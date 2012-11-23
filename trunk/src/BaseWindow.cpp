@@ -16,9 +16,10 @@
 // along with this program; if not, write to the Free Software Foundation,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
+
 #include "stdafx.h"
 #include "BaseWindow.h"
-#include "shlwapi.h"
+#include <shlwapi.h>
 
 #pragma comment(lib, "shlwapi.lib")
 
