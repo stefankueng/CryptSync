@@ -151,11 +151,11 @@ bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const
 std::wstring CPairs::Decrypt( const std::wstring& pw )
 {
     DWORD dwLen = 0;
-    if (CryptStringToBinary(pw.c_str(), pw.size(), CRYPT_STRING_HEX, NULL, &dwLen, NULL, NULL)==FALSE)
+    if (CryptStringToBinary(pw.c_str(), (DWORD)pw.size(), CRYPT_STRING_HEX, NULL, &dwLen, NULL, NULL)==FALSE)
         return L"";
 
     std::unique_ptr<BYTE[]> strIn(new BYTE[dwLen + 1]);
-    if (CryptStringToBinary(pw.c_str(), pw.size(), CRYPT_STRING_HEX, strIn.get(), &dwLen, NULL, NULL)==FALSE)
+    if (CryptStringToBinary(pw.c_str(), (DWORD)pw.size(), CRYPT_STRING_HEX, strIn.get(), &dwLen, NULL, NULL)==FALSE)
         return L"";
 
     DATA_BLOB blobin;
