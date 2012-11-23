@@ -119,7 +119,6 @@ bool CUpdateDlg::CheckNewer()
                 {
                     oldweek = week;
                     //
-                    std::wstring temp;
                     std::wstring tempfile = GetTempFilePath();
 
                     CRegStdString checkurluser = CRegStdString(_T("Software\\CryptSync\\UpdateCheckURL"), _T(""));
@@ -141,7 +140,6 @@ bool CUpdateDlg::CheckNewer()
                             char line[1024];
                             char * pLine = line;
                             File.getline(line, sizeof(line));
-                            std::string vertemp = line;
                             int major = 0;
                             int minor = 0;
                             int micro = 0;

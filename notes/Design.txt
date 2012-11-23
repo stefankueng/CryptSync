@@ -56,4 +56,3 @@ and sync it to its pair folder.
 To avoid the user having to enter the password every time CryptSync
 starts up, the password can be saved to the registry. The password
 is saved encrypted using the Windows logon credentials.
-
