@@ -96,7 +96,7 @@ bool CUpdateDlg::CheckNewer()
 {
     bool bNewerAvailable = false;
     // check for newer versions
-    if (CRegStdWORD(_T("Software\\CryptSync\\CheckNewer"), TRUE) != FALSE)
+    if (CRegStdDWORD(_T("Software\\CryptSync\\CheckNewer"), TRUE) != FALSE)
     {
         time_t now;
         struct tm ptm;
@@ -110,7 +110,7 @@ bool CUpdateDlg::CheckNewer()
             // that's not needed.
             week = ptm.tm_yday / 7;
 
-            CRegStdWORD oldweek = CRegStdWORD(_T("Software\\CryptSync\\CheckNewerWeek"), (DWORD)-1);
+            CRegStdDWORD oldweek = CRegStdDWORD(_T("Software\\CryptSync\\CheckNewerWeek"), (DWORD)-1);
             if (((DWORD)oldweek) == -1)
                 oldweek = week;     // first start of CommitMonitor, no update check needed
             else

@@ -94,6 +94,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>..\sktoolslib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -113,6 +114,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_WIN64;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>..\sktoolslib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -137,6 +139,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <OmitFramePointers>true</OmitFramePointers>
+      <AdditionalIncludeDirectories>..\sktoolslib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -162,6 +165,7 @@
       <PreprocessorDefinitions>_WIN64;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>..\sktoolslib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -189,65 +193,66 @@
     <None Include="Setup\Setup64.wxs" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\sktoolslib\AeroControls.h" />
+    <ClInclude Include="..\sktoolslib\AeroGlass.h" />
+    <ClInclude Include="..\sktoolslib\BaseDialog.h" />
+    <ClInclude Include="..\sktoolslib\BaseWindow.h" />
+    <ClInclude Include="..\sktoolslib\BrowseFolder.h" />
+    <ClInclude Include="..\sktoolslib\CmdLineParser.h" />
+    <ClInclude Include="..\sktoolslib\CreateProcessHelper.h" />
+    <ClInclude Include="..\sktoolslib\DebugOutput.h" />
+    <ClInclude Include="..\sktoolslib\DirFileEnum.h" />
+    <ClInclude Include="..\sktoolslib\DlgResizer.h" />
+    <ClInclude Include="..\sktoolslib\FileDropTarget.h" />
+    <ClInclude Include="..\sktoolslib\hyperlink.h" />
+    <ClInclude Include="..\sktoolslib\maxpath.h" />
+    <ClInclude Include="..\sktoolslib\ProgressDlg.h" />
+    <ClInclude Include="..\sktoolslib\ReaderWriterLock.h" />
+    <ClInclude Include="..\sktoolslib\Registry.h" />
+    <ClInclude Include="..\sktoolslib\SmartHandle.h" />
+    <ClInclude Include="..\sktoolslib\StringUtils.h" />
+    <ClInclude Include="..\sktoolslib\UnicodeUtils.h" />
     <ClInclude Include="AboutDlg.h" />
-    <ClInclude Include="AeroControls.h" />
-    <ClInclude Include="AeroGlass.h" />
-    <ClInclude Include="BaseDialog.h" />
-    <ClInclude Include="BaseWindow.h" />
-    <ClInclude Include="BrowseFolder.h" />
-    <ClInclude Include="CmdLineParser.h" />
-    <ClInclude Include="CreateProcessHelper.h" />
-    <ClInclude Include="DebugOutput.h" />
-    <ClInclude Include="DirFileEnum.h" />
-    <ClInclude Include="DlgResizer.h" />
-    <ClInclude Include="FileDropTarget.h" />
     <ClInclude Include="FolderSync.h" />
-    <ClInclude Include="hyperlink.h" />
     <ClInclude Include="Ignores.h" />
-    <ClInclude Include="maxpath.h" />
     <ClInclude Include="PairAddDlg.h" />
     <ClInclude Include="Pairs.h" />
     <ClInclude Include="PathWatcher.h" />
-    <ClInclude Include="ProgressDlg.h" />
-    <ClInclude Include="ReaderWriterLock.h" />
-    <ClInclude Include="SmartHandle.h" />
-    <ClInclude Include="StringUtils.h" />
     <ClInclude Include="TextDlg.h" />
     <ClInclude Include="TrayWindow.h" />
     <ClInclude Include="OptionsDlg.h" />
-    <ClInclude Include="Registry.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="CryptSync.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="UnicodeUtils.h" />
     <ClInclude Include="UpdateDlg.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\sktoolslib\AeroControls.cpp" />
+    <ClCompile Include="..\sktoolslib\AeroGlass.cpp" />
+    <ClCompile Include="..\sktoolslib\BaseDialog.cpp" />
+    <ClCompile Include="..\sktoolslib\BaseWindow.cpp" />
+    <ClCompile Include="..\sktoolslib\BrowseFolder.cpp" />
+    <ClCompile Include="..\sktoolslib\CmdLineParser.cpp" />
+    <ClCompile Include="..\sktoolslib\DebugOutput.cpp" />
+    <ClCompile Include="..\sktoolslib\DirFileEnum.cpp" />
+    <ClCompile Include="..\sktoolslib\DlgResizer.cpp" />
+    <ClCompile Include="..\sktoolslib\FileDropTarget.cpp" />
+    <ClCompile Include="..\sktoolslib\hyperlink.cpp" />
+    <ClCompile Include="..\sktoolslib\ProgressDlg.cpp" />
+    <ClCompile Include="..\sktoolslib\ReaderWriterLock.cpp" />
+    <ClCompile Include="..\sktoolslib\Registry.cpp" />
+    <ClCompile Include="..\sktoolslib\StringUtils.cpp" />
+    <ClCompile Include="..\sktoolslib\UnicodeUtils.cpp" />
     <ClCompile Include="AboutDlg.cpp" />
-    <ClCompile Include="AeroControls.cpp" />
-    <ClCompile Include="AeroGlass.cpp" />
-    <ClCompile Include="BaseDialog.cpp" />
-    <ClCompile Include="BaseWindow.cpp" />
-    <ClCompile Include="BrowseFolder.cpp" />
-    <ClCompile Include="CmdLineParser.cpp" />
-    <ClCompile Include="DebugOutput.cpp" />
-    <ClCompile Include="DirFileEnum.cpp" />
-    <ClCompile Include="DlgResizer.cpp" />
-    <ClCompile Include="FileDropTarget.cpp" />
     <ClCompile Include="FolderSync.cpp" />
-    <ClCompile Include="hyperlink.cpp" />
     <ClCompile Include="Ignores.cpp" />
     <ClCompile Include="PairAddDlg.cpp" />
     <ClCompile Include="Pairs.cpp" />
     <ClCompile Include="PathWatcher.cpp" />
-    <ClCompile Include="ProgressDlg.cpp" />
-    <ClCompile Include="ReaderWriterLock.cpp" />
-    <ClCompile Include="StringUtils.cpp" />
     <ClCompile Include="TextDlg.cpp" />
     <ClCompile Include="TrayWindow.cpp" />
     <ClCompile Include="OptionsDlg.cpp" />
-    <ClCompile Include="Registry.cpp" />
     <ClCompile Include="CryptSync.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -255,7 +260,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="UnicodeUtils.cpp" />
     <ClCompile Include="UpdateDlg.cpp" />
   </ItemGroup>
   <ItemGroup>

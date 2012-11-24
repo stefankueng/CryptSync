@@ -64,11 +64,11 @@ void CPairs::InitPairList()
         password = Decrypt(password);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
-        CRegStdWORD encnamesreg(key, TRUE);
+        CRegStdDWORD encnamesreg(key, TRUE);
         bool encnames = !!(DWORD)encnamesreg;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
-        CRegStdWORD onewayreg(key, TRUE);
+        CRegStdDWORD onewayreg(key, TRUE);
         bool oneway = !!(DWORD)onewayreg;
 
         auto t = std::make_tuple(origpath, cryptpath, password, encnames, oneway);
@@ -99,11 +99,11 @@ void CPairs::SavePairs()
         passwordreg = Encrypt(std::get<2>(*it));
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
-        CRegStdWORD encnamesreg(key, TRUE, true);
+        CRegStdDWORD encnamesreg(key, TRUE, true);
         encnamesreg = (DWORD)std::get<3>(*it);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
-        CRegStdWORD onewayreg(key, TRUE, true);
+        CRegStdDWORD onewayreg(key, TRUE, true);
         onewayreg = (DWORD)std::get<4>(*it);
 
         ++p;
@@ -125,11 +125,11 @@ void CPairs::SavePairs()
         passwordreg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
-        CRegStdWORD encnamesreg(key);
+        CRegStdDWORD encnamesreg(key);
         encnamesreg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
-        CRegStdWORD onewayreg(key);
+        CRegStdDWORD onewayreg(key);
         onewayreg.removeValue();
         ++p;
     }

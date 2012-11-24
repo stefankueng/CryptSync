@@ -1,54 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="AeroControls.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="AeroGlass.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseDialog.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseWindow.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="BrowseFolder.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="CmdLineParser.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="FileDropTarget.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="hyperlink.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Registry.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="UnicodeUtils.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="ReaderWriterLock.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="DebugOutput.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="DirFileEnum.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="StringUtils.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="ProgressDlg.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="DlgResizer.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="AboutDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -85,65 +37,56 @@
     <ClCompile Include="UpdateDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\sktoolslib\ReaderWriterLock.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\Registry.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\StringUtils.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\UnicodeUtils.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\AeroControls.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\AeroGlass.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\BaseDialog.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\BaseWindow.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\BrowseFolder.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\CmdLineParser.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\DebugOutput.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\DirFileEnum.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\DlgResizer.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\FileDropTarget.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\hyperlink.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\ProgressDlg.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AeroControls.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="AeroGlass.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="BaseDialog.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="BaseWindow.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="BrowseFolder.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="CmdLineParser.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="FileDropTarget.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="hyperlink.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="maxpath.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Registry.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="UnicodeUtils.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="SmartHandle.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="ReaderWriterLock.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="DebugOutput.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="DirFileEnum.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="StringUtils.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="CreateProcessHelper.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="ProgressDlg.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="DlgResizer.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
     <ClInclude Include="AboutDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -186,6 +129,63 @@
     <ClInclude Include="UpdateDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\sktoolslib\ProgressDlg.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\ReaderWriterLock.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\Registry.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\SmartHandle.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\StringUtils.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\UnicodeUtils.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\AeroControls.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\AeroGlass.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\BaseDialog.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\BaseWindow.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\BrowseFolder.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\CmdLineParser.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\CreateProcessHelper.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\DebugOutput.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\DirFileEnum.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\DlgResizer.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\FileDropTarget.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\hyperlink.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\maxpath.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\default.build">
@@ -223,11 +223,11 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{47f90456-6a9e-4d6f-a690-2333627ad0bf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Utils">
-      <UniqueIdentifier>{b5532ff0-76ad-4a37-ac00-e3b22eb74cc2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{c83d6671-f2d2-40c1-95e5-dbe3bb8ad452}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sktoolslib">
+      <UniqueIdentifier>{b5532ff0-76ad-4a37-ac00-e3b22eb74cc2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

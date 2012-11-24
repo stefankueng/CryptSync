@@ -51,9 +51,6 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             InitDialog(hwndDlg, IDI_CryptSync);
 
             // initialize the controls
-            bool bStartWithWindows = !std::wstring(CRegStdString(_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run\\CryptSync"))).empty();
-            SendDlgItemMessage(*this, IDC_AUTOSTART, BM_SETCHECK, bStartWithWindows ? BST_CHECKED : BST_UNCHECKED, NULL);
-
             SetDlgItemText(hwndDlg, IDC_ORIGPATH, m_origpath.c_str());
             SetDlgItemText(hwndDlg, IDC_CRYPTPATH, m_cryptpath.c_str());
             SetDlgItemText(hwndDlg, IDC_PASSWORD, m_password.c_str());
