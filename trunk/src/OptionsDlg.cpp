@@ -57,9 +57,12 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             AddToolTip(IDC_IGNORE, L"Ignore masks, separated by '|' example: *.tmp|~*.*");
 
             // initialize the controls
-            bool bStartWithWindows = !std::wstring(CRegStdString(_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run\\CryptSync"))).empty();
+            CRegStdString regStart(_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run\\CryptSync"));
+            bool bStartWithWindows = !std::wstring(regStart).empty();
             SendDlgItemMessage(*this, IDC_AUTOSTART, BM_SETCHECK, bStartWithWindows ? BST_CHECKED : BST_UNCHECKED, NULL);
-            std::wstring sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
+            SendDlgItemMessage(*this, IDC_AUTOSTART, BM_SETCHECK, bStartWithWindows ? BST_CHECKED : BST_UNCHECKED, NULL);
+            CRegStdString regIgnores(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
+            std::wstring sIgnores = regIgnores;
             SetDlgItemText(*this, IDC_IGNORE, sIgnores.c_str());
 
             InitPairList();

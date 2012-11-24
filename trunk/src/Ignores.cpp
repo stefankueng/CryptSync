@@ -62,7 +62,8 @@ void CIgnores::Reload()
 {
     CAutoWriteLock locker(m_guard);
     ignores.clear();
-    sIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
+    CRegStdString regIgnores(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
+    sIgnores = std::wstring(regIgnores);
     stringtok(ignores, sIgnores, true);
     for (auto it = ignores.begin(); it != ignores.end(); ++it)
     {
