@@ -164,13 +164,13 @@ bool CUpdateDlg::CheckNewer()
                                     }
                                 }
                             }
-                            if (major > CM_VERMAJOR)
+                            if (major > CS_VERMAJOR)
                                 bNewerAvailable = true;
-                            else if ((minor > CM_VERMINOR)&&(major == CM_VERMAJOR))
+                            else if ((minor > CS_VERMINOR)&&(major == CS_VERMAJOR))
                                 bNewerAvailable = true;
-                            else if ((micro > CM_VERMICRO)&&(minor == CM_VERMINOR)&&(major == CM_VERMAJOR))
+                            else if ((micro > CS_VERMICRO)&&(minor == CS_VERMINOR)&&(major == CS_VERMAJOR))
                                 bNewerAvailable = true;
-                            else if ((build > CM_VERBUILD)&&(micro == CM_VERMICRO)&&(minor == CM_VERMINOR)&&(major == CM_VERMAJOR))
+                            else if ((build > CS_VERBUILD)&&(micro == CS_VERMICRO)&&(minor == CS_VERMINOR)&&(major == CS_VERMAJOR))
                                 bNewerAvailable = true;
                         }
                         File.close();
