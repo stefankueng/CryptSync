@@ -36,8 +36,10 @@
 CFolderSync::CFolderSync(void)
     : m_parentWnd(NULL)
     , m_pProgDlg(NULL)
+    , m_sevenzip(L"%ProgramFiles%\\7-zip\\7z.exe")
+    , m_progress(0)
+    , m_progressTotal(1)
 {
-    m_sevenzip = L"%ProgramFiles%\\7-zip\\7z.exe";
     m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
     if (!PathFileExists(m_sevenzip.c_str()))
     {
@@ -525,7 +527,6 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
 
 std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, const std::wstring& password, bool encryptname ) const
 {
-    bool bResult = true;
     std::wstring decryptName = filename;
     size_t dotpos = filename.find_last_of('.');
     std::wstring fname;
@@ -550,6 +551,7 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
     // Get handle to user default provider.
     if (CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT|CRYPT_SILENT))
     {
+        bool bResult = true;
         HCRYPTHASH hHash = NULL;
         // Create hash object.
         if (CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))

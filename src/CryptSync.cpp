@@ -76,7 +76,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     LoadLibrary(L"riched32.dll");
 
     MSG msg;
-    HACCEL hAccelTable;
 
     HANDLE hReloadProtection = ::CreateMutex(NULL, FALSE, GetMutexID().c_str());
     if ((!hReloadProtection) || (GetLastError() == ERROR_ALREADY_EXISTS))
@@ -94,7 +93,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     if (trayWindow.RegisterAndCreateWindow())
     {
-        hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CryptSync));
+        HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CryptSync));
         // Main message loop:
         while (GetMessage(&msg, NULL, 0, 0))
         {
