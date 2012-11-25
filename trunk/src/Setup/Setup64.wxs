@@ -76,11 +76,12 @@
       <Publish Dialog="ExitDialog"
                   Control="Finish"
                   Event="DoAction"
-                  Value="LaunchApplication">NOT Installed</Publish>
+                  Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
     </UI>
     <WixVariable Id="WixUIBannerBmp" Value="Banner.jpg" />
     <WixVariable Id="WixUIDialogBmp" Value="Dialog.jpg" />
-    <Property Id="WixShellExecTarget" Value="[#CommitMonitor.EXE]" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch CryptSync" />
+    <Property Id="WixShellExecTarget" Value="[INSTALLDIR]CryptSync.exe" />
     <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
 
     <InstallExecuteSequence>
