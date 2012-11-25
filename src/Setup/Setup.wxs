@@ -37,8 +37,10 @@
       <Directory Id="ProgramFilesFolder" Name="PFiles">
         <Directory Id="INSTALLDIR" Name="CryptSync">
 
-          <Component Id="MainEXE" Guid="186BFEE2-AD6A-46A4-9928-45D243AEBF4C">
+          <Component Id="CryptSync.exe" Guid="186BFEE2-AD6A-46A4-9928-45D243AEBF4C">
             <File Id="CryptSync.EXE" Name="CryptSync.exe" DiskId="1" Source="../../bin/release/win32/CryptSync.exe" Vital="yes" />
+          </Component>
+          <Component Id="ZipExe" Guid="334DA1F3-3A8E-4F79-B6F8-DB7B28CB5FBE">
             <File Id="Z7Z.EXE" Name="7z.exe" DiskId="1" Source="../../tools/win32/7z.exe" Vital="yes" />
             <File Id="Z7Z.DLL" Name="7z.dll" DiskId="1" Source="../../tools/win32/7z.dll" Vital="yes" />
             <RegistryValue Root="HKLM" Key="Software\CryptSync" Name="installDir" Value="[INSTALLDIR]" Type="string" />
@@ -64,7 +66,8 @@
     <Feature Id="Complete" Title="CryptSync" Description="The complete package."
           Display="expand" Level="1" ConfigurableDirectory="INSTALLDIR">
       <Feature Id="MainEXE" Title="Program" Description="The main executable." Level="1">
-        <ComponentRef Id="MainEXE" />
+        <ComponentRef Id="CryptSync.exe" />
+        <ComponentRef Id="ZipExe" />
         <ComponentRef Id="StartMenuShortCut" />
       </Feature>
     </Feature>
@@ -83,7 +86,7 @@
     <WixVariable Id="WixUIBannerBmp" Value="Banner.jpg" />
     <WixVariable Id="WixUIDialogBmp" Value="Dialog.jpg" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch CryptSync" />
-    <Property Id="WixShellExecTarget" Value="[INSTALLDIR]CryptSync.exe" />
+    <Property Id="WixShellExecTarget" Value="[#CryptSync.EXE]" />
     <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
 
     <InstallExecuteSequence>
