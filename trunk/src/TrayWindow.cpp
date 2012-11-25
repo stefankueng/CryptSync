@@ -286,6 +286,7 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
     case WM_QUIT:
         foldersyncer.Stop();
         watcher.Stop();
+        ::PostQuitMessage(0);
         break;
     default:
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
