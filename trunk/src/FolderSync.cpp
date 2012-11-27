@@ -39,6 +39,7 @@ CFolderSync::CFolderSync(void)
     , m_sevenzip(L"%ProgramFiles%\\7-zip\\7z.exe")
     , m_progress(0)
     , m_progressTotal(1)
+    , m_bRunning(FALSE)
 {
     m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
     if (!PathFileExists(m_sevenzip.c_str()))
