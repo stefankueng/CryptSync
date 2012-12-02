@@ -27,8 +27,6 @@
 #include <time.h>
 #include <fstream>
 
-#pragma comment(lib, "Urlmon.lib")
-
 CUpdateDlg::CUpdateDlg(HWND hParent)
     : m_hParent(hParent)
 {

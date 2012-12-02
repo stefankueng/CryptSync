@@ -25,8 +25,6 @@
 #include <assert.h>
 
 
-#pragma comment(lib, "Crypt32.lib")
-
 CPairs::CPairs()
 {
     InitPairList();
