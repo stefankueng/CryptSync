@@ -81,4 +81,3 @@ LRESULT CTextDlg::DoCommand(int id)
     }
     return 1;
 }
-

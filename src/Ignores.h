@@ -38,4 +38,3 @@ private:
     std::wstring                    sIgnores;
     std::vector<std::wstring>       ignores;
 };
-

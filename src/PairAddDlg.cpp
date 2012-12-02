@@ -185,4 +185,3 @@ LRESULT CPairAddDlg::DoCommand(int id)
     }
     return 1;
 }
-
