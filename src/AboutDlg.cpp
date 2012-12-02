@@ -25,8 +25,8 @@
 
 
 CAboutDlg::CAboutDlg(HWND hParent)
+    : m_hParent(hParent)
 {
-    m_hParent = hParent;
 }
 
 CAboutDlg::~CAboutDlg(void)
