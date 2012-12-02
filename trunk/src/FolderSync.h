@@ -37,10 +37,9 @@ public:
     }
     ~FileData()
     {
-
     }
 
-    std::wstring    filerelpath;               ///< real filename, possibly encrypted
+    std::wstring    filerelpath;            ///< real filename, possibly encrypted
     FILETIME        ft;
     bool            filenameEncrypted;      ///< if the filename is encrypted
 };
@@ -98,4 +97,3 @@ private:
     PairTuple                       m_currentPath;
     std::map<std::wstring, SyncOp>  m_failures;
 };
-
