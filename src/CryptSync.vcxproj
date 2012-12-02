@@ -222,7 +222,6 @@
     <ClInclude Include="TrayWindow.h" />
     <ClInclude Include="OptionsDlg.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="CryptSync.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="UpdateDlg.h" />
