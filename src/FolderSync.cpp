@@ -31,7 +31,6 @@
 #include <cctype>
 #include <algorithm>
 
-#pragma comment(lib, "shell32.lib")
 
 CFolderSync::CFolderSync(void)
     : m_parentWnd(NULL)
