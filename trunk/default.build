@@ -12,7 +12,7 @@
   <loadfile file="signinfo.txt" property="signinfo" failonerror="false" if="${file::exists('signinfo.txt')}"/>
 
   <!-- ====================================================================== -->
-  <!-- Configuration targets                                                    -->
+  <!-- Configuration targets                                                  -->
   <!-- ====================================================================== -->
   <target name="debug">
     <description>
