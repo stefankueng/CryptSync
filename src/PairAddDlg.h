@@ -18,9 +18,11 @@
 //
 
 #pragma once
+
 #include "BaseDialog.h"
 #include "AeroControls.h"
 #include "FileDropTarget.h"
+
 
 /**
  * options dialog.

@@ -18,6 +18,7 @@
 //
 
 #pragma once
+
 #include "BaseDialog.h"
 #include "hyperlink.h"
 #include "AeroControls.h"

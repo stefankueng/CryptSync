@@ -16,10 +16,13 @@
 // along with this program; if not, write to the Free Software Foundation,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
+
 #pragma once
+
 #include "ReaderWriterLock.h"
 
 #define DEFAULT_IGNORES L"*.tmp*|~*.*|thumbs.db|desktop.ini"
+
 
 class CIgnores
 {

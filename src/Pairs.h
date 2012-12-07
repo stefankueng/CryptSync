@@ -18,12 +18,14 @@
 //
 
 #pragma once
+
 #include <vector>
 #include <tuple>
 #include <string>
 
 typedef std::tuple<std::wstring, std::wstring, std::wstring, bool, bool> PairTuple;
 typedef std::vector<PairTuple>                                           PairVector;
+
 
 /**
  * class to handle pairs of synced folders

@@ -16,7 +16,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
+
 #pragma once
+
 #include "ReaderWriterLock.h"
 #include "SmartHandle.h"
 #include <string>
@@ -98,12 +100,11 @@ private:
     {
     private:
         CDirWatchInfo();    // private & not implemented
-        CDirWatchInfo & operator=(const CDirWatchInfo & rhs);//so that they're aren't accidentally used. -- you'll get a linker error
+        CDirWatchInfo & operator=(const CDirWatchInfo & rhs);   //so that they're aren't accidentally used. -- you'll get a linker error
     public:
         CDirWatchInfo(HANDLE hDir, const std::wstring& DirectoryName);
         ~CDirWatchInfo();
 
-    protected:
     public:
         bool            CloseDirectoryHandle();
 
