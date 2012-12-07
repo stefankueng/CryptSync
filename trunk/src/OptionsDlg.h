@@ -18,10 +18,12 @@
 //
 
 #pragma once
+
 #include "BaseDialog.h"
 #include "AeroControls.h"
 #include "FolderSync.h"
 #include "hyperlink.h"
+
 
 /**
  * options dialog.

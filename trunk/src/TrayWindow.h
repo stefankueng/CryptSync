@@ -18,6 +18,7 @@
 //
 
 #pragma once
+
 #include "BaseWindow.h"
 #include "resource.h"
 #include "Registry.h"
