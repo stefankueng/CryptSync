@@ -171,7 +171,6 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             }
             SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
             SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
-            unsigned int threadId = 0;
             if (!m_bTrayMode)
                 ::PostMessage(*this, WM_COMMAND, MAKEWPARAM(IDM_OPTIONS, 1), 0);
         }
