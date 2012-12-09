@@ -159,7 +159,6 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
     case WM_CREATE:
         {
             m_hwnd = hwnd;
-            foldersyncer.SyncFolders(g_pairs);
             watcher.ClearPaths();
             for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
             {
@@ -171,6 +170,8 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             }
             SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
             SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
+            unsigned int threadId = 0;
+            _beginthreadex(NULL, 0, UpdateCheckThreadEntry, this, 0, &threadId);
             if (!m_bTrayMode)
                 ::PostMessage(*this, WM_COMMAND, MAKEWPARAM(IDM_OPTIONS, 1), 0);
         }
