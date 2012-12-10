@@ -401,11 +401,16 @@ std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( const std::ws
     std::map<std::wstring,FileData, ci_less> filelist;
     std::wstring filepath;
     bool isDir = false;
-    while (enumerator.NextFile(filepath, &isDir, true))
+    bool bRecurse = true;
+    while (enumerator.NextFile(filepath, &isDir, bRecurse))
     {
         if (isDir)
+        {
+            if (CIgnores::Instance().IsIgnored(filepath))
+                bRecurse = false;   // don't recurse into ignored folders
             continue;
-
+        }
+        bRecurse = true;
         if (!m_bRunning)
             break;
 
