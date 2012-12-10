@@ -100,36 +100,16 @@ LRESULT COptionsDlg::DoCommand(int id)
     {
     case IDOK:
         {
-            CRegStdString regStartWithWindows = CRegStdString(_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run\\CryptSync"));
-            bool bStartWithWindows = !!SendDlgItemMessage(*this, IDC_AUTOSTART, BM_GETCHECK, 0, NULL);
-            if (bStartWithWindows)
-            {
-                TCHAR buf[MAX_PATH*4];
-                GetModuleFileName(NULL, buf, _countof(buf));
-                std::wstring cmd = L"\"";
-                cmd += std::wstring(buf);
-                cmd += L"\" /tray";
-                regStartWithWindows = cmd;
-            }
-            else
-                regStartWithWindows.removeValue();
-
-            CRegStdString regIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
-            auto ignoreText = GetDlgItemText(IDC_IGNORE);
-            regIgnores = ignoreText.get();
-
-            g_pairs.SavePairs();
-            CIgnores::Instance().Reload();
+            SaveSettings();
         }
         // fall through
     case IDCANCEL:
     case IDEXIT:
-        CIgnores::Instance().Reload();
         EndDialog(*this, id);
         break;
     case IDC_SYNCEXIT:
         {
-            CIgnores::Instance().Reload();
+            SaveSettings();
             m_foldersync.SyncFolders(g_pairs, *this);
         }
         break;
@@ -310,4 +290,29 @@ int COptionsDlg::GetFailuresFor( const std::wstring& path )
         }
     }
     return failures;
+}
+
+void COptionsDlg::SaveSettings()
+{
+    CRegStdString regStartWithWindows = CRegStdString(_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run\\CryptSync"));
+    bool bStartWithWindows = !!SendDlgItemMessage(*this, IDC_AUTOSTART, BM_GETCHECK, 0, NULL);
+    if (bStartWithWindows)
+    {
+        TCHAR buf[MAX_PATH*4];
+        GetModuleFileName(NULL, buf, _countof(buf));
+        std::wstring cmd = L"\"";
+        cmd += std::wstring(buf);
+        cmd += L"\" /tray";
+        regStartWithWindows = cmd;
+    }
+    else
+        regStartWithWindows.removeValue();
+
+    CRegStdString regIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
+    auto ignoreText = GetDlgItemText(IDC_IGNORE);
+    regIgnores = ignoreText.get();
+
+    g_pairs.SavePairs();
+
+    CIgnores::Instance().Reload();
 }

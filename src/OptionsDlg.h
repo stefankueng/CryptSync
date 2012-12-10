@@ -43,6 +43,7 @@ protected:
     void                    DoListNotify(LPNMITEMACTIVATE lpNMItemActivate);
 
     int                     GetFailuresFor(const std::wstring& path);
+    void                    SaveSettings();
 private:
     HWND                    m_hParent;
     AeroControlBase         m_aerocontrols;
