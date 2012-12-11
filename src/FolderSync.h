@@ -68,6 +68,7 @@ public:
     ~CFolderSync(void);
 
     void                            SyncFolders(const PairVector& pv, HWND hWnd = NULL);
+    void                            SyncFoldersWait(const PairVector& pv, HWND hWnd = NULL);
     void                            SyncFile(const std::wstring& path);
     void                            Stop();
     std::map<std::wstring, SyncOp>  GetFailures();
