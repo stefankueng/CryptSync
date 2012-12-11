@@ -58,12 +58,15 @@ bool CIgnores::IsIgnored( const std::wstring& s )
     return bIgnored;
 }
 
-void CIgnores::Reload()
+void CIgnores::Reload(const std::wstring& s /* = std::wstring() */)
 {
     CAutoWriteLock locker(m_guard);
     ignores.clear();
     CRegStdString regIgnores(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
-    sIgnores = std::wstring(regIgnores);
+    if (s.empty())
+        sIgnores = std::wstring(regIgnores);
+    else
+        sIgnores = s;
     stringtok(ignores, sIgnores, true);
     for (auto it = ignores.begin(); it != ignores.end(); ++it)
     {

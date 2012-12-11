@@ -29,7 +29,7 @@ class CIgnores
 public:
     static CIgnores& Instance();
     bool IsIgnored(const std::wstring& s);
-    void Reload();
+    void Reload(const std::wstring& s = std::wstring());
 private:
     CIgnores(void);
     ~CIgnores(void);
