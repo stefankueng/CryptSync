@@ -20,6 +20,7 @@
 #include "stdafx.h"
 #include "CmdLineParser.h"
 #include "TrayWindow.h"
+#include "Ignores.h"
 #include "resource.h"
 
 
@@ -73,6 +74,29 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     CoInitializeEx(0, COINIT_APARTMENTTHREADED);
     LoadLibrary(L"riched32.dll");
 
+
+    CCmdLineParser parser(lpCmdLine);
+    if (parser.HasVal(L"src") && parser.HasVal(L"dst"))
+    {
+        std::wstring src =   parser.GetVal(L"src");
+        std::wstring dst =   parser.GetVal(L"dst");
+        std::wstring pw  =   parser.HasVal(L"pw") ? parser.GetVal(L"pw") : L"";
+        bool encnames    = !!parser.HasKey(L"encnames");
+        bool mirror      = !!parser.HasKey(L"mirror");
+        std::wstring ign =   parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
+
+        CIgnores::Instance().Reload();
+        if (!ign.empty())
+            CIgnores::Instance().Reload(ign);
+
+        CPairs pair;
+        pair.clear();
+        pair.AddPair(src, dst, pw, encnames, mirror);
+        CFolderSync foldersync;
+        foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
+        return 1;
+    }
+
     MSG msg;
 
     HANDLE hReloadProtection = ::CreateMutex(NULL, FALSE, GetMutexID().c_str());
@@ -86,7 +110,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 
     CTrayWindow trayWindow(hInstance);
-    CCmdLineParser parser(lpCmdLine);
     trayWindow.ShowDialogImmediately(!parser.HasKey(L"tray"));
 
     if (trayWindow.RegisterAndCreateWindow())
