@@ -88,6 +88,15 @@ void CFolderSync::SyncFolders( const PairVector& pv, HWND hWnd )
     m_hThread = (HANDLE)_beginthreadex(NULL, 0, SyncFolderThreadEntry, this, 0, &threadId);
 }
 
+void CFolderSync::SyncFoldersWait( const PairVector& pv, HWND hWnd )
+{
+    CAutoWriteLock locker(m_guard);
+    m_pairs = pv;
+    m_parentWnd = hWnd;
+    InterlockedExchange(&m_bRunning, TRUE);
+    SyncFolderThread();
+}
+
 unsigned int CFolderSync::SyncFolderThreadEntry(void* pContext)
 {
     ((CFolderSync*)pContext)->SyncFolderThread();
