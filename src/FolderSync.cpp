@@ -641,6 +641,9 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
     else
         DebugBreak();
 
+    if (decryptName.empty())
+        decryptName = filename;
+
     return decryptName;
 }
 
