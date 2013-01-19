@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012-2013 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -241,6 +241,16 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     }
                 }
                 m_lastChangedPaths = watcher.GetChangedPaths();
+                auto ignores = foldersyncer.GetNotifyIgnores();
+                if (!ignores.empty())
+                {
+                    for (auto it = ignores.cbegin(); it != ignores.end(); ++it)
+                    {
+                        auto foundIt = m_lastChangedPaths.find(*it);
+                        if (foundIt != m_lastChangedPaths.end())
+                            m_lastChangedPaths.erase(foundIt);
+                    }
+                }
             }
             break;
         case TIMER_FULLSCAN:
@@ -259,6 +269,16 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                         }
                     }
                     m_lastChangedPaths = watcher.GetChangedPaths();
+                    auto ignores = foldersyncer.GetNotifyIgnores();
+                    if (!ignores.empty())
+                    {
+                        for (auto it = ignores.cbegin(); it != ignores.end(); ++it)
+                        {
+                            auto foundIt = m_lastChangedPaths.find(*it);
+                            if (foundIt != m_lastChangedPaths.end())
+                                m_lastChangedPaths.erase(foundIt);
+                        }
+                    }
                 }
                 // now start the full scan
                 foldersyncer.SyncFolders(g_pairs);

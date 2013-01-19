@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012-2013 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -459,6 +459,16 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     if ((!cryptname.empty()) && (cryptname[0] == '-'))
         cryptname = L".\\" + cryptname;
 
+    // try to open the source file in read mode:
+    // if we can't open the file, then it is locked and 7-zip would fail.
+    // But when 7-zip fails, it destroys a possible already existing encrypted file instead of
+    // just leaving it as it is. So by first checking if the source file
+    // can be read, we reduce the chances of 7-zip destroying the target file.
+    CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, NULL, OPEN_EXISTING, 0, NULL);
+    if (!hFile.IsValid())
+        return false;
+    hFile.CloseHandle();
+
     // 7zip 9.30 has an option "-stl" which sets the timestamp of the archive
     // to the most recent one of the compressed files
     // add this flag as soon as 9.30 is stable and officially released.
@@ -490,6 +500,14 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     }
     else
     {
+        // If encrypting failed, remove the leftover file
+        // and also mark that leftover file so it won't get
+        // acted upon by the change notifications
+        {
+            CAutoWriteLock nlocker(m_notignguard);
+            m_notifyignores.insert(crypt);
+        }
+        DeleteFile(crypt.c_str());
         CAutoWriteLock locker(m_failureguard);
         m_failures[orig] = Encrypt;
     }
@@ -533,6 +551,11 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     }
     else
     {
+        {
+            CAutoWriteLock nlocker(m_notignguard);
+            m_notifyignores.insert(orig);
+        }
+        DeleteFile(orig.c_str());
         CAutoWriteLock locker(m_failureguard);
         m_failures[orig] = Decrypt;
     }
@@ -765,4 +788,12 @@ size_t CFolderSync::GetFailureCount()
 {
     CAutoReadLock locker(m_failureguard);
     return m_failures.size();
+}
+
+std::set<std::wstring> CFolderSync::GetNotifyIgnores()
+{
+    CAutoWriteLock locker(m_notignguard);
+    auto igncopy = m_notifyignores;
+    m_notifyignores.clear();
+    return igncopy;
 }
