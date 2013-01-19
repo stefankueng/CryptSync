@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012-2013 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -72,6 +72,7 @@ public:
     void                            SyncFile(const std::wstring& path);
     void                            Stop();
     std::map<std::wstring, SyncOp>  GetFailures();
+    std::set<std::wstring>          GetNotifyIgnores();
     size_t                          GetFailureCount();
 
 private:
@@ -89,6 +90,7 @@ private:
 
     CReaderWriterLock               m_guard;
     CReaderWriterLock               m_failureguard;
+    CReaderWriterLock               m_notignguard;
     PairVector                      m_pairs;
     std::wstring                    m_sevenzip;
     HWND                            m_parentWnd;
@@ -99,4 +101,5 @@ private:
     CAutoGeneralHandle              m_hThread;
     PairTuple                       m_currentPath;
     std::map<std::wstring, SyncOp>  m_failures;
+    std::set<std::wstring>          m_notifyignores;
 };
