@@ -217,6 +217,7 @@
     <ClInclude Include="..\sktoolslib\ProgressDlg.h" />
     <ClInclude Include="..\sktoolslib\ReaderWriterLock.h" />
     <ClInclude Include="..\sktoolslib\Registry.h" />
+    <ClInclude Include="..\sktoolslib\ResString.h" />
     <ClInclude Include="..\sktoolslib\SmartHandle.h" />
     <ClInclude Include="..\sktoolslib\StringUtils.h" />
     <ClInclude Include="..\sktoolslib\UnicodeUtils.h" />
