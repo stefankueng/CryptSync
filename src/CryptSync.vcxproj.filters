@@ -180,6 +180,9 @@
     <ClInclude Include="..\sktoolslib\maxpath.h">
       <Filter>sktoolslib</Filter>
     </ClInclude>
+    <ClInclude Include="..\sktoolslib\ResString.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\default.build">

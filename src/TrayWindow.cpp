@@ -82,7 +82,8 @@ bool CTrayWindow::RegisterAndCreateWindow()
     wcx.cbWndExtra = 0;
     wcx.hInstance = hResource;
     wcx.hCursor = NULL;
-    wcx.lpszClassName = ResString(hResource, IDS_APP_TITLE);
+    ResString clsname(hResource, IDS_APP_TITLE);
+    wcx.lpszClassName = clsname;
     wcx.hIcon = LoadIcon(hResource, MAKEINTRESOURCE(IDI_CryptSync));
     wcx.hbrBackground = NULL;
     wcx.lpszMenuName = NULL;
