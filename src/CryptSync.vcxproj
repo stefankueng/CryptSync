@@ -137,10 +137,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\sktoolslib</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <OmitFramePointers>true</OmitFramePointers>
       <Optimization>MaxSpeed</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -224,14 +224,14 @@
     <ClInclude Include="AboutDlg.h" />
     <ClInclude Include="FolderSync.h" />
     <ClInclude Include="Ignores.h" />
+    <ClInclude Include="OptionsDlg.h" />
     <ClInclude Include="PairAddDlg.h" />
     <ClInclude Include="Pairs.h" />
     <ClInclude Include="PathWatcher.h" />
-    <ClInclude Include="TextDlg.h" />
-    <ClInclude Include="TrayWindow.h" />
-    <ClInclude Include="OptionsDlg.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="TextDlg.h" />
+    <ClInclude Include="TrayWindow.h" />
     <ClInclude Include="UpdateDlg.h" />
   </ItemGroup>
   <ItemGroup>
@@ -252,18 +252,18 @@
     <ClCompile Include="..\sktoolslib\StringUtils.cpp" />
     <ClCompile Include="..\sktoolslib\UnicodeUtils.cpp" />
     <ClCompile Include="AboutDlg.cpp" />
+    <ClCompile Include="CryptSync.cpp" />
     <ClCompile Include="FolderSync.cpp" />
     <ClCompile Include="Ignores.cpp" />
+    <ClCompile Include="OptionsDlg.cpp" />
     <ClCompile Include="PairAddDlg.cpp" />
     <ClCompile Include="Pairs.cpp" />
     <ClCompile Include="PathWatcher.cpp" />
-    <ClCompile Include="TextDlg.cpp" />
-    <ClCompile Include="TrayWindow.cpp" />
-    <ClCompile Include="OptionsDlg.cpp" />
-    <ClCompile Include="CryptSync.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="TextDlg.cpp" />
+    <ClCompile Include="TrayWindow.cpp" />
     <ClCompile Include="UpdateDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
