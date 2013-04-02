@@ -40,20 +40,18 @@ CFolderSync::CFolderSync(void)
     , m_progressTotal(1)
     , m_bRunning(FALSE)
 {
-    m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
+    wchar_t buf[1024] = {0};
+    GetModuleFileName(NULL, buf, 1024);
+    std::wstring dir = buf;
+    dir = dir.substr(0, dir.find_last_of('\\'));
+    m_sevenzip = dir + L"\\7z.exe";
     if (!PathFileExists(m_sevenzip.c_str()))
     {
-        m_sevenzip = L"%ProgramW6432%\\7-zip\\7z.exe";
         m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
         if (!PathFileExists(m_sevenzip.c_str()))
         {
-            // user does not have 7zip installed, use
-            // our own copy
-            wchar_t buf[1024] = {0};
-            GetModuleFileName(NULL, buf, 1024);
-            std::wstring dir = buf;
-            dir = dir.substr(0, dir.find_last_of('\\'));
-            m_sevenzip = dir + L"\\7z.exe";
+            m_sevenzip = L"%ProgramW6432%\\7-zip\\7z.exe";
+            m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
         }
     }
 }
