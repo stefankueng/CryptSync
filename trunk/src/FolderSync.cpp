@@ -405,7 +405,10 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
 
 std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( const std::wstring& path, const std::wstring& password, bool encnames ) const
 {
-    CDirFileEnum enumerator(path);
+    std::wstring enumpath = path;
+    if ((enumpath.size() == 2)&&(enumpath[1]==':'))
+        enumpath += L"\\";
+    CDirFileEnum enumerator(enumpath);
 
     std::map<std::wstring,FileData, ci_less> filelist;
     std::wstring filepath;
