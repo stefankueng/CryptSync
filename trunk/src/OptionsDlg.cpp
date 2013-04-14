@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012-2013 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -120,7 +120,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                 {
-                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_encnames, dlg.m_oneway))
+                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_encnames, dlg.m_oneway, dlg.m_7zExt))
                         InitPairList();
                     g_pairs.SavePairs();
                 }
@@ -206,8 +206,8 @@ void COptionsDlg::InitPairList()
 
     for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
     {
-        std::wstring origpath = std::get<0>(*it);
-        std::wstring cryptpath = std::get<1>(*it);
+        std::wstring origpath = it->origpath;
+        std::wstring cryptpath = it->cryptpath;
         LVITEM lv = {0};
         lv.mask = LVIF_TEXT;
         std::unique_ptr<WCHAR[]> varbuf(new WCHAR[origpath.size()+1]);
@@ -250,17 +250,18 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             auto t = g_pairs[lpNMItemActivate->iItem];
 
             CPairAddDlg dlg(*this);
-            dlg.m_origpath = std::get<0>(t);
-            dlg.m_cryptpath = std::get<1>(t);
-            dlg.m_password = std::get<2>(t);
-            dlg.m_encnames = std::get<3>(t);
-            dlg.m_oneway = std::get<4>(t);
+            dlg.m_origpath = t.origpath;
+            dlg.m_cryptpath = t.cryptpath;
+            dlg.m_password = t.password;
+            dlg.m_encnames = t.encnames;
+            dlg.m_oneway = t.oneway;
+            dlg.m_7zExt = t.use7z;
             if (dlg.DoModal(hResource, IDD_PAIRADD, *this)==IDOK)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                 {
                     g_pairs.erase(g_pairs.begin()+lpNMItemActivate->iItem);
-                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_encnames, dlg.m_oneway))
+                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_encnames, dlg.m_oneway, dlg.m_7zExt))
                         InitPairList();
                     g_pairs.SavePairs();
                 }

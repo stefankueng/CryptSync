@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012-2013 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,7 @@ CPairAddDlg::CPairAddDlg(HWND hParent)
     : m_hParent(hParent)
     , m_encnames(false)
     , m_oneway(false)
+    , m_7zExt(false)
     , m_pDropTargetOrig(nullptr)
     , m_pDropTargetCrypt(nullptr)
 {
@@ -57,6 +58,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(hwndDlg, IDC_PASSWORD2, m_password.c_str());
             SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encnames ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_ONEWAY, BM_SETCHECK, m_oneway ? BST_CHECKED : BST_UNCHECKED, NULL);
+            SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_SETCHECK, m_7zExt ? BST_CHECKED : BST_UNCHECKED, NULL);
 
             AddToolTip(IDC_ONEWAY, L"if this is checked, changes in the encrypted folder are not synchronized back to the original folder!");
 
@@ -147,6 +149,7 @@ LRESULT CPairAddDlg::DoCommand(int id)
 
             m_encnames = !!SendDlgItemMessage(*this, IDC_ENCNAMES, BM_GETCHECK, 0, NULL);
             m_oneway = !!SendDlgItemMessage(*this, IDC_ONEWAY, BM_GETCHECK, 0, NULL);
+            m_7zExt = !!SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_GETCHECK, 0, NULL);
         }
         // fall through
     case IDCANCEL:

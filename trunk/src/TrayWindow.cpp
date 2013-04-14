@@ -163,10 +163,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             watcher.ClearPaths();
             for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
             {
-                std::wstring origpath = std::get<0>(*it);
-                std::wstring cryptpath = std::get<1>(*it);
+                std::wstring origpath = it->origpath;
+                std::wstring cryptpath = it->cryptpath;
                 watcher.AddPath(origpath);
-                if (!std::get<4>(*it))
+                if (!it->oneway)
                     watcher.AddPath(cryptpath);
             }
             SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
@@ -286,10 +286,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                 watcher.ClearPaths();
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                 {
-                    std::wstring origpath = std::get<0>(*it);
-                    std::wstring cryptpath = std::get<1>(*it);
+                    std::wstring origpath = it->origpath;
+                    std::wstring cryptpath = it->cryptpath;
                     watcher.AddPath(origpath);
-                    if (!std::get<4>(*it))
+                    if (!it->oneway)
                         watcher.AddPath(cryptpath);
                 }
                 SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
@@ -347,10 +347,10 @@ LRESULT CTrayWindow::DoCommand(int id)
                 watcher.ClearPaths();
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                 {
-                    std::wstring origpath = std::get<0>(*it);
-                    std::wstring cryptpath = std::get<1>(*it);
+                    std::wstring origpath = it->origpath;
+                    std::wstring cryptpath = it->cryptpath;
                     watcher.AddPath(origpath);
-                    if (!std::get<4>(*it))
+                    if (!it->oneway)
                         watcher.AddPath(cryptpath);
                 }
                 SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
