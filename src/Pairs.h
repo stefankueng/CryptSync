@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012-2013 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,9 +23,37 @@
 #include <tuple>
 #include <string>
 
-typedef std::tuple<std::wstring, std::wstring, std::wstring, bool, bool> PairTuple;
-typedef std::vector<PairTuple>                                           PairVector;
+class PairData
+{
+public:
+    PairData()
+        : encnames(false)
+        , oneway(false)
+        , use7z(false)
+    {
+    }
 
+    std::wstring            origpath;
+    std::wstring            cryptpath;
+    std::wstring            password;
+    bool                    encnames;
+    bool                    oneway;
+    bool                    use7z;
+
+    friend bool operator<(const PairData& mk1, const PairData& mk2)
+    {
+        if (mk1.origpath != mk2.origpath )
+            return mk1.origpath < mk2.origpath;
+
+        return mk1.cryptpath < mk2.cryptpath;
+    }
+    friend bool operator==(const PairData& mk1, const PairData& mk2)
+    {
+        return ((mk1.origpath==mk2.origpath)&&(mk1.cryptpath==mk2.cryptpath));
+    }
+};
+
+typedef std::vector<PairData>   PairVector;
 
 /**
  * class to handle pairs of synced folders
@@ -37,7 +65,7 @@ public:
     ~CPairs(void);
 
     void                    SavePairs();
-    bool                    AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, bool encryptnames, bool oneway);
+    bool                    AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, bool encryptnames, bool oneway, bool use7zext);
 protected:
     void                    InitPairList();
 

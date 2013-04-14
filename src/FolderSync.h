@@ -77,14 +77,14 @@ public:
 
 private:
     static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
-    void                            SyncFile(const std::wstring& path, const PairTuple& pt);
+    void                            SyncFile(const std::wstring& path, const PairData& pt);
     void                            SyncFolderThread();
-    void                            SyncFolder(const PairTuple& pt);
-    std::map<std::wstring,FileData, ci_less> GetFileList(const std::wstring& path, const std::wstring& password, bool encnames) const;
+    void                            SyncFolder(const PairData& pt);
+    std::map<std::wstring,FileData, ci_less> GetFileList(const std::wstring& path, const std::wstring& password, bool encnames, bool use7z) const;
     bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd);
     bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd);
-    std::wstring                    GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname) const;
-    std::wstring                    GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname) const;
+    std::wstring GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z) const;
+    std::wstring GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z) const;
 
     bool                            Run7Zip(LPWSTR cmdline, const std::wstring& cwd) const;
 
@@ -99,7 +99,7 @@ private:
     DWORD                           m_progressTotal;
     volatile LONG                   m_bRunning;
     CAutoGeneralHandle              m_hThread;
-    PairTuple                       m_currentPath;
+    PairData                        m_currentPath;
     std::map<std::wstring, SyncOp>  m_failures;
     std::set<std::wstring>          m_notifyignores;
 };

@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012-2013 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,37 +41,42 @@ void CPairs::InitPairList()
     int p = 0;
     for (;;)
     {
+        PairData pd;
+
         WCHAR key[MAX_PATH];
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOrig%d", p);
         CRegStdString origpathreg(key);
-        std::wstring origpath = origpathreg;
-        if (origpath.empty())
+        pd.origpath = origpathreg;
+        if (pd.origpath.empty())
             break;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCrypt%d", p);
         CRegStdString cryptpathreg(key);
-        std::wstring cryptpath = cryptpathreg;
-        if (cryptpath.empty())
+        pd.cryptpath = cryptpathreg;
+        if (pd.cryptpath.empty())
             break;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
         CRegStdString passwordreg(key);
-        std::wstring password = passwordreg;
-        if (password.empty())
+        pd.password = passwordreg;
+        if (pd.password.empty())
             break;
-        password = Decrypt(password);
+        pd.password = Decrypt(pd.password);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
         CRegStdDWORD encnamesreg(key, TRUE);
-        bool encnames = !!(DWORD)encnamesreg;
+        pd.encnames = !!(DWORD)encnamesreg;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
         CRegStdDWORD onewayreg(key, TRUE);
-        bool oneway = !!(DWORD)onewayreg;
+        pd.oneway = !!(DWORD)onewayreg;
 
-        auto t = std::make_tuple(origpath, cryptpath, password, encnames, oneway);
-        if (std::find(cbegin(), cend(), t) == cend())
-            push_back(t);
+        swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
+        CRegStdDWORD zextreg(key, FALSE);
+        pd.use7z = !!(DWORD)zextreg;
+
+        if (std::find(cbegin(), cend(), pd) == cend())
+            push_back(pd);
         ++p;
     }
     std::sort(begin(), end());
@@ -86,23 +91,27 @@ void CPairs::SavePairs()
         WCHAR key[MAX_PATH];
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOrig%d", p);
         CRegStdString origpathreg(key, L"", true);
-        origpathreg = std::get<0>(*it);
+        origpathreg = it->origpath;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCrypt%d", p);
         CRegStdString cryptpathreg(key, L"", true);
-        cryptpathreg = std::get<1>(*it);
+        cryptpathreg = it->cryptpath;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
         CRegStdString passwordreg(key, L"", true);
-        passwordreg = Encrypt(std::get<2>(*it));
+        passwordreg = Encrypt(it->password);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
         CRegStdDWORD encnamesreg(key, TRUE, true);
-        encnamesreg = (DWORD)std::get<3>(*it);
+        encnamesreg = (DWORD)it->encnames;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
         CRegStdDWORD onewayreg(key, TRUE, true);
-        onewayreg = (DWORD)std::get<4>(*it);
+        onewayreg = (DWORD)it->oneway;
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
+        CRegStdDWORD zextreg(key, FALSE, true);
+        zextreg = (DWORD)it->use7z;
 
         ++p;
     }
@@ -129,16 +138,26 @@ void CPairs::SavePairs()
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
         CRegStdDWORD onewayreg(key);
         onewayreg.removeValue();
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
+        CRegStdDWORD zextreg(key);
+        zextreg.removeValue();
         ++p;
     }
 }
 
-bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, bool encryptnames, bool oneway )
+bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, bool encryptnames, bool oneway, bool use7zext )
 {
-    auto t = std::make_tuple(orig, crypt, password, encryptnames, oneway);
-    if (std::find(cbegin(), cend(), t) == cend())
+    PairData pd;
+    pd.origpath = orig;
+    pd.cryptpath = crypt;
+    pd.password = password;
+    pd.encnames = encryptnames;
+    pd.oneway = oneway;
+    pd.use7z = use7zext;
+    if (std::find(cbegin(), cend(), pd) == cend())
     {
-        push_back(t);
+        push_back(pd);
         std::sort(begin(), end());
         return true;
     }

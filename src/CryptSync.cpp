@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012-2013 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -83,6 +83,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         std::wstring pw  =   parser.HasVal(L"pw") ? parser.GetVal(L"pw") : L"";
         bool encnames    = !!parser.HasKey(L"encnames");
         bool mirror      = !!parser.HasKey(L"mirror");
+        bool use7z       = !!parser.HasKey(L"use7z");
         std::wstring ign =   parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
 
         CIgnores::Instance().Reload();
@@ -91,7 +92,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
         CPairs pair;
         pair.clear();
-        pair.AddPair(src, dst, pw, encnames, mirror);
+        pair.AddPair(src, dst, pw, encnames, mirror, use7z);
         CFolderSync foldersync;
         foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
         return 1;

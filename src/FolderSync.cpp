@@ -133,7 +133,7 @@ void CFolderSync::SyncFolderThread()
         SyncFolder(*it);
         {
             CAutoWriteLock locker(m_guard);
-            m_currentPath = PairTuple();
+            m_currentPath = PairData();
         }
     }
     if (m_pProgDlg)
@@ -153,14 +153,14 @@ void CFolderSync::SyncFile( const std::wstring& path )
     // check if the path notification comes from a folder that's
     // currently synced in the sync thread
     {
-        std::wstring s = std::get<0>(m_currentPath);
+        std::wstring s = m_currentPath.origpath;
         if (!s.empty())
         {
             if ((path.size() > s.size()) &&
                 (_wcsicmp(s.c_str(), path.substr(0, s.size()).c_str())==0))
                 return;
         }
-        s = std::get<1>(m_currentPath);
+        s = m_currentPath.cryptpath;
         if (!s.empty())
         {
             if ((path.size() > s.size()) &&
@@ -169,11 +169,11 @@ void CFolderSync::SyncFile( const std::wstring& path )
         }
     }
 
-    PairTuple pt;
+    PairData pt;
     CAutoReadLock locker(m_guard);
     for (auto it = m_pairs.cbegin(); it != m_pairs.cend(); ++it)
     {
-        std::wstring s = std::get<0>(*it);
+        std::wstring s = it->origpath;
         if (path.size() > s.size())
         {
             if ((_wcsicmp(path.substr(0, s.size()).c_str(), s.c_str())==0)&&(path[s.size()] == '\\'))
@@ -183,7 +183,7 @@ void CFolderSync::SyncFile( const std::wstring& path )
                 continue;
             }
         }
-        s = std::get<1>(*it);
+        s = it->cryptpath;
         if (path.size() > s.size())
         {
             if ((_wcsicmp(path.substr(0, s.size()).c_str(), s.c_str())==0)&&(path[s.size()] == '\\'))
@@ -196,21 +196,21 @@ void CFolderSync::SyncFile( const std::wstring& path )
     }
 }
 
-void CFolderSync::SyncFile( const std::wstring& path, const PairTuple& pt )
+void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
 {
-    std::wstring orig  = std::get<0>(pt);
-    std::wstring crypt = std::get<1>(pt);
+    std::wstring orig  = pt.origpath;
+    std::wstring crypt = pt.cryptpath;
     if (orig.empty() || crypt.empty())
         return;
 
     if ((orig.size() < path.size())&&(_wcsicmp(path.substr(0, orig.size()).c_str(), orig.c_str())==0))
     {
-        crypt = crypt + L"\\" + GetEncryptedFilename(path.substr(orig.size()), std::get<2>(pt), std::get<3>(pt));
+        crypt = crypt + L"\\" + GetEncryptedFilename(path.substr(orig.size()), pt.password, pt.encnames, pt.use7z);
         orig = path;
     }
     else
     {
-        orig = orig + L"\\" + GetDecryptedFilename(path.substr(crypt.size()), std::get<2>(pt), std::get<3>(pt));
+        orig = orig + L"\\" + GetDecryptedFilename(path.substr(crypt.size()), pt.password, pt.encnames, pt.use7z);
         crypt = path;
     }
 
@@ -279,7 +279,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairTuple& pt )
         // decrypt the file
         FileData fd;
         fd.ft = fdatacrypt.ftLastWriteTime;
-        DecryptFile(orig, crypt, std::get<2>(pt), fd);
+        DecryptFile(orig, crypt, pt.password, fd);
     }
     else if (cmp > 0)
     {
@@ -287,7 +287,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairTuple& pt )
         // encrypt the file
         FileData fd;
         fd.ft = fdataorig.ftLastWriteTime;
-        EncryptFile(orig, crypt, std::get<2>(pt), fd);
+        EncryptFile(orig, crypt, pt.password, fd);
     }
     else if (cmp == 0)
     {
@@ -296,7 +296,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairTuple& pt )
     }
 }
 
-void CFolderSync::SyncFolder( const PairTuple& pt )
+void CFolderSync::SyncFolder( const PairData& pt )
 {
     if (m_pProgDlg)
     {
@@ -304,8 +304,8 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
         m_pProgDlg->SetLine(2, L"");
         m_pProgDlg->SetProgress(m_progress, m_progressTotal);
     }
-    auto origFileList  = GetFileList(std::get<0>(pt), std::get<2>(pt), std::get<3>(pt));
-    auto cryptFileList = GetFileList(std::get<1>(pt), std::get<2>(pt), std::get<3>(pt));
+    auto origFileList  = GetFileList(pt.origpath, pt.password, pt.encnames, pt.use7z);
+    auto cryptFileList = GetFileList(pt.cryptpath, pt.password, pt.encnames, pt.use7z);
 
     m_progressTotal += DWORD(origFileList.size() + cryptFileList.size());
 
@@ -320,7 +320,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
                 break;
         }
 
-        if (CIgnores::Instance().IsIgnored(std::get<0>(pt) + L"\\" + it->first))
+        if (CIgnores::Instance().IsIgnored(pt.origpath + L"\\" + it->first))
             continue;
         auto cryptit = cryptFileList.find(it->first);
         if (cryptit == cryptFileList.end())
@@ -328,9 +328,9 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
             // file does not exist in the encrypted folder:
             // encrypt the file
             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist in encrypted folder\n"), it->first.c_str());
-            std::wstring cryptpath = std::get<1>(pt) + L"\\" + GetEncryptedFilename(it->first, std::get<2>(pt), std::get<3>(pt));
-            std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
-            EncryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
+            std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
+            std::wstring origpath = pt.origpath + L"\\" + it->first;
+            EncryptFile(origpath, cryptpath, pt.password, it->second);
         }
         else
         {
@@ -340,18 +340,18 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
                 // original file is older than the encrypted file
                 // decrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s is older than its encrypted partner\n"), it->first.c_str());
-                std::wstring cryptpath = std::get<1>(pt) + L"\\" + GetEncryptedFilename(it->first, std::get<2>(pt), std::get<3>(pt));
-                std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
-                DecryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
+                std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
+                std::wstring origpath = pt.origpath + L"\\" + it->first;
+                DecryptFile(origpath, cryptpath, pt.password, it->second);
             }
             else if (cmp > 0)
             {
                 // encrypted file is older than the original file
                 // encrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s is newer than its encrypted partner\n"), it->first.c_str());
-                std::wstring cryptpath = std::get<1>(pt) + L"\\" + GetEncryptedFilename(it->first, std::get<2>(pt), std::get<3>(pt));
-                std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
-                EncryptFile(origpath, cryptpath, std::get<2>(pt), it->second);
+                std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
+                std::wstring origpath = pt.origpath + L"\\" + it->first;
+                EncryptFile(origpath, cryptpath, pt.password, it->second);
             }
             else if (cmp == 0)
             {
@@ -362,7 +362,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
     }
     // now go through the encrypted file list and if there's a file that's not in the original file list,
     // decrypt it
-    if (!std::get<4>(pt) || origFileList.empty())
+    if (!pt.oneway || origFileList.empty())
     {
         for (auto it = cryptFileList.cbegin(); (it != cryptFileList.cend()) && m_bRunning; ++it)
         {
@@ -375,21 +375,21 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
                     break;
             }
 
-            if (CIgnores::Instance().IsIgnored(std::get<0>(pt) + L"\\" + it->first))
+            if (CIgnores::Instance().IsIgnored(pt.origpath + L"\\" + it->first))
                 continue;
             auto origit = origFileList.find(it->first);
             if (origit == origFileList.end())
             {
                 // file does not exist in the original folder:
                 // decrypt the file
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), std::get<0>(pt).c_str());
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), pt.origpath.c_str());
                 size_t slashpos = it->first.find_last_of('\\');
                 std::wstring fname = it->first;
                 if (slashpos != std::string::npos)
                     fname = it->first.substr(slashpos + 1);
-                std::wstring cryptpath = std::get<1>(pt) + L"\\" + it->second.filerelpath;
-                std::wstring origpath = std::get<0>(pt) + L"\\" + it->first;
-                if (!DecryptFile(origpath, cryptpath, std::get<2>(pt), it->second))
+                std::wstring cryptpath = pt.cryptpath + L"\\" + it->second.filerelpath;
+                std::wstring origpath = pt.origpath + L"\\" + it->first;
+                if (!DecryptFile(origpath, cryptpath, pt.password, it->second))
                 {
                     if (!it->second.filenameEncrypted)
                     {
@@ -401,7 +401,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
     }
 }
 
-std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( const std::wstring& path, const std::wstring& password, bool encnames ) const
+std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( const std::wstring& path, const std::wstring& password, bool encnames, bool use7z ) const
 {
     std::wstring enumpath = path;
     if ((enumpath.size() == 2)&&(enumpath[1]==':'))
@@ -414,13 +414,13 @@ std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( const std::ws
     bool bRecurse = true;
     while (enumerator.NextFile(filepath, &isDir, bRecurse))
     {
+        bRecurse = true;
         if (isDir)
         {
             if (CIgnores::Instance().IsIgnored(filepath))
                 bRecurse = false;   // don't recurse into ignored folders
             continue;
         }
-        bRecurse = true;
         if (!m_bRunning)
             break;
 
@@ -433,7 +433,7 @@ std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( const std::ws
         std::wstring relpath = filepath.substr(path.size()+1);
         fd.filerelpath = relpath;
 
-        std::wstring decryptedRelPath = GetDecryptedFilename(relpath, password, encnames);
+        std::wstring decryptedRelPath = GetDecryptedFilename(relpath, password, encnames, use7z);
         fd.filenameEncrypted = (_wcsicmp(decryptedRelPath.c_str(), fd.filerelpath.c_str())!=0);
         if (fd.filenameEncrypted)
         {
@@ -563,7 +563,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     return bRet;
 }
 
-std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, const std::wstring& password, bool encryptname ) const
+std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z ) const
 {
     std::wstring decryptName = filename;
     size_t dotpos = filename.find_last_of('.');
@@ -577,10 +577,21 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
     {
         std::wstring f = filename;
         std::transform(f.begin(), f.end(), f.begin(), std::tolower);
-        size_t pos = f.find(L".cryptsync");
-        if ((pos != std::string::npos) && (pos == (filename.size() - 10)))
+        if (use7z)
         {
-            return filename.substr(0, pos);
+            size_t pos = f.find(L".7z");
+            if ((pos != std::string::npos) && (pos == (filename.size() - 3)))
+            {
+                return filename.substr(0, pos);
+            }
+        }
+        else
+        {
+            size_t pos = f.find(L".cryptsync");
+            if ((pos != std::string::npos) && (pos == (filename.size() - 10)))
+            {
+                return filename.substr(0, pos);
+            }
         }
         return filename;
     }
@@ -671,17 +682,27 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
     return decryptName;
 }
 
-std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, const std::wstring& password, bool encryptname ) const
+std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z ) const
 {
     std::wstring encryptFilename = filename;
     if (!encryptname)
     {
         std::wstring f = filename;
         std::transform(f.begin(), f.end(), f.begin(), std::tolower);
-        size_t pos = f.find(L".cryptsync");
-        if ((pos == std::string::npos) || (pos != (filename.size() - 10)))
-            encryptFilename += L".cryptsync";
-        return encryptFilename;
+        if (use7z)
+        {
+            size_t pos = f.find(L".7z");
+            if ((pos == std::string::npos) || (pos != (filename.size() - 3)))
+                encryptFilename += L".7z";
+            return encryptFilename;
+        }
+        else
+        {
+            size_t pos = f.find(L".cryptsync");
+            if ((pos == std::string::npos) || (pos != (filename.size() - 10)))
+                encryptFilename += L".cryptsync";
+            return encryptFilename;
+        }
     }
 
     bool bResult = true;
@@ -733,7 +754,10 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
                             encryptFilename += L"\\";
                         encryptFilename += *it;
                     }
-                    encryptFilename += L".cryptsync";
+                    if (use7z)
+                        encryptFilename += L".7z";
+                    else
+                        encryptFilename += L".cryptsync";
 
                     CryptDestroyKey(hKey);  // Release provider handle.
                 }
