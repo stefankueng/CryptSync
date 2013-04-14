@@ -36,6 +36,7 @@ public:
     std::wstring            m_origpath;
     std::wstring            m_cryptpath;
     std::wstring            m_password;
+    std::wstring            m_copyonly;
     bool                    m_encnames;
     bool                    m_oneway;
     bool                    m_7zExt;

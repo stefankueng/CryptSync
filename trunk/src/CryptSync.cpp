@@ -81,6 +81,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         std::wstring src =   parser.GetVal(L"src");
         std::wstring dst =   parser.GetVal(L"dst");
         std::wstring pw  =   parser.HasVal(L"pw") ? parser.GetVal(L"pw") : L"";
+        std::wstring cpy =   parser.HasVal(L"cpy") ? parser.GetVal(L"cpy") : L"";
         bool encnames    = !!parser.HasKey(L"encnames");
         bool mirror      = !!parser.HasKey(L"mirror");
         bool use7z       = !!parser.HasKey(L"use7z");
@@ -92,7 +93,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
         CPairs pair;
         pair.clear();
-        pair.AddPair(src, dst, pw, encnames, mirror, use7z);
+        pair.AddPair(src, dst, pw, cpy, encnames, mirror, use7z);
         CFolderSync foldersync;
         foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
         return 1;

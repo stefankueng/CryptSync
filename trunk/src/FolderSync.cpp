@@ -202,15 +202,21 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
     std::wstring crypt = pt.cryptpath;
     if (orig.empty() || crypt.empty())
         return;
-
+    bool bCopyOnly = pt.IsCopyOnly(path);
     if ((orig.size() < path.size())&&(_wcsicmp(path.substr(0, orig.size()).c_str(), orig.c_str())==0))
     {
-        crypt = crypt + L"\\" + GetEncryptedFilename(path.substr(orig.size()), pt.password, pt.encnames, pt.use7z);
+        if (bCopyOnly)
+            crypt = crypt + L"\\" + path.substr(orig.size());
+        else
+            crypt = crypt + L"\\" + GetEncryptedFilename(path.substr(orig.size()), pt.password, pt.encnames, pt.use7z);
         orig = path;
     }
     else
     {
-        orig = orig + L"\\" + GetDecryptedFilename(path.substr(crypt.size()), pt.password, pt.encnames, pt.use7z);
+        if (bCopyOnly)
+            orig = orig + L"\\" + path.substr(crypt.size());
+        else
+            orig = orig + L"\\" + GetDecryptedFilename(path.substr(crypt.size()), pt.password, pt.encnames, pt.use7z);
         crypt = path;
     }
 
@@ -279,7 +285,17 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         // decrypt the file
         FileData fd;
         fd.ft = fdatacrypt.ftLastWriteTime;
-        DecryptFile(orig, crypt, pt.password, fd);
+        if (bCopyOnly)
+        {
+            if (!CopyFile(crypt.c_str(), orig.c_str(), FALSE))
+            {
+                std::wstring targetfolder = orig.substr(0, orig.find_last_of('\\'));
+                SHCreateDirectory(NULL, targetfolder.c_str());
+                CopyFile(crypt.c_str(), orig.c_str(), FALSE);
+            }
+        }
+        else
+            DecryptFile(orig, crypt, pt.password, fd);
     }
     else if (cmp > 0)
     {
@@ -287,7 +303,17 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         // encrypt the file
         FileData fd;
         fd.ft = fdataorig.ftLastWriteTime;
-        EncryptFile(orig, crypt, pt.password, fd);
+        if (bCopyOnly)
+        {
+            if (!CopyFile(orig.c_str(), crypt.c_str(), FALSE))
+            {
+                std::wstring targetfolder = crypt.substr(0, crypt.find_last_of('\\'));
+                SHCreateDirectory(NULL, targetfolder.c_str());
+                CopyFile(orig.c_str(), crypt.c_str(), FALSE);
+            }
+        }
+        else
+            EncryptFile(orig, crypt, pt.password, fd);
     }
     else if (cmp == 0)
     {
@@ -322,15 +348,29 @@ void CFolderSync::SyncFolder( const PairData& pt )
 
         if (CIgnores::Instance().IsIgnored(pt.origpath + L"\\" + it->first))
             continue;
+        bool bCopyOnly = pt.IsCopyOnly(pt.origpath + L"\\" + it->first);
         auto cryptit = cryptFileList.find(it->first);
         if (cryptit == cryptFileList.end())
         {
             // file does not exist in the encrypted folder:
             // encrypt the file
             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist in encrypted folder\n"), it->first.c_str());
-            std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
-            std::wstring origpath = pt.origpath + L"\\" + it->first;
-            EncryptFile(origpath, cryptpath, pt.password, it->second);
+            if (bCopyOnly)
+            {
+                if (!CopyFile((pt.origpath + L"\\" + it->first).c_str(), (pt.cryptpath + L"\\" + it->first).c_str(), FALSE))
+                {
+                    std::wstring targetfolder = pt.cryptpath + L"\\" + it->first;
+                    targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
+                    SHCreateDirectory(NULL, targetfolder.c_str());
+                    CopyFile((pt.origpath + L"\\" + it->first).c_str(), (pt.cryptpath + L"\\" + it->first).c_str(), FALSE);
+                }
+            }
+            else
+            {
+                std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
+                std::wstring origpath = pt.origpath + L"\\" + it->first;
+                EncryptFile(origpath, cryptpath, pt.password, it->second);
+            }
         }
         else
         {
@@ -340,18 +380,44 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 // original file is older than the encrypted file
                 // decrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s is older than its encrypted partner\n"), it->first.c_str());
-                std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
-                std::wstring origpath = pt.origpath + L"\\" + it->first;
-                DecryptFile(origpath, cryptpath, pt.password, it->second);
+                if (bCopyOnly)
+                {
+                    if (!CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE))
+                    {
+                        std::wstring targetfolder = pt.origpath + L"\\" + it->first;
+                        targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
+                        SHCreateDirectory(NULL, targetfolder.c_str());
+                        CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE);
+                    }
+                }
+                else
+                {
+                    std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
+                    std::wstring origpath = pt.origpath + L"\\" + it->first;
+                    DecryptFile(origpath, cryptpath, pt.password, it->second);
+                }
             }
             else if (cmp > 0)
             {
                 // encrypted file is older than the original file
                 // encrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s is newer than its encrypted partner\n"), it->first.c_str());
-                std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
-                std::wstring origpath = pt.origpath + L"\\" + it->first;
-                EncryptFile(origpath, cryptpath, pt.password, it->second);
+                if (bCopyOnly)
+                {
+                    if (!CopyFile((pt.origpath + L"\\" + it->first).c_str(), (pt.cryptpath + L"\\" + it->first).c_str(), FALSE))
+                    {
+                        std::wstring targetfolder = pt.cryptpath + L"\\" + it->first;
+                        targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
+                        SHCreateDirectory(NULL, targetfolder.c_str());
+                        CopyFile((pt.origpath + L"\\" + it->first).c_str(), (pt.cryptpath + L"\\" + it->first).c_str(), FALSE);
+                    }
+                }
+                else
+                {
+                    std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
+                    std::wstring origpath = pt.origpath + L"\\" + it->first;
+                    EncryptFile(origpath, cryptpath, pt.password, it->second);
+                }
             }
             else if (cmp == 0)
             {
@@ -377,23 +443,37 @@ void CFolderSync::SyncFolder( const PairData& pt )
 
             if (CIgnores::Instance().IsIgnored(pt.origpath + L"\\" + it->first))
                 continue;
+            bool bCopyOnly = pt.IsCopyOnly(pt.origpath + L"\\" + it->first);
             auto origit = origFileList.find(it->first);
             if (origit == origFileList.end())
             {
                 // file does not exist in the original folder:
                 // decrypt the file
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), pt.origpath.c_str());
-                size_t slashpos = it->first.find_last_of('\\');
-                std::wstring fname = it->first;
-                if (slashpos != std::string::npos)
-                    fname = it->first.substr(slashpos + 1);
-                std::wstring cryptpath = pt.cryptpath + L"\\" + it->second.filerelpath;
-                std::wstring origpath = pt.origpath + L"\\" + it->first;
-                if (!DecryptFile(origpath, cryptpath, pt.password, it->second))
+                if (bCopyOnly)
                 {
-                    if (!it->second.filenameEncrypted)
+                    if (!CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE))
                     {
-                        MoveFileEx(cryptpath.c_str(), origpath.c_str(), MOVEFILE_COPY_ALLOWED);
+                        std::wstring targetfolder = pt.origpath + L"\\" + it->first;
+                        targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
+                        SHCreateDirectory(NULL, targetfolder.c_str());
+                        CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE);
+                    }
+                }
+                else
+                {
+                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), pt.origpath.c_str());
+                    size_t slashpos = it->first.find_last_of('\\');
+                    std::wstring fname = it->first;
+                    if (slashpos != std::string::npos)
+                        fname = it->first.substr(slashpos + 1);
+                    std::wstring cryptpath = pt.cryptpath + L"\\" + it->second.filerelpath;
+                    std::wstring origpath = pt.origpath + L"\\" + it->first;
+                    if (!DecryptFile(origpath, cryptpath, pt.password, it->second))
+                    {
+                        if (!it->second.filenameEncrypted)
+                        {
+                            MoveFileEx(cryptpath.c_str(), origpath.c_str(), MOVEFILE_COPY_ALLOWED);
+                        }
                     }
                 }
             }
