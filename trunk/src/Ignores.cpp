@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012-2013 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,16 +44,20 @@ bool CIgnores::IsIgnored( const std::wstring& s )
 
     std::wstring scmp = s;
     std::transform(scmp.begin(), scmp.end(), scmp.begin(), std::tolower);
-    size_t slashpos = s.find_last_of('\\');
-    if (slashpos != std::string::npos)
-        scmp = s.substr(slashpos+1);
-    for (auto it = ignores.cbegin(); it != ignores.cend(); ++it)
+    std::vector<std::wstring> pathelems;
+    stringtok(pathelems, scmp, true, L"\\");
+    for (auto pe:pathelems)
     {
-        if (wcswildcmp(it->c_str(), scmp.c_str()))
+        for (auto it = ignores.cbegin(); it != ignores.cend(); ++it)
         {
-            bIgnored = true;
-            break;
+            if (wcswildcmp(it->c_str(), pe.c_str()))
+            {
+                bIgnored = true;
+                break;
+            }
         }
+        if (bIgnored)
+            break;
     }
     return bIgnored;
 }

@@ -320,7 +320,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
                 break;
         }
 
-        if (CIgnores::Instance().IsIgnored(it->first))
+        if (CIgnores::Instance().IsIgnored(std::get<0>(pt) + L"\\" + it->first))
             continue;
         auto cryptit = cryptFileList.find(it->first);
         if (cryptit == cryptFileList.end())
@@ -375,7 +375,7 @@ void CFolderSync::SyncFolder( const PairTuple& pt )
                     break;
             }
 
-            if (CIgnores::Instance().IsIgnored(it->first))
+            if (CIgnores::Instance().IsIgnored(std::get<0>(pt) + L"\\" + it->first))
                 continue;
             auto origit = origFileList.find(it->first);
             if (origit == origFileList.end())
