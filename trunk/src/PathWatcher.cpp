@@ -30,12 +30,12 @@ CPathWatcher::CPathWatcher(void)
 {
     // enable the required privileges for this process
 
-    LPCTSTR arPrivelegeNames[] = {  SE_BACKUP_NAME,
-                                    SE_RESTORE_NAME,
-                                    SE_CHANGE_NOTIFY_NAME
+    LPCTSTR arPrivelegeNames[] = { SE_BACKUP_NAME,
+                                   SE_RESTORE_NAME,
+                                   SE_CHANGE_NOTIFY_NAME
                                  };
 
-    for (int i=0; i<(sizeof(arPrivelegeNames)/sizeof(LPCTSTR)); ++i)
+    for (int i=0; i< _countof(arPrivelegeNames); ++i)
     {
         CAutoGeneralHandle hToken;
         if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, hToken.GetPointer()))
