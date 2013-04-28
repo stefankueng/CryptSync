@@ -5,16 +5,12 @@ First, you need to install the compiler package.
   Applications" are installed.
 
 Next you need to install some utilities/programs:
-- TortoiseSVN or SubWCRev : http://tortoisesvn.net
-- WiX(*)                  : http://wix.sourceforge.net
-- NAnt(*)                 : http://nant.sourceforge.net
+- TortoiseSVN           : http://tortoisesvn.net
+- WiX(*)                : http://wixtoolset.org/
+- NAnt(*)               : http://nant.sourceforge.net
 
 (*) Add the paths of the binaries to the PATH environment variable
     You may have to logoff/logon to make the new environment variables take effect!
-
-Note: if you're not using TortoiseSVN, you have to install SubWCRev (which is part
-of TortoiseSVN) anyway, but it is also available separately from here:
-http://sourceforge.net/project/showfiles.php?group_id=138498&package_id=281312
 
 
 Now you're almost ready. Only a few more steps to do:
@@ -40,7 +36,7 @@ Building packages
   exactly the build failed.
 
 
-  After the script finished, the packages can be found in .\bin .
+  After the script finished, the packages can be found in .\bin.
 
 Once CryptSync has been built with the NAnt script, you can build it again
 with VS2012 alone.
