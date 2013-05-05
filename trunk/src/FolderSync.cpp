@@ -279,7 +279,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         return;
 
     LONG cmp = CompareFileTime(&fdataorig.ftLastWriteTime, &fdatacrypt.ftLastWriteTime);
-    if (cmp < 0)
+    if ((cmp < 0) && (!pt.oneway))
     {
         // original file is older than the encrypted file
         // decrypt the file
@@ -297,7 +297,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         else
             DecryptFile(orig, crypt, pt.password, fd);
     }
-    else if (cmp > 0)
+    else if ((cmp > 0) || ((cmp < 0) && pt.oneway))
     {
         // encrypted file is older than the original file
         // encrypt the file
