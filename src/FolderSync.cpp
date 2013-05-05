@@ -428,52 +428,64 @@ void CFolderSync::SyncFolder( const PairData& pt )
     }
     // now go through the encrypted file list and if there's a file that's not in the original file list,
     // decrypt it
-    if (!pt.oneway || origFileList.empty())
+    for (auto it = cryptFileList.cbegin(); (it != cryptFileList.cend()) && m_bRunning; ++it)
     {
-        for (auto it = cryptFileList.cbegin(); (it != cryptFileList.cend()) && m_bRunning; ++it)
+        if (m_pProgDlg)
         {
-            if (m_pProgDlg)
-            {
-                m_pProgDlg->SetLine(0, L"syncing files");
-                m_pProgDlg->SetLine(2, it->first.c_str(), true);
-                m_pProgDlg->SetProgress(m_progress++, m_progressTotal);
-                if (m_pProgDlg->HasUserCancelled())
-                    break;
-            }
+            m_pProgDlg->SetLine(0, L"syncing files");
+            m_pProgDlg->SetLine(2, it->first.c_str(), true);
+            m_pProgDlg->SetProgress(m_progress++, m_progressTotal);
+            if (m_pProgDlg->HasUserCancelled())
+                break;
+        }
 
-            if (CIgnores::Instance().IsIgnored(pt.origpath + L"\\" + it->first))
-                continue;
-            bool bCopyOnly = pt.IsCopyOnly(pt.origpath + L"\\" + it->first);
-            auto origit = origFileList.find(it->first);
-            if (origit == origFileList.end())
+        if (CIgnores::Instance().IsIgnored(pt.origpath + L"\\" + it->first))
+            continue;
+        bool bCopyOnly = pt.IsCopyOnly(pt.origpath + L"\\" + it->first);
+        auto origit = origFileList.find(it->first);
+        if (origit == origFileList.end())
+        {
+            // file does not exist in the original folder:
+            if (pt.oneway)
             {
-                // file does not exist in the original folder:
-                // decrypt the file
-                if (bCopyOnly)
+                // remove the encrypted file
+                SHFILEOPSTRUCT fop = {0};
+                fop.wFunc = FO_DELETE;
+                fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
+                std::wstring crypt = pt.cryptpath + L"\\" + it->second.filerelpath;
+                std::unique_ptr<wchar_t[]> delbuf(new wchar_t[crypt.size()+2]);
+                wcscpy_s(delbuf.get(), crypt.size()+2, crypt.c_str());
+                delbuf[crypt.size()] = 0;
+                delbuf[crypt.size()+1] = 0;
+                fop.pFrom = delbuf.get();
+                SHFileOperation(&fop);
+            }
+            else if (bCopyOnly)
+            {
+                // copy the file
+                if (!CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE))
                 {
-                    if (!CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE))
-                    {
-                        std::wstring targetfolder = pt.origpath + L"\\" + it->first;
-                        targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
-                        SHCreateDirectory(NULL, targetfolder.c_str());
-                        CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE);
-                    }
+                    std::wstring targetfolder = pt.origpath + L"\\" + it->first;
+                    targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
+                    SHCreateDirectory(NULL, targetfolder.c_str());
+                    CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE);
                 }
-                else
+            }
+            else
+            {
+                // decrypt the file
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), pt.origpath.c_str());
+                size_t slashpos = it->first.find_last_of('\\');
+                std::wstring fname = it->first;
+                if (slashpos != std::string::npos)
+                    fname = it->first.substr(slashpos + 1);
+                std::wstring cryptpath = pt.cryptpath + L"\\" + it->second.filerelpath;
+                std::wstring origpath = pt.origpath + L"\\" + it->first;
+                if (!DecryptFile(origpath, cryptpath, pt.password, it->second))
                 {
-                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), pt.origpath.c_str());
-                    size_t slashpos = it->first.find_last_of('\\');
-                    std::wstring fname = it->first;
-                    if (slashpos != std::string::npos)
-                        fname = it->first.substr(slashpos + 1);
-                    std::wstring cryptpath = pt.cryptpath + L"\\" + it->second.filerelpath;
-                    std::wstring origpath = pt.origpath + L"\\" + it->first;
-                    if (!DecryptFile(origpath, cryptpath, pt.password, it->second))
+                    if (!it->second.filenameEncrypted)
                     {
-                        if (!it->second.filenameEncrypted)
-                        {
-                            MoveFileEx(cryptpath.c_str(), origpath.c_str(), MOVEFILE_COPY_ALLOWED);
-                        }
+                        MoveFileEx(cryptpath.c_str(), origpath.c_str(), MOVEFILE_COPY_ALLOWED);
                     }
                 }
             }
