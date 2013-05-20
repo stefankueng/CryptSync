@@ -565,7 +565,10 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     // 7zip 9.30 has an option "-stl" which sets the timestamp of the archive
     // to the most recent one of the compressed files
     // add this flag as soon as 9.30 is stable and officially released.
-    swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx9 -p\"%s\" -mhe=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str());
+    if (password.empty())
+        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx9 -mhe=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str());
+    else
+        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx9 -p\"%s\" -mhe=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str());
     bool bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
     if (!bRet)
     {
@@ -616,7 +619,10 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     std::wstring targetfolder = orig.substr(0, slashpos);
     size_t buflen = orig.size() + crypt.size() + password.size() + 1000;
     std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
-    swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" e \"%s\" -o\"%s\" -p\"%s\" -y", m_sevenzip.c_str(), crypt.c_str(), targetfolder.c_str(), password.c_str());
+    if (password.empty())
+        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" e \"%s\" -o\"%s\" -y", m_sevenzip.c_str(), crypt.c_str(), targetfolder.c_str());
+    else
+        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" e \"%s\" -o\"%s\" -p\"%s\" -y", m_sevenzip.c_str(), crypt.c_str(), targetfolder.c_str(), password.c_str());
     bool bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
     if (!bRet)
     {
