@@ -22,6 +22,7 @@
 #include "OptionsDlg.h"
 #include "Ignores.h"
 #include "UpdateDlg.h"
+#include "DebugOutput.h"
 
 #include <WindowsX.h>
 #include <process.h>
@@ -249,7 +250,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     {
                         auto foundIt = m_lastChangedPaths.find(*it);
                         if (foundIt != m_lastChangedPaths.end())
+                        {
+                            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": remove notification for file %s\n"), foundIt->c_str());
                             m_lastChangedPaths.erase(foundIt);
+                        }
                     }
                 }
             }
@@ -277,7 +281,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                         {
                             auto foundIt = m_lastChangedPaths.find(*it);
                             if (foundIt != m_lastChangedPaths.end())
+                            {
+                                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": remove notification for file %s\n"), foundIt->c_str());
                                 m_lastChangedPaths.erase(foundIt);
+                            }
                         }
                     }
                 }
