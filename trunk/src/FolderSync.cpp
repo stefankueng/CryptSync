@@ -222,15 +222,25 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
 
     WIN32_FILE_ATTRIBUTE_DATA fdataorig  = {0};
     WIN32_FILE_ATTRIBUTE_DATA fdatacrypt = {0};
-    if ((!GetFileAttributesEx(orig.c_str(),  GetFileExInfoStandard, &fdataorig)) &&
-        (GetLastError() == ERROR_ACCESS_DENIED))
-        return;
-    if ((!GetFileAttributesEx(crypt.c_str(), GetFileExInfoStandard, &fdatacrypt)) &&
-        (GetLastError() == ERROR_ACCESS_DENIED))
-        return;
+    bool bOrigMissing = false;
+    bool bCryptMissing = false;
+    if (!GetFileAttributesEx(orig.c_str(),  GetFileExInfoStandard, &fdataorig))
+    {
+        DWORD lastError = GetLastError();
+        if (lastError == ERROR_ACCESS_DENIED)
+            return;
+        bOrigMissing = (lastError == ERROR_FILE_NOT_FOUND);
+    }
+    if (!GetFileAttributesEx(crypt.c_str(),  GetFileExInfoStandard, &fdatacrypt))
+    {
+        DWORD lastError = GetLastError();
+        if (lastError == ERROR_ACCESS_DENIED)
+            return;
+        bCryptMissing = (lastError == ERROR_FILE_NOT_FOUND);
+    }
 
     if ((fdataorig.ftLastWriteTime.dwLowDateTime == 0)&&(fdataorig.ftLastWriteTime.dwHighDateTime == 0)&&
-        (_wcsicmp(orig.c_str(), path.c_str())==0))
+        (_wcsicmp(orig.c_str(), path.c_str())==0) && bOrigMissing)
     {
         // original file got deleted
         // delete the encrypted file
@@ -257,7 +267,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         return;
     }
     else if ((fdatacrypt.ftLastWriteTime.dwLowDateTime == 0)&&(fdatacrypt.ftLastWriteTime.dwHighDateTime == 0)&&
-        (_wcsicmp(crypt.c_str(), path.c_str())==0))
+        (_wcsicmp(crypt.c_str(), path.c_str())==0) && bCryptMissing)
     {
         // encrypted file got deleted
         // delete the original file as well
