@@ -21,6 +21,7 @@
 #include "DirFileEnum.h"
 #include "StringUtils.h"
 #include "UnicodeUtils.h"
+#include "PathUtils.h"
 #include "Ignores.h"
 #include "CreateProcessHelper.h"
 #include "SmartHandle.h"
@@ -206,17 +207,17 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
     if ((orig.size() < path.size())&&(_wcsicmp(path.substr(0, orig.size()).c_str(), orig.c_str())==0))
     {
         if (bCopyOnly)
-            crypt = crypt + L"\\" + path.substr(orig.size());
+            crypt = CPathUtils::Append(crypt, path.substr(orig.size()));
         else
-            crypt = crypt + L"\\" + GetEncryptedFilename(path.substr(orig.size()), pt.password, pt.encnames, pt.use7z);
+            crypt = CPathUtils::Append(crypt, GetEncryptedFilename(path.substr(orig.size()), pt.password, pt.encnames, pt.use7z));
         orig = path;
     }
     else
     {
         if (bCopyOnly)
-            orig = orig + L"\\" + path.substr(crypt.size());
+            orig = CPathUtils::Append(orig, path.substr(crypt.size()));
         else
-            orig = orig + L"\\" + GetDecryptedFilename(path.substr(crypt.size()), pt.password, pt.encnames, pt.use7z);
+            orig = CPathUtils::Append(orig, GetDecryptedFilename(path.substr(crypt.size()), pt.password, pt.encnames, pt.use7z));
         crypt = path;
     }
 
@@ -244,6 +245,12 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
     {
         // original file got deleted
         // delete the encrypted file
+        {
+            CAutoWriteLock nlocker(m_notignguard);
+            m_notifyignores.insert(crypt);
+        }
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), orig.c_str(), crypt.c_str());
+
         SHFILEOPSTRUCT fop = {0};
         fop.wFunc = FO_DELETE;
         fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
@@ -271,6 +278,12 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
     {
         // encrypted file got deleted
         // delete the original file as well
+        {
+            CAutoWriteLock nlocker(m_notignguard);
+            m_notifyignores.insert(orig);
+        }
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), crypt.c_str(), orig.c_str());
+
         SHFILEOPSTRUCT fop = {0};
         fop.wFunc = FO_DELETE;
         fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
@@ -356,9 +369,9 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 break;
         }
 
-        if (CIgnores::Instance().IsIgnored(pt.origpath + L"\\" + it->first))
+        if (CIgnores::Instance().IsIgnored(CPathUtils::Append(pt.origpath, it->first)))
             continue;
-        bool bCopyOnly = pt.IsCopyOnly(pt.origpath + L"\\" + it->first);
+        bool bCopyOnly = pt.IsCopyOnly(CPathUtils::Append(pt.origpath, it->first));
         auto cryptit = cryptFileList.find(it->first);
         if (cryptit == cryptFileList.end())
         {
@@ -377,8 +390,8 @@ void CFolderSync::SyncFolder( const PairData& pt )
             }
             else
             {
-                std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
-                std::wstring origpath = pt.origpath + L"\\" + it->first;
+                std::wstring cryptpath = CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z));
+                std::wstring origpath = CPathUtils::Append(pt.origpath, it->first);
                 EncryptFile(origpath, cryptpath, pt.password, it->second);
             }
         }
@@ -402,8 +415,8 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 }
                 else
                 {
-                    std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
-                    std::wstring origpath = pt.origpath + L"\\" + it->first;
+                    std::wstring cryptpath = CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z));
+                    std::wstring origpath = CPathUtils::Append(pt.origpath, it->first);
                     DecryptFile(origpath, cryptpath, pt.password, it->second);
                 }
             }
@@ -424,8 +437,8 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 }
                 else
                 {
-                    std::wstring cryptpath = pt.cryptpath + L"\\" + GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z);
-                    std::wstring origpath = pt.origpath + L"\\" + it->first;
+                    std::wstring cryptpath = CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z));
+                    std::wstring origpath = CPathUtils::Append(pt.origpath, it->first);
                     EncryptFile(origpath, cryptpath, pt.password, it->second);
                 }
             }
@@ -449,9 +462,9 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 break;
         }
 
-        if (CIgnores::Instance().IsIgnored(pt.origpath + L"\\" + it->first))
+        if (CIgnores::Instance().IsIgnored(CPathUtils::Append(pt.origpath, it->first)))
             continue;
-        bool bCopyOnly = pt.IsCopyOnly(pt.origpath + L"\\" + it->first);
+        bool bCopyOnly = pt.IsCopyOnly(CPathUtils::Append(pt.origpath, it->first));
         auto origit = origFileList.find(it->first);
         if (origit == origFileList.end())
         {
@@ -459,15 +472,20 @@ void CFolderSync::SyncFolder( const PairData& pt )
             if (pt.oneway)
             {
                 // remove the encrypted file
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in src folder, delete file\n"), it->first.c_str());
                 SHFILEOPSTRUCT fop = {0};
                 fop.wFunc = FO_DELETE;
                 fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
-                std::wstring crypt = pt.cryptpath + L"\\" + it->second.filerelpath;
+                std::wstring crypt = CPathUtils::Append(pt.cryptpath, it->second.filerelpath);
                 std::unique_ptr<wchar_t[]> delbuf(new wchar_t[crypt.size()+2]);
                 wcscpy_s(delbuf.get(), crypt.size()+2, crypt.c_str());
                 delbuf[crypt.size()] = 0;
                 delbuf[crypt.size()+1] = 0;
                 fop.pFrom = delbuf.get();
+                {
+                    CAutoWriteLock nlocker(m_notignguard);
+                    m_notifyignores.insert(crypt);
+                }
                 SHFileOperation(&fop);
             }
             else if (bCopyOnly)
@@ -478,6 +496,10 @@ void CFolderSync::SyncFolder( const PairData& pt )
                     std::wstring targetfolder = pt.origpath + L"\\" + it->first;
                     targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
                     SHCreateDirectory(NULL, targetfolder.c_str());
+                    {
+                        CAutoWriteLock nlocker(m_notignguard);
+                        m_notifyignores.insert(CPathUtils::Append(pt.origpath, it->first));
+                    }
                     CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE);
                 }
             }
@@ -489,12 +511,16 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 std::wstring fname = it->first;
                 if (slashpos != std::string::npos)
                     fname = it->first.substr(slashpos + 1);
-                std::wstring cryptpath = pt.cryptpath + L"\\" + it->second.filerelpath;
-                std::wstring origpath = pt.origpath + L"\\" + it->first;
+                std::wstring cryptpath = CPathUtils::Append(pt.cryptpath, it->second.filerelpath);
+                std::wstring origpath = CPathUtils::Append(pt.origpath, it->first);
                 if (!DecryptFile(origpath, cryptpath, pt.password, it->second))
                 {
                     if (!it->second.filenameEncrypted)
                     {
+                        {
+                            CAutoWriteLock nlocker(m_notignguard);
+                            m_notifyignores.insert(origpath);
+                        }
                         MoveFileEx(cryptpath.c_str(), origpath.c_str(), MOVEFILE_COPY_ALLOWED);
                     }
                 }
@@ -583,6 +609,10 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     if (!bRet)
     {
         SHCreateDirectory(NULL, targetfolder.c_str());
+        {
+            CAutoWriteLock nlocker(m_notignguard);
+            m_notifyignores.insert(crypt);
+        }
         bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
     }
     if (bRet)
@@ -607,12 +637,6 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     else
     {
         // If encrypting failed, remove the leftover file
-        // and also mark that leftover file so it won't get
-        // acted upon by the change notifications
-        {
-            CAutoWriteLock nlocker(m_notignguard);
-            m_notifyignores.insert(crypt);
-        }
         DeleteFile(crypt.c_str());
         CAutoWriteLock locker(m_failureguard);
         m_failures[orig] = Encrypt;
@@ -622,7 +646,7 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
 
 bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd )
 {
-    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), orig.c_str(), crypt.c_str());
+    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), crypt.c_str(), orig.c_str());
     size_t slashpos = orig.find_last_of('\\');
     if (slashpos == std::string::npos)
         return false;
@@ -637,6 +661,10 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     if (!bRet)
     {
         SHCreateDirectory(NULL, targetfolder.c_str());
+        {
+            CAutoWriteLock nlocker(m_notignguard);
+            m_notifyignores.insert(orig);
+        }
         bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
     }
     if (bRet)
@@ -660,10 +688,6 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     }
     else
     {
-        {
-            CAutoWriteLock nlocker(m_notignguard);
-            m_notifyignores.insert(orig);
-        }
         DeleteFile(orig.c_str());
         CAutoWriteLock locker(m_failureguard);
         m_failures[orig] = Decrypt;

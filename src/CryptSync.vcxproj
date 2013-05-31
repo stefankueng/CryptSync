@@ -214,6 +214,7 @@
     <ClInclude Include="..\sktoolslib\FileDropTarget.h" />
     <ClInclude Include="..\sktoolslib\hyperlink.h" />
     <ClInclude Include="..\sktoolslib\maxpath.h" />
+    <ClInclude Include="..\sktoolslib\PathUtils.h" />
     <ClInclude Include="..\sktoolslib\ProgressDlg.h" />
     <ClInclude Include="..\sktoolslib\ReaderWriterLock.h" />
     <ClInclude Include="..\sktoolslib\Registry.h" />
@@ -246,6 +247,7 @@
     <ClCompile Include="..\sktoolslib\DlgResizer.cpp" />
     <ClCompile Include="..\sktoolslib\FileDropTarget.cpp" />
     <ClCompile Include="..\sktoolslib\hyperlink.cpp" />
+    <ClCompile Include="..\sktoolslib\PathUtils.cpp" />
     <ClCompile Include="..\sktoolslib\ProgressDlg.cpp" />
     <ClCompile Include="..\sktoolslib\ReaderWriterLock.cpp" />
     <ClCompile Include="..\sktoolslib\Registry.cpp" />
