@@ -107,7 +107,7 @@ void CPairs::InitPairList()
         pd.encnames = !!(DWORD)encnamesreg;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
-        CRegStdDWORD onewayreg(key, TRUE);
+        CRegStdDWORD onewayreg(key, FALSE);
         pd.oneway = !!(DWORD)onewayreg;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
@@ -149,7 +149,7 @@ void CPairs::SavePairs()
         encnamesreg = (DWORD)it->encnames;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
-        CRegStdDWORD onewayreg(key, TRUE, true);
+        CRegStdDWORD onewayreg(key, FALSE, true);
         onewayreg = (DWORD)it->oneway;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
