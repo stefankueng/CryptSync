@@ -30,7 +30,8 @@
 #define TIMER_DETECTCHANGES 100
 #define TIMER_DETECTCHANGESINTERVAL 10000
 #define TIMER_FULLSCAN 101
-#define TIMER_FULLSCANINTERVAL (60000*30)
+
+UINT TIMER_FULLSCANINTERVAL = CRegStdDWORD(L"Software\\CryptSync\\FullScanInterval", 60000*30);
 
 static UINT WM_TASKBARCREATED = RegisterWindowMessage(_T("TaskbarCreated"));
 CTrayWindow::PFNCHANGEWINDOWMESSAGEFILTEREX CTrayWindow::m_pChangeWindowMessageFilter = NULL;
@@ -350,6 +351,7 @@ LRESULT CTrayWindow::DoCommand(int id)
             m_bOptionsDialogShown = false;
             if ((ret == IDOK)||(ret == IDCANCEL))
             {
+                TIMER_FULLSCANINTERVAL = CRegStdDWORD(L"Software\\CryptSync\\FullScanInterval", 60000*30);
                 foldersyncer.SyncFolders(g_pairs);
                 watcher.ClearPaths();
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
@@ -371,6 +373,9 @@ LRESULT CTrayWindow::DoCommand(int id)
                 return 0;
             }
         }
+        break;
+    case ID_FILE_SYNCNOW:
+        SetTimer(*this, TIMER_FULLSCAN, 1, NULL);
         break;
     default:
         break;

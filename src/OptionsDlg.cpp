@@ -26,6 +26,7 @@
 #include "AboutDlg.h"
 #include "TextDlg.h"
 #include "Ignores.h"
+#include "StringUtils.h"
 
 #include <string>
 #include <algorithm>
@@ -64,6 +65,12 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             CRegStdString regIgnores(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
             std::wstring sIgnores = regIgnores;
             SetDlgItemText(*this, IDC_IGNORE, sIgnores.c_str());
+
+            CRegStdDWORD regInterval(L"Software\\CryptSync\\FullScanInterval", 60000*30);
+            UINT intval = (DWORD)regInterval;
+            intval /= 60000;
+            std::wstring sInterval = CStringUtils::Format(L"%d", intval);
+            SetDlgItemText(*this, IDC_INTERVAL, sInterval.c_str());
 
             InitPairList();
 
@@ -313,6 +320,12 @@ void COptionsDlg::SaveSettings()
     CRegStdString regIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
     auto ignoreText = GetDlgItemText(IDC_IGNORE);
     regIgnores = ignoreText.get();
+
+    CRegStdDWORD regInterval(L"Software\\CryptSync\\FullScanInterval", 60000*30);
+    auto intervalText = GetDlgItemText(IDC_INTERVAL);
+    DWORD intval = _wtoi(intervalText.get());
+    if ((intval > 0) && (intval < 1000))
+        regInterval = intval*60000;
 
     g_pairs.SavePairs();
 
