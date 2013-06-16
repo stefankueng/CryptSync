@@ -45,7 +45,7 @@ LRESULT CUpdateDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
         {
             InitDialog(hwndDlg, IDI_CryptSync);
             // initialize the controls
-            m_link.ConvertStaticToHyperlink(hwndDlg, IDC_WEBURL, _T("http://tools.tortoisesvn.net/CryptSync.html"));
+            m_link.ConvertStaticToHyperlink(hwndDlg, IDC_WEBURL, _T("http://stefanstools.sourceforge.net/CryptSync.html"));
 
             ExtendFrameIntoClientArea((UINT)-1, (UINT)-1, (UINT)-1, (UINT)-1);
             m_aerocontrols.SubclassControl(GetDlgItem(*this, IDC_INFOLABEL));
