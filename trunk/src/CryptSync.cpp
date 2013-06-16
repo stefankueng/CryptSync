@@ -76,6 +76,22 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 
     CCmdLineParser parser(lpCmdLine);
+    if (parser.HasKey(L"?") || parser.HasKey(L"help"))
+    {
+        std::wstring sInfo = L"/src      : path to source folder with original content\n"
+                             L"/dst      : path to encrpyted folder\n"
+                             L"/pw       : password for encryption\n"
+                             L"/cpy      : copy only\n"
+                             L"/encnames : encrypt file and folder names\n"
+                             L"/mirror   : mirror only from src to dst\n"
+                             L"/use7z    : use .7z instead of .cryptsync extension\n"
+                             L"/ignore   : ignore patterns\n"
+                             L"\n"
+                             L"/syncall  : syncs all set up pairs and then exists\n"
+                             L"/progress : shows a progress dialog while syncing";
+        MessageBox(NULL, sInfo.c_str(), L"CryptSync Command Line Options", MB_ICONINFORMATION);
+        return 1;
+    }
     if (parser.HasVal(L"src") && parser.HasVal(L"dst"))
     {
         std::wstring src =   parser.GetVal(L"src");
@@ -94,6 +110,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         CPairs pair;
         pair.clear();
         pair.AddPair(src, dst, pw, cpy, encnames, mirror, use7z);
+        CFolderSync foldersync;
+        foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
+        return 1;
+    }
+    if (parser.HasKey(L"syncall"))
+    {
+        CIgnores::Instance().Reload();
+
+        CPairs pair;
         CFolderSync foldersync;
         foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
         return 1;
