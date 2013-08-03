@@ -23,6 +23,7 @@
 #include "Ignores.h"
 #include "UpdateDlg.h"
 #include "DebugOutput.h"
+#include "CircularLog.h"
 
 #include <WindowsX.h>
 #include <process.h>

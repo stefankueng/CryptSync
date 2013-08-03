@@ -21,6 +21,8 @@
 #include "CmdLineParser.h"
 #include "TrayWindow.h"
 #include "Ignores.h"
+#include "PathUtils.h"
+#include "CircularLog.h"
 #include "resource.h"
 
 
@@ -88,10 +90,22 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"/ignore   : ignore patterns\n"
                              L"\n"
                              L"/syncall  : syncs all set up pairs and then exists\n"
-                             L"/progress : shows a progress dialog while syncing";
+                             L"/progress : shows a progress dialog while syncing\n"
+                             L"/logpath  : path to a logfile\n"
+                             L"/maxlog   : maximum number of lines the logfile can have";
         MessageBox(NULL, sInfo.c_str(), L"CryptSync Command Line Options", MB_ICONINFORMATION);
         return 1;
     }
+
+    std::wstring lp  =   parser.HasVal(L"logpath") ? parser.GetVal(L"logpath") : L"";
+    int maxlog       =   parser.HasVal(L"maxlog") ? parser.GetLongVal(L"maxlog") : 10000;
+
+    if (lp.empty())
+        lp = CPathUtils::GetAppDataPath() + L"\\CryptSync.log";
+
+    CCircularLog::Instance().Init(lp, maxlog);
+    CCircularLog::Instance()(L"Starting CryptSync");
+
     if (parser.HasVal(L"src") && parser.HasVal(L"dst"))
     {
         std::wstring src =   parser.GetVal(L"src");
