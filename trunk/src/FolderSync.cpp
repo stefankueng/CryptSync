@@ -284,19 +284,36 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
             CAutoWriteLock nlocker(m_notignguard);
             m_notifyignores.insert(orig);
         }
-        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), crypt.c_str(), orig.c_str());
-        CCircularLog::Instance()(_T("file %s does not exist, delete file %s"), crypt.c_str(), orig.c_str());
+        // check if there's an unencrypted file instead of an encrypted one in the encrypted folder
+        if (!bCopyOnly)
+        {
+            std::wstring cryptnot = crypt.substr(0, crypt.find_last_of('.'));
+            if (!GetFileAttributesEx(cryptnot.c_str(),  GetFileExInfoStandard, &fdatacrypt))
+            {
+                DWORD lastError = GetLastError();
+                if (lastError == ERROR_ACCESS_DENIED)
+                    return;
+                bCryptMissing = (lastError == ERROR_FILE_NOT_FOUND);
+            }
+            else
+                bCryptMissing = false;
+        }
+        if (bCryptMissing)
+        {
+            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), crypt.c_str(), orig.c_str());
+            CCircularLog::Instance()(_T("file %s does not exist, delete file %s"), crypt.c_str(), orig.c_str());
 
-        SHFILEOPSTRUCT fop = {0};
-        fop.wFunc = FO_DELETE;
-        fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
-        std::unique_ptr<wchar_t[]> delbuf(new wchar_t[orig.size()+2]);
-        wcscpy_s(delbuf.get(), orig.size()+2, orig.c_str());
-        delbuf[orig.size()] = 0;
-        delbuf[orig.size()+1] = 0;
-        fop.pFrom = delbuf.get();
-        SHFileOperation(&fop);
-        return;
+            SHFILEOPSTRUCT fop = {0};
+            fop.wFunc = FO_DELETE;
+            fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
+            std::unique_ptr<wchar_t[]> delbuf(new wchar_t[orig.size()+2]);
+            wcscpy_s(delbuf.get(), orig.size()+2, orig.c_str());
+            delbuf[orig.size()] = 0;
+            delbuf[orig.size()+1] = 0;
+            fop.pFrom = delbuf.get();
+            SHFileOperation(&fop);
+            return;
+        }
     }
 
     if (fdataorig.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -523,7 +540,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
                     {
                         {
                             CAutoWriteLock nlocker(m_notignguard);
-                            m_notifyignores.insert(origpath);
+                            m_notifyignores.insert(cryptpath);
                         }
                         MoveFileEx(cryptpath.c_str(), origpath.c_str(), MOVEFILE_COPY_ALLOWED);
                     }
