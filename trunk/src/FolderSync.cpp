@@ -26,6 +26,7 @@
 #include "CreateProcessHelper.h"
 #include "SmartHandle.h"
 #include "DebugOutput.h"
+#include "CircularLog.h"
 
 #include <process.h>
 #include <shlobj.h>
@@ -250,6 +251,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
             m_notifyignores.insert(crypt);
         }
         CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), orig.c_str(), crypt.c_str());
+        CCircularLog::Instance()(_T("file %s does not exist, delete file %s"), orig.c_str(), crypt.c_str());
 
         SHFILEOPSTRUCT fop = {0};
         fop.wFunc = FO_DELETE;
@@ -283,6 +285,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
             m_notifyignores.insert(orig);
         }
         CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), crypt.c_str(), orig.c_str());
+        CCircularLog::Instance()(_T("file %s does not exist, delete file %s"), crypt.c_str(), orig.c_str());
 
         SHFILEOPSTRUCT fop = {0};
         fop.wFunc = FO_DELETE;
@@ -473,6 +476,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
             {
                 // remove the encrypted file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in src folder, delete file\n"), it->first.c_str());
+                CCircularLog::Instance()(_T("counterpart of file %s does not exist in src folder, delete file"), it->first.c_str());
                 SHFILEOPSTRUCT fop = {0};
                 fop.wFunc = FO_DELETE;
                 fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
@@ -579,6 +583,7 @@ std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( bool orig, co
 bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd )
 {
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": encrypt file %s to %s\n"), orig.c_str(), crypt.c_str());
+    CCircularLog::Instance()(_T("encrypt file %s to %s"), orig.c_str(), crypt.c_str());
 
     size_t slashpos = crypt.find_last_of('\\');
     if (slashpos == std::string::npos)
@@ -642,6 +647,7 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
         DeleteFile(crypt.c_str());
         CAutoWriteLock locker(m_failureguard);
         m_failures[orig] = Encrypt;
+        CCircularLog::Instance()(L"Failed to encrypt file \"%s\" to \"%s\"", orig.c_str(), crypt.c_str());
     }
     return bRet;
 }
@@ -649,6 +655,7 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
 bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd )
 {
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), crypt.c_str(), orig.c_str());
+    CCircularLog::Instance()(_T("decrypt file %s to %s"), crypt.c_str(), orig.c_str());
     size_t slashpos = orig.find_last_of('\\');
     if (slashpos == std::string::npos)
         return false;
@@ -693,6 +700,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
         DeleteFile(orig.c_str());
         CAutoWriteLock locker(m_failureguard);
         m_failures[orig] = Decrypt;
+        CCircularLog::Instance()(L"Failed to decrypt file \"%s\" to \"%s\"", crypt.c_str(), orig.c_str());
     }
     return bRet;
 }

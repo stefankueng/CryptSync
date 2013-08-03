@@ -27,6 +27,7 @@
 #include "TextDlg.h"
 #include "Ignores.h"
 #include "StringUtils.h"
+#include "CircularLog.h"
 
 #include <string>
 #include <algorithm>
@@ -113,6 +114,29 @@ LRESULT COptionsDlg::DoCommand(int id)
     case IDCANCEL:
     case IDEXIT:
         EndDialog(*this, id);
+        break;
+    case IDC_SHOWLOG:
+        {
+            CCircularLog::Instance().Save();
+            std::wstring path = CCircularLog::Instance().GetSavePath().c_str();
+            SHELLEXECUTEINFO shex = {0};
+            shex.cbSize = sizeof(SHELLEXECUTEINFO);
+            shex.fMask = SEE_MASK_DOENVSUBST|SEE_MASK_ASYNCOK|SEE_MASK_CLASSNAME;
+            shex.hwnd = *this;
+            shex.lpVerb = L"open";
+            shex.lpFile = path.c_str();
+            shex.lpClass = L".txt";
+            shex.nShow = SW_SHOWNORMAL;
+            if (!ShellExecuteEx(&shex))
+            {
+                shex.fMask = SEE_MASK_DOENVSUBST|SEE_MASK_ASYNCOK;
+                shex.hwnd = *this;
+                shex.lpFile = L"%windir%\\notepad.exe";
+                shex.lpParameters = path.c_str();
+                shex.nShow = SW_SHOWNORMAL;
+                ShellExecuteEx(&shex);
+            }
+        }
         break;
     case IDC_SYNCEXIT:
         {
