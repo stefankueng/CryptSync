@@ -626,9 +626,9 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     // to the most recent one of the compressed files
     // add this flag as soon as 9.30 is stable and officially released.
     if (password.empty())
-        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx9 -mhe=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str());
+        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx9 -mhe=on -m0=lzma2 -mtc=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str());
     else
-        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx9 -p\"%s\" -mhe=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str());
+        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx9 -p\"%s\" -mhe=on -m0=lzma2 -mtc=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str());
     bool bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
     if (!bRet)
     {
