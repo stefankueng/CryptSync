@@ -11,7 +11,7 @@
     Version="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion)"
     Manufacturer="Stefans Tools">
 
-    <Package Id="*" Keywords="Installer"
+    <Package Id="*"
           Description="Stefans CryptSync"
           Keywords="cloud, security, encryption"
           Comments="http://stefanstools.sourceforge.net" Manufacturer="Stefans Tools"
