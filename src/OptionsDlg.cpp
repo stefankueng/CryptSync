@@ -158,6 +158,40 @@ LRESULT COptionsDlg::DoCommand(int id)
             }
         }
         break;
+    case IDC_EDITPAIR:
+        {
+            HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
+            int nCount = ListView_GetItemCount(hListControl);
+            if (nCount == 0)
+                break;
+            int iItem = -1;
+            PairVector sels;
+            while ((iItem = ListView_GetNextItem(hListControl, iItem, LVNI_SELECTED)) != (-1))
+            {
+                if ((iItem < 0)||(iItem >= (int)g_pairs.size()))
+                    continue;
+                auto t = g_pairs[iItem];
+                CPairAddDlg dlg(*this);
+                dlg.m_origpath = t.origpath;
+                dlg.m_cryptpath = t.cryptpath;
+                dlg.m_password = t.password;
+                dlg.m_copyonly = t.copyonly();
+                dlg.m_encnames = t.encnames;
+                dlg.m_oneway = t.oneway;
+                dlg.m_7zExt = t.use7z;
+                if (dlg.DoModal(hResource, IDD_PAIRADD, *this)==IDOK)
+                {
+                    if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
+                    {
+                        g_pairs.erase(g_pairs.begin()+iItem);
+                        if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_copyonly, dlg.m_encnames, dlg.m_oneway, dlg.m_7zExt))
+                            InitPairList();
+                        g_pairs.SavePairs();
+                    }
+                }
+            }
+        }
+        break;
     case IDC_DELETEPAIR:
         {
             HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
@@ -304,6 +338,7 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
     {
         HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
         DialogEnableWindow(IDC_DELETEPAIR, (ListView_GetSelectedCount(hListControl)) > 0);
+        DialogEnableWindow(IDC_EDITPAIR, (ListView_GetSelectedCount(hListControl)) == 1);
     }
 }
 
