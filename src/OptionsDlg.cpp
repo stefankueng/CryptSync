@@ -189,6 +189,7 @@ LRESULT COptionsDlg::DoCommand(int id)
                         g_pairs.SavePairs();
                     }
                 }
+                break;
             }
         }
         break;
