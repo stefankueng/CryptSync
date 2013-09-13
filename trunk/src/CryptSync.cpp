@@ -129,14 +129,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             RegCloseKey(subKey);
             // CryptSync is installed: we must not store the application data
             // in the same directory as the exe is but in %APPDATA%\CryptSync instead
-            PWSTR outpath = nullptr;
-            if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_CREATE, NULL, &outpath)))
+            WCHAR outpath[MAX_PATH] = {0};
+            if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, outpath)))
             {
                 lp = outpath;
                 lp += L"\\CryptSync";
                 lp = CPathUtils::GetLongPathname(lp);
                 lp += L"\\CryptSync.log";
-                CoTaskMemFree(outpath);
             }
         }
     }
