@@ -58,6 +58,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(hwndDlg, IDC_PASSWORD, m_password.c_str());
             SetDlgItemText(hwndDlg, IDC_PASSWORD2, m_password.c_str());
             SetDlgItemText(hwndDlg, IDC_NOCRYPT, m_copyonly.c_str());
+            SetDlgItemText(hwndDlg, IDC_NOSYNC, m_nosync.c_str());
             SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encnames ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_ONEWAY, BM_SETCHECK, m_oneway ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_SETCHECK, m_7zExt ? BST_CHECKED : BST_UNCHECKED, NULL);
@@ -65,6 +66,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 
             AddToolTip(IDC_ONEWAY, L"if this is checked, changes in the encrypted folder are not synchronized back to the original folder!");
             AddToolTip(IDC_NOCRYPT, L"File masks, separated by '|' example: *.jpg|*.zip");
+            AddToolTip(IDC_NOSYNC, L"File masks, separated by '|' example: *.jpg|*.zip");
 
             // the path edit control should work as a drop target for files and folders
             HWND hOrigPath = GetDlgItem(hwndDlg, IDC_ORIGPATH);
@@ -118,6 +120,10 @@ LRESULT CPairAddDlg::DoCommand(int id)
             buf = GetDlgItemText(IDC_NOCRYPT);
             m_copyonly = buf.get();
             m_copyonly.erase(m_copyonly.find_last_not_of(L" \n\r\t\\")+1);
+
+            buf = GetDlgItemText(IDC_NOSYNC);
+            m_nosync = buf.get();
+            m_nosync.erase(m_nosync.find_last_not_of(L" \n\r\t\\")+1);
 
             buf = GetDlgItemText(IDC_PASSWORD);
             m_password = buf.get();
