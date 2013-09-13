@@ -320,7 +320,30 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         return;
     if (fdatacrypt.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
         return;
+    if (pt.FAT)
+    {
+        // round up to two seconds accuracy
+        ULONGLONG qwResult;
+        qwResult = (((ULONGLONG) fdataorig.ftLastWriteTime.dwHighDateTime) << 32) + fdataorig.ftLastWriteTime.dwLowDateTime;
+        if (qwResult % 20000000UL)
+        {
+            qwResult += 20000000UL;
+            qwResult /= 20000000UL;
+            qwResult *= 20000000UL;
+        }
+        fdataorig.ftLastWriteTime.dwLowDateTime  = (DWORD) (qwResult & 0xFFFFFFFF );
+        fdataorig.ftLastWriteTime.dwHighDateTime = (DWORD) (qwResult >> 32 );
 
+        qwResult = (((ULONGLONG) fdatacrypt.ftLastWriteTime.dwHighDateTime) << 32) + fdatacrypt.ftLastWriteTime.dwLowDateTime;
+        if (qwResult % 20000000UL)
+        {
+            qwResult += 20000000UL;
+            qwResult /= 20000000UL;
+            qwResult *= 20000000UL;
+        }
+        fdatacrypt.ftLastWriteTime.dwLowDateTime  = (DWORD) (qwResult & 0xFFFFFFFF );
+        fdatacrypt.ftLastWriteTime.dwHighDateTime = (DWORD) (qwResult >> 32 );
+    }
     LONG cmp = CompareFileTime(&fdataorig.ftLastWriteTime, &fdatacrypt.ftLastWriteTime);
     if ((cmp < 0) && (!pt.oneway))
     {
@@ -417,7 +440,42 @@ void CFolderSync::SyncFolder( const PairData& pt )
         }
         else
         {
-            LONG cmp = CompareFileTime(&it->second.ft, &cryptit->second.ft);
+            LONG cmp = 0;
+            if (pt.FAT)
+            {
+                // round up to two seconds accuracy
+                FILETIME ft1;
+                ft1.dwLowDateTime = it->second.ft.dwLowDateTime;
+                ft1.dwHighDateTime = it->second.ft.dwHighDateTime;
+                FILETIME ft2;
+                ft2.dwLowDateTime = cryptit->second.ft.dwLowDateTime;
+                ft2.dwHighDateTime = cryptit->second.ft.dwHighDateTime;
+
+                ULONGLONG qwResult;
+                qwResult = (((ULONGLONG) ft1.dwHighDateTime) << 32) + ft1.dwLowDateTime;
+                if (qwResult % 20000000UL)
+                {
+                    qwResult += 20000000UL;
+                    qwResult /= 20000000UL;
+                    qwResult *= 20000000UL;
+                }
+                ft1.dwLowDateTime  = (DWORD) (qwResult & 0xFFFFFFFF );
+                ft1.dwHighDateTime = (DWORD) (qwResult >> 32 );
+
+                qwResult = (((ULONGLONG) ft2.dwHighDateTime) << 32) + ft2.dwLowDateTime;
+                if (qwResult % 20000000UL)
+                {
+                    qwResult += 20000000UL;
+                    qwResult /= 20000000UL;
+                    qwResult *= 20000000UL;
+                }
+                ft2.dwLowDateTime  = (DWORD) (qwResult & 0xFFFFFFFF );
+                ft2.dwHighDateTime = (DWORD) (qwResult >> 32 );
+
+                cmp = CompareFileTime(&ft1, &ft2);
+            }
+            else
+                cmp = CompareFileTime(&it->second.ft, &cryptit->second.ft);
             if (cmp < 0)
             {
                 // original file is older than the encrypted file

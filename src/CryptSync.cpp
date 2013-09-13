@@ -87,6 +87,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"/encnames : encrypt file and folder names\n"
                              L"/mirror   : mirror only from src to dst\n"
                              L"/use7z    : use .7z instead of .cryptsync extension\n"
+                             L"/fat      : use FAT write time accuracy (2s)\n"
                              L"/ignore   : ignore patterns\n"
                              L"\n"
                              L"/syncall  : syncs all set up pairs and then exists\n"
@@ -152,6 +153,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         bool encnames    = !!parser.HasKey(L"encnames");
         bool mirror      = !!parser.HasKey(L"mirror");
         bool use7z       = !!parser.HasKey(L"use7z");
+        bool fat         = !!parser.HasKey(L"fat");
         std::wstring ign =   parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
 
         CIgnores::Instance().Reload();
@@ -160,7 +162,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
         CPairs pair;
         pair.clear();
-        pair.AddPair(src, dst, pw, cpy, encnames, mirror, use7z);
+        pair.AddPair(src, dst, pw, cpy, encnames, mirror, use7z, fat);
         CFolderSync foldersync;
         foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
         return 1;
