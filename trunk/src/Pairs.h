@@ -30,6 +30,7 @@ public:
         : encnames(false)
         , oneway(false)
         , use7z(false)
+        , FAT(false)
     {
     }
 
@@ -39,6 +40,7 @@ public:
     bool                    encnames;
     bool                    oneway;
     bool                    use7z;
+    bool                    FAT;
     std::wstring            copyonly() const { return m_copyonly; }
     void                    copyonly(const std::wstring& c) { m_copyonly = c; UpdateVec(); }
     bool                    IsCopyOnly(const std::wstring& s) const;
@@ -79,7 +81,8 @@ public:
                                     const std::wstring& copyonly,
                                     bool encryptnames,
                                     bool oneway,
-                                    bool use7zext);
+                                    bool use7zext,
+                                    bool fat);
 protected:
     void                    InitPairList();
 

@@ -31,6 +31,7 @@ CPairAddDlg::CPairAddDlg(HWND hParent)
     , m_encnames(false)
     , m_oneway(false)
     , m_7zExt(false)
+    , m_FAT(false)
     , m_pDropTargetOrig(nullptr)
     , m_pDropTargetCrypt(nullptr)
 {
@@ -60,6 +61,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encnames ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_ONEWAY, BM_SETCHECK, m_oneway ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_SETCHECK, m_7zExt ? BST_CHECKED : BST_UNCHECKED, NULL);
+            SendDlgItemMessage(*this, IDC_FAT, BM_SETCHECK, m_FAT ? BST_CHECKED : BST_UNCHECKED, NULL);
 
             AddToolTip(IDC_ONEWAY, L"if this is checked, changes in the encrypted folder are not synchronized back to the original folder!");
             AddToolTip(IDC_NOCRYPT, L"File masks, separated by '|' example: *.jpg|*.zip");
@@ -156,6 +158,7 @@ LRESULT CPairAddDlg::DoCommand(int id)
             m_encnames = !!SendDlgItemMessage(*this, IDC_ENCNAMES, BM_GETCHECK, 0, NULL);
             m_oneway = !!SendDlgItemMessage(*this, IDC_ONEWAY, BM_GETCHECK, 0, NULL);
             m_7zExt = !!SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_GETCHECK, 0, NULL);
+            m_FAT = !!SendDlgItemMessage(*this, IDC_FAT, BM_GETCHECK, 0, NULL);
         }
         // fall through
     case IDCANCEL:

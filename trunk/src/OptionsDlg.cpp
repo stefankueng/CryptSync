@@ -151,7 +151,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                 {
-                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_copyonly, dlg.m_encnames, dlg.m_oneway, dlg.m_7zExt))
+                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_copyonly, dlg.m_encnames, dlg.m_oneway, dlg.m_7zExt, dlg.m_FAT))
                         InitPairList();
                     g_pairs.SavePairs();
                 }
@@ -179,12 +179,13 @@ LRESULT COptionsDlg::DoCommand(int id)
                 dlg.m_encnames = t.encnames;
                 dlg.m_oneway = t.oneway;
                 dlg.m_7zExt = t.use7z;
+                dlg.m_FAT = t.FAT;
                 if (dlg.DoModal(hResource, IDD_PAIRADD, *this)==IDOK)
                 {
                     if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                     {
                         g_pairs.erase(g_pairs.begin()+iItem);
-                        if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_copyonly, dlg.m_encnames, dlg.m_oneway, dlg.m_7zExt))
+                        if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_copyonly, dlg.m_encnames, dlg.m_oneway, dlg.m_7zExt, dlg.m_FAT))
                             InitPairList();
                         g_pairs.SavePairs();
                     }
@@ -323,12 +324,13 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             dlg.m_encnames = t.encnames;
             dlg.m_oneway = t.oneway;
             dlg.m_7zExt = t.use7z;
+            dlg.m_FAT = t.FAT;
             if (dlg.DoModal(hResource, IDD_PAIRADD, *this)==IDOK)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                 {
                     g_pairs.erase(g_pairs.begin()+lpNMItemActivate->iItem);
-                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_copyonly, dlg.m_encnames, dlg.m_oneway, dlg.m_7zExt))
+                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_copyonly, dlg.m_encnames, dlg.m_oneway, dlg.m_7zExt, dlg.m_FAT))
                         InitPairList();
                     g_pairs.SavePairs();
                 }

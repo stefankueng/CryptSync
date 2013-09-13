@@ -40,6 +40,7 @@ public:
     bool                    m_encnames;
     bool                    m_oneway;
     bool                    m_7zExt;
+    bool                    m_FAT;
 protected:
     LRESULT CALLBACK        DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
     LRESULT                 DoCommand(int id);

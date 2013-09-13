@@ -114,6 +114,10 @@ void CPairs::InitPairList()
         CRegStdDWORD zextreg(key, FALSE);
         pd.use7z = !!(DWORD)zextreg;
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
+        CRegStdDWORD fatreg(key, FALSE);
+        pd.FAT = !!(DWORD)fatreg;
+
         if (std::find(cbegin(), cend(), pd) == cend())
             push_back(pd);
         ++p;
@@ -156,6 +160,10 @@ void CPairs::SavePairs()
         CRegStdDWORD zextreg(key, FALSE, true);
         zextreg = (DWORD)it->use7z;
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
+        CRegStdDWORD fatreg(key, FALSE, true);
+        fatreg = (DWORD)it->FAT;
+
         ++p;
     }
     // delete all possible remaining registry entries
@@ -189,11 +197,15 @@ void CPairs::SavePairs()
         swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
         CRegStdDWORD zextreg(key);
         zextreg.removeValue();
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
+        CRegStdDWORD fatreg(key);
+        fatreg.removeValue();
         ++p;
     }
 }
 
-bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& copyonly, bool encryptnames, bool oneway, bool use7zext )
+bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& copyonly, bool encryptnames, bool oneway, bool use7zext, bool fat )
 {
     PairData pd;
     pd.origpath = orig;
@@ -203,6 +215,7 @@ bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const
     pd.encnames = encryptnames;
     pd.oneway = oneway;
     pd.use7z = use7zext;
+    pd.FAT = fat;
     if (std::find(cbegin(), cend(), pd) == cend())
     {
         push_back(pd);
