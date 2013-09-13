@@ -83,7 +83,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         std::wstring sInfo = L"/src      : path to source folder with original content\n"
                              L"/dst      : path to encrpyted folder\n"
                              L"/pw       : password for encryption\n"
-                             L"/cpy      : copy only\n"
+                             L"/cpy      : copy only pattern\n"
+                             L"/nsy      : don't sync pattern\n"
                              L"/encnames : encrypt file and folder names\n"
                              L"/mirror   : mirror only from src to dst\n"
                              L"/use7z    : use .7z instead of .cryptsync extension\n"
@@ -150,6 +151,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         std::wstring dst =   parser.GetVal(L"dst");
         std::wstring pw  =   parser.HasVal(L"pw") ? parser.GetVal(L"pw") : L"";
         std::wstring cpy =   parser.HasVal(L"cpy") ? parser.GetVal(L"cpy") : L"";
+        std::wstring nsy =   parser.HasVal(L"nsy") ? parser.GetVal(L"nsy") : L"";
         bool encnames    = !!parser.HasKey(L"encnames");
         bool mirror      = !!parser.HasKey(L"mirror");
         bool use7z       = !!parser.HasKey(L"use7z");
@@ -162,7 +164,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
         CPairs pair;
         pair.clear();
-        pair.AddPair(src, dst, pw, cpy, encnames, mirror, use7z, fat);
+        pair.AddPair(src, dst, pw, cpy, nsy, encnames, mirror, use7z, fat);
         CFolderSync foldersync;
         foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
         return 1;

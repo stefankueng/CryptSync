@@ -204,6 +204,8 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
     std::wstring crypt = pt.cryptpath;
     if (orig.empty() || crypt.empty())
         return;
+    if (pt.IsIgnored(path))
+        return;
     bool bCopyOnly = pt.IsCopyOnly(path);
     if ((orig.size() < path.size())&&(_wcsicmp(path.substr(0, orig.size()).c_str(), orig.c_str())==0))
     {
@@ -414,6 +416,8 @@ void CFolderSync::SyncFolder( const PairData& pt )
 
         if (CIgnores::Instance().IsIgnored(CPathUtils::Append(pt.origpath, it->first)))
             continue;
+        if (pt.IsIgnored(CPathUtils::Append(pt.origpath, it->first)))
+            continue;
         bool bCopyOnly = pt.IsCopyOnly(CPathUtils::Append(pt.origpath, it->first));
         auto cryptit = cryptFileList.find(it->first);
         if (cryptit == cryptFileList.end())
@@ -541,6 +545,8 @@ void CFolderSync::SyncFolder( const PairData& pt )
         }
 
         if (CIgnores::Instance().IsIgnored(CPathUtils::Append(pt.origpath, it->first)))
+            continue;
+        if (pt.IsIgnored(CPathUtils::Append(pt.origpath, it->first)))
             continue;
         bool bCopyOnly = pt.IsCopyOnly(CPathUtils::Append(pt.origpath, it->first));
         auto origit = origFileList.find(it->first);

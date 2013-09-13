@@ -37,6 +37,7 @@ public:
     std::wstring            m_cryptpath;
     std::wstring            m_password;
     std::wstring            m_copyonly;
+    std::wstring            m_nosync;
     bool                    m_encnames;
     bool                    m_oneway;
     bool                    m_7zExt;

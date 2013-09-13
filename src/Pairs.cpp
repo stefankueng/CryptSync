@@ -28,16 +28,26 @@
 
 
 
-void PairData::UpdateVec()
+void PairData::UpdateVec(std::wstring& s, std::vector<std::wstring>& v)
 {
-    std::transform(m_copyonly.begin(), m_copyonly.end(), m_copyonly.begin(), std::tolower);
-    stringtok(m_copyonlyvec, m_copyonly, true);
+    std::transform(s.begin(), s.end(), s.begin(), std::tolower);
+    stringtok(v, s, true);
 }
 
 bool PairData::IsCopyOnly( const std::wstring& s ) const
 {
-    bool bCopyOnly = false;
-    if (m_copyonlyvec.empty())
+    return MatchInVec(m_copyonlyvec, s);
+}
+
+bool PairData::IsIgnored( const std::wstring& s ) const
+{
+    return MatchInVec(m_nosyncvec, s);
+}
+
+bool PairData::MatchInVec( const std::vector<std::wstring>& v, const std::wstring& s ) const
+{
+    bool bMatched = false;
+    if (v.empty())
         return false;
     std::wstring scmp = s;
     std::transform(scmp.begin(), scmp.end(), scmp.begin(), std::tolower);
@@ -45,18 +55,18 @@ bool PairData::IsCopyOnly( const std::wstring& s ) const
     stringtok(pathelems, scmp, true, L"\\");
     for (auto pe:pathelems)
     {
-        for (auto it = m_copyonlyvec.cbegin(); it != m_copyonlyvec.cend(); ++it)
+        for (auto it = v.cbegin(); it != v.cend(); ++it)
         {
             if (wcswildcmp(it->c_str(), pe.c_str()))
             {
-                bCopyOnly = true;
+                bMatched = true;
                 break;
             }
         }
-        if (bCopyOnly)
+        if (bMatched)
             break;
     }
-    return bCopyOnly;
+    return bMatched;
 }
 
 
@@ -101,6 +111,10 @@ void CPairs::InitPairList()
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCopyOnly%d", p);
         CRegStdString copyonlyreg(key);
         pd.copyonly(copyonlyreg);
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairNoSync%d", p);
+        CRegStdString nosyncreg(key);
+        pd.nosync(nosyncreg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
         CRegStdDWORD encnamesreg(key, TRUE);
@@ -148,6 +162,10 @@ void CPairs::SavePairs()
         CRegStdString copyonlyreg(key, L"", true);
         copyonlyreg = it->copyonly();
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairNoSync%d", p);
+        CRegStdString nosyncreg(key, L"", true);
+        nosyncreg = it->nosync();
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
         CRegStdDWORD encnamesreg(key, TRUE, true);
         encnamesreg = (DWORD)it->encnames;
@@ -186,6 +204,10 @@ void CPairs::SavePairs()
         CRegStdString copyonlyreg(key);
         copyonlyreg.removeValue();
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairNoSync%d", p);
+        CRegStdString nosyncreg(key);
+        nosyncreg.removeValue();
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
         CRegStdDWORD encnamesreg(key);
         encnamesreg.removeValue();
@@ -205,13 +227,14 @@ void CPairs::SavePairs()
     }
 }
 
-bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& copyonly, bool encryptnames, bool oneway, bool use7zext, bool fat )
+bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& copyonly, const std::wstring& nosync, bool encryptnames, bool oneway, bool use7zext, bool fat )
 {
     PairData pd;
     pd.origpath = orig;
     pd.cryptpath = crypt;
     pd.password = password;
     pd.copyonly(copyonly);
+    pd.nosync(nosync);
     pd.encnames = encryptnames;
     pd.oneway = oneway;
     pd.use7z = use7zext;
