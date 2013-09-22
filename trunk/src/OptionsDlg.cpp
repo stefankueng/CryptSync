@@ -165,7 +165,6 @@ LRESULT COptionsDlg::DoCommand(int id)
             if (nCount == 0)
                 break;
             int iItem = -1;
-            PairVector sels;
             while ((iItem = ListView_GetNextItem(hListControl, iItem, LVNI_SELECTED)) != (-1))
             {
                 if ((iItem < 0)||(iItem >= (int)g_pairs.size()))
