@@ -349,12 +349,16 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
     LONG cmp = CompareFileTime(&fdataorig.ftLastWriteTime, &fdatacrypt.ftLastWriteTime);
     if ((cmp < 0) && (!pt.oneway))
     {
+        CCircularLog::Instance()(L"original file is older: %s : %s, %s : %s",
+                                 crypt.c_str(), GetFileTimeStringForLog(fdatacrypt.ftLastWriteTime).c_str(),
+                                 orig.c_str(), GetFileTimeStringForLog(fdataorig.ftLastWriteTime).c_str());
         // original file is older than the encrypted file
         // decrypt the file
         FileData fd;
         fd.ft = fdatacrypt.ftLastWriteTime;
         if (bCopyOnly)
         {
+            CCircularLog::Instance()(_T("copy file %s to %s"), crypt.c_str(), orig.c_str());
             if (!CopyFile(crypt.c_str(), orig.c_str(), FALSE))
             {
                 std::wstring targetfolder = orig.substr(0, orig.find_last_of('\\'));
@@ -367,12 +371,16 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
     }
     else if ((cmp > 0) || ((cmp < 0) && pt.oneway))
     {
+        CCircularLog::Instance()(L"encrypted file is older: %s : %s, %s : %s",
+                                 orig.c_str(), GetFileTimeStringForLog(fdataorig.ftLastWriteTime).c_str(),
+                                 crypt.c_str(), GetFileTimeStringForLog(fdatacrypt.ftLastWriteTime).c_str());
         // encrypted file is older than the original file
         // encrypt the file
         FileData fd;
         fd.ft = fdataorig.ftLastWriteTime;
         if (bCopyOnly)
         {
+            CCircularLog::Instance()(_T("copy file %s to %s"), orig.c_str(), crypt.c_str());
             if (!CopyFile(orig.c_str(), crypt.c_str(), FALSE))
             {
                 std::wstring targetfolder = crypt.substr(0, crypt.find_last_of('\\'));
@@ -427,6 +435,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist in encrypted folder\n"), it->first.c_str());
             if (bCopyOnly)
             {
+                CCircularLog::Instance()(_T("copy file %s to %s"), (pt.origpath + L"\\" + it->first).c_str(), (pt.cryptpath + L"\\" + it->first).c_str());
                 if (!CopyFile((pt.origpath + L"\\" + it->first).c_str(), (pt.cryptpath + L"\\" + it->first).c_str(), FALSE))
                 {
                     std::wstring targetfolder = pt.cryptpath + L"\\" + it->first;
@@ -482,11 +491,15 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 cmp = CompareFileTime(&it->second.ft, &cryptit->second.ft);
             if (cmp < 0)
             {
+                CCircularLog::Instance()(L"original file is older: %s : %s, %s : %s",
+                                         (pt.cryptpath + L"\\" + it->first).c_str(), GetFileTimeStringForLog(cryptit->second.ft).c_str(),
+                                         (pt.origpath + L"\\" + it->first).c_str(), GetFileTimeStringForLog(it->second.ft).c_str());
                 // original file is older than the encrypted file
                 // decrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s is older than its encrypted partner\n"), it->first.c_str());
                 if (bCopyOnly)
                 {
+                    CCircularLog::Instance()(_T("copy file %s to %s"), (pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str());
                     if (!CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE))
                     {
                         std::wstring targetfolder = pt.origpath + L"\\" + it->first;
@@ -504,11 +517,15 @@ void CFolderSync::SyncFolder( const PairData& pt )
             }
             else if (cmp > 0)
             {
+                CCircularLog::Instance()(L"encrypted file is older: %s : %s, %s : %s",
+                                         (pt.origpath + L"\\" + it->first).c_str(), GetFileTimeStringForLog(it->second.ft).c_str(),
+                                         (pt.cryptpath + L"\\" + it->first).c_str(), GetFileTimeStringForLog(cryptit->second.ft).c_str());
                 // encrypted file is older than the original file
                 // encrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s is newer than its encrypted partner\n"), it->first.c_str());
                 if (bCopyOnly)
                 {
+                    CCircularLog::Instance()(_T("copy file %s to %s"), (pt.origpath + L"\\" + it->first).c_str(), (pt.cryptpath + L"\\" + it->first).c_str());
                     if (!CopyFile((pt.origpath + L"\\" + it->first).c_str(), (pt.cryptpath + L"\\" + it->first).c_str(), FALSE))
                     {
                         std::wstring targetfolder = pt.cryptpath + L"\\" + it->first;
@@ -575,6 +592,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
             }
             else if (bCopyOnly)
             {
+                CCircularLog::Instance()(_T("copy file %s to %s"), (pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str());
                 // copy the file
                 if (!CopyFile((pt.cryptpath + L"\\" + it->first).c_str(), (pt.origpath + L"\\" + it->first).c_str(), FALSE))
                 {
@@ -719,6 +737,8 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
             if (!bRet)
                 Sleep(200);
         } while (!bRet && (retry-- > 0));
+        if (!bRet)
+            CCircularLog::Instance()(_T("failed to set file time on %s"), crypt.c_str());
         CAutoWriteLock locker(m_failureguard);
         m_failures.erase(orig);
     }
@@ -773,6 +793,8 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
             if (!bRet)
                 Sleep(200);
         } while (!bRet && (retry-- > 0));
+        if (!bRet)
+            CCircularLog::Instance()(_T("failed to set file time on %s"), orig.c_str());
         CAutoWriteLock locker(m_failureguard);
         m_failures.erase(orig);
     }
@@ -1040,4 +1062,15 @@ std::set<std::wstring> CFolderSync::GetNotifyIgnores()
     auto igncopy = m_notifyignores;
     m_notifyignores.clear();
     return igncopy;
+}
+
+std::wstring CFolderSync::GetFileTimeStringForLog( const FILETIME & ft )
+{
+    SYSTEMTIME stUTC, stLocal;
+    FileTimeToSystemTime(&ft, &stUTC);
+    SystemTimeToTzSpecificLocalTime(NULL, &stUTC, &stLocal);
+
+    return CStringUtils::Format(L"%02d.%02d.%02d - %02d:%02d:%02d:%03d",
+                                stLocal.wDay, stLocal.wMonth, stLocal.wYear,
+                                stLocal.wHour, stLocal.wMinute, stLocal.wSecond, stLocal.wMilliseconds);
 }
