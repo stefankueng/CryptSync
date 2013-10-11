@@ -85,7 +85,7 @@ private:
     bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd);
     std::wstring GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z) const;
     std::wstring GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z) const;
-
+    std::wstring                    GetFileTimeStringForLog(const FILETIME & ft);
     bool                            Run7Zip(LPWSTR cmdline, const std::wstring& cwd) const;
 
     CReaderWriterLock               m_guard;
