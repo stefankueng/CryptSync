@@ -324,6 +324,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         return;
     if (fdatacrypt.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
         return;
+    LONG cmp = CompareFileTime(&fdataorig.ftLastWriteTime, &fdatacrypt.ftLastWriteTime);
     if (pt.FAT)
     {
         // round up to two seconds accuracy
@@ -338,17 +339,31 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         fdataorig.ftLastWriteTime.dwLowDateTime  = (DWORD) (qwResult & 0xFFFFFFFF );
         fdataorig.ftLastWriteTime.dwHighDateTime = (DWORD) (qwResult >> 32 );
 
-        qwResult = (((ULONGLONG) fdatacrypt.ftLastWriteTime.dwHighDateTime) << 32) + fdatacrypt.ftLastWriteTime.dwLowDateTime;
-        if (qwResult % 20000000UL)
+        ULONGLONG qwResult2 = (((ULONGLONG)fdatacrypt.ftLastWriteTime.dwHighDateTime) << 32) + fdatacrypt.ftLastWriteTime.dwLowDateTime;
+        if (qwResult2 % 20000000UL)
         {
-            qwResult += 20000000UL;
-            qwResult /= 20000000UL;
-            qwResult *= 20000000UL;
+            qwResult2 += 20000000UL;
+            qwResult2 /= 20000000UL;
+            qwResult2 *= 20000000UL;
         }
-        fdatacrypt.ftLastWriteTime.dwLowDateTime  = (DWORD) (qwResult & 0xFFFFFFFF );
-        fdatacrypt.ftLastWriteTime.dwHighDateTime = (DWORD) (qwResult >> 32 );
+        fdatacrypt.ftLastWriteTime.dwLowDateTime = (DWORD)(qwResult2 & 0xFFFFFFFF);
+        fdatacrypt.ftLastWriteTime.dwHighDateTime = (DWORD)(qwResult2 >> 32);
+        cmp = CompareFileTime(&fdataorig.ftLastWriteTime, &fdatacrypt.ftLastWriteTime);
+
+        // if the difference is smaller than 4 seconds (twice the FAT limit),
+        // then assume the times are equal.
+        if (qwResult > qwResult2)
+        {
+
+            if ((qwResult - qwResult2) < 40000000UL)
+                cmp = 0;
+        }
+        else
+        {
+            if ((qwResult2 - qwResult) < 40000000UL)
+                cmp = 0;
+        }
     }
-    LONG cmp = CompareFileTime(&fdataorig.ftLastWriteTime, &fdatacrypt.ftLastWriteTime);
     if ((cmp < 0) && (!pt.oneway))
     {
         CCircularLog::Instance()(L"original file is older: %s : %s, %s : %s",
@@ -479,17 +494,30 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 ft1.dwLowDateTime  = (DWORD) (qwResult & 0xFFFFFFFF );
                 ft1.dwHighDateTime = (DWORD) (qwResult >> 32 );
 
-                qwResult = (((ULONGLONG) ft2.dwHighDateTime) << 32) + ft2.dwLowDateTime;
-                if (qwResult % 20000000UL)
+                ULONGLONG qwResult2 = (((ULONGLONG)ft2.dwHighDateTime) << 32) + ft2.dwLowDateTime;
+                if (qwResult2 % 20000000UL)
                 {
-                    qwResult += 20000000UL;
-                    qwResult /= 20000000UL;
-                    qwResult *= 20000000UL;
+                    qwResult2 += 20000000UL;
+                    qwResult2 /= 20000000UL;
+                    qwResult2 *= 20000000UL;
                 }
-                ft2.dwLowDateTime  = (DWORD) (qwResult & 0xFFFFFFFF );
-                ft2.dwHighDateTime = (DWORD) (qwResult >> 32 );
+                ft2.dwLowDateTime  = (DWORD) (qwResult2 & 0xFFFFFFFF );
+                ft2.dwHighDateTime = (DWORD) (qwResult2 >> 32 );
 
                 cmp = CompareFileTime(&ft1, &ft2);
+                // if the difference is smaller than 4 seconds (twice the FAT limit),
+                // then assume the times are equal.
+                if (qwResult > qwResult2)
+                {
+                    
+                    if ((qwResult - qwResult2) < 40000000UL)
+                        cmp = 0;
+                }
+                else
+                {
+                    if ((qwResult2 - qwResult) < 40000000UL)
+                        cmp = 0;
+                }
             }
             else
                 cmp = CompareFileTime(&it->second.ft, &cryptit->second.ft);
