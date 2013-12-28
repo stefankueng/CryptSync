@@ -74,6 +74,7 @@ public:
     std::map<std::wstring, SyncOp>  GetFailures();
     std::set<std::wstring>          GetNotifyIgnores();
     size_t                          GetFailureCount();
+    void                            SetTrayWnd(HWND hTray) { m_TrayWnd = hTray; }
 
 private:
     static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
@@ -94,6 +95,7 @@ private:
     PairVector                      m_pairs;
     std::wstring                    m_sevenzip;
     HWND                            m_parentWnd;
+    HWND                            m_TrayWnd;
     CProgressDlg *                  m_pProgDlg;
     DWORD                           m_progress;
     DWORD                           m_progressTotal;
