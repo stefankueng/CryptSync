@@ -275,7 +275,12 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
             delbuf[crypt.size()] = 0;
             delbuf[crypt.size()+1] = 0;
             fop.pFrom = delbuf.get();
-            SHFileOperation(&fop);
+            if (SHFileOperation(&fop))
+            {
+                // could not delete file to the trashbin, so delete it directly
+                DeleteFile(crypt.c_str());
+                DeleteFile(delbuf.get());
+            }
         }
         return;
     }
@@ -315,7 +320,11 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
             delbuf[orig.size()] = 0;
             delbuf[orig.size()+1] = 0;
             fop.pFrom = delbuf.get();
-            SHFileOperation(&fop);
+            if (SHFileOperation(&fop))
+            {
+                // could not delete file to the trashbin, so delete it directly
+                DeleteFile(orig.c_str());
+            }
             return;
         }
     }
@@ -624,7 +633,11 @@ void CFolderSync::SyncFolder( const PairData& pt )
                     CAutoWriteLock nlocker(m_notignguard);
                     m_notifyignores.insert(crypt);
                 }
-                SHFileOperation(&fop);
+                if (SHFileOperation(&fop))
+                {
+                    // could not delete file to the trashbin, so delete it directly
+                    DeleteFile(it->first.c_str());
+                }
             }
             else if (bCopyOnly)
             {
