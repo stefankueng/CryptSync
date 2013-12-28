@@ -178,10 +178,17 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             _beginthreadex(NULL, 0, UpdateCheckThreadEntry, this, 0, &threadId);
             if (!m_bTrayMode)
                 ::PostMessage(*this, WM_COMMAND, MAKEWPARAM(IDM_OPTIONS, 1), 0);
+            foldersyncer.SetTrayWnd(m_hwnd);
         }
         break;
     case WM_COMMAND:
         return DoCommand(LOWORD(wParam));
+        break;
+    case WM_PROGRESS:
+        {
+            m_itemsprocessed = (int)wParam;
+            m_totalitemstoprocess = (int)lParam;
+        }
         break;
     case TRAY_WM_MESSAGE:
         {
@@ -214,6 +221,8 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     WCHAR buf[200] = {0};
                     if (count)
                         swprintf_s(buf, L"%d items failed to synchronize", count);
+                    else if (m_totalitemstoprocess)
+                        swprintf_s(buf, L"Synched %d of %d items", m_itemsprocessed, m_totalitemstoprocess);
                     else
                         wcscpy_s(buf, L"synchronization ok");
                     niData.uFlags = NIF_TIP;

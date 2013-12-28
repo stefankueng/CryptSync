@@ -32,5 +32,6 @@ extern CPairs g_pairs;
 
 #define TRAY_WM_MESSAGE     (WM_APP+1)
 #define WM_THREADENDED      (WM_APP+2)
+#define WM_PROGRESS         (WM_APP+3)
 
 #define DEBUGOUTPUTREGPATH L"Software\\CryptSync\\DebugOutputString"

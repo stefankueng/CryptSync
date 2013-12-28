@@ -36,6 +36,7 @@
 
 CFolderSync::CFolderSync(void)
     : m_parentWnd(NULL)
+    , m_TrayWnd(NULL)
     , m_pProgDlg(NULL)
     , m_sevenzip(L"%ProgramFiles%\\7-zip\\7z.exe")
     , m_progress(0)
@@ -432,6 +433,8 @@ void CFolderSync::SyncFolder( const PairData& pt )
         m_pProgDlg->SetLine(2, L"");
         m_pProgDlg->SetProgress(m_progress, m_progressTotal);
     }
+    if (m_TrayWnd)
+        PostMessage(m_TrayWnd, WM_PROGRESS, m_progress, m_progressTotal);
     if (GetFileAttributes(CPathUtils::AdjustForMaxPath(pt.origpath).c_str()) == INVALID_FILE_ATTRIBUTES)
     {
         CCircularLog::Instance()(L"error accessing path \"%s\", skipped", pt.origpath.c_str());
@@ -444,14 +447,21 @@ void CFolderSync::SyncFolder( const PairData& pt )
 
     for (auto it = origFileList.cbegin(); (it != origFileList.cend()) && m_bRunning; ++it)
     {
+        if (m_TrayWnd)
+            PostMessage(m_TrayWnd, WM_PROGRESS, m_progress, m_progressTotal);
         if (m_pProgDlg)
         {
             m_pProgDlg->SetLine(0, L"syncing files");
             m_pProgDlg->SetLine(2, it->first.c_str(), true);
-            m_pProgDlg->SetProgress(m_progress++, m_progressTotal);
+            m_pProgDlg->SetProgress(m_progress, m_progressTotal);
             if (m_pProgDlg->HasUserCancelled())
+            {
+                if (m_TrayWnd)
+                    PostMessage(m_TrayWnd, WM_PROGRESS, 0, 0);
                 break;
+            }
         }
+        ++m_progress;
 
         if (CIgnores::Instance().IsIgnored(CPathUtils::Append(pt.origpath, it->first)))
             continue;
@@ -602,14 +612,21 @@ void CFolderSync::SyncFolder( const PairData& pt )
     // decrypt it
     for (auto it = cryptFileList.cbegin(); (it != cryptFileList.cend()) && m_bRunning; ++it)
     {
+        if (m_TrayWnd)
+            PostMessage(m_TrayWnd, WM_PROGRESS, m_progress, m_progressTotal);
         if (m_pProgDlg)
         {
             m_pProgDlg->SetLine(0, L"syncing files");
             m_pProgDlg->SetLine(2, it->first.c_str(), true);
-            m_pProgDlg->SetProgress(m_progress++, m_progressTotal);
+            m_pProgDlg->SetProgress(m_progress, m_progressTotal);
             if (m_pProgDlg->HasUserCancelled())
+            {
+                if (m_TrayWnd)
+                    PostMessage(m_TrayWnd, WM_PROGRESS, 0, 0);
                 break;
+            }
         }
+        ++m_progress;
 
         if (CIgnores::Instance().IsIgnored(CPathUtils::Append(pt.origpath, it->first)))
             continue;
@@ -686,6 +703,8 @@ void CFolderSync::SyncFolder( const PairData& pt )
             }
         }
     }
+    if (m_TrayWnd)
+        PostMessage(m_TrayWnd, WM_PROGRESS, 0, 0);
 }
 
 std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z ) const

@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012-2013 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,6 +40,8 @@ public:
         , m_bNewerVersionAvailable(false)
         , m_bTrayMode(true)
         , m_bOptionsDialogShown(false)
+        , m_itemsprocessed(0)
+        , m_totalitemstoprocess(0)
     {
         SetWindowTitle((LPCTSTR)ResString(hResource, IDS_APP_TITLE));
     };
@@ -75,6 +77,8 @@ protected:
     bool                m_bTrayMode;
     bool                m_bOptionsDialogShown;
     std::set<std::wstring> m_lastChangedPaths;
+    int                 m_itemsprocessed;
+    int                 m_totalitemstoprocess;
 
     typedef BOOL(__stdcall *PFNCHANGEWINDOWMESSAGEFILTEREX)(HWND hWnd, UINT message, DWORD dwFlag, PCHANGEFILTERSTRUCT pChangeFilterStruct);
     static PFNCHANGEWINDOWMESSAGEFILTEREX m_pChangeWindowMessageFilter;
