@@ -432,6 +432,11 @@ void CFolderSync::SyncFolder( const PairData& pt )
         m_pProgDlg->SetLine(2, L"");
         m_pProgDlg->SetProgress(m_progress, m_progressTotal);
     }
+    if (GetFileAttributes(CPathUtils::AdjustForMaxPath(pt.origpath).c_str()) == INVALID_FILE_ATTRIBUTES)
+    {
+        CCircularLog::Instance()(L"error accessing path \"%s\", skipped", pt.origpath.c_str());
+        return;
+    }
     auto origFileList  = GetFileList(true, pt.origpath, pt.password, pt.encnames, pt.use7z);
     auto cryptFileList = GetFileList(false, pt.cryptpath, pt.password, pt.encnames, pt.use7z);
 
