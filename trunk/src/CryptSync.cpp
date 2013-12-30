@@ -94,7 +94,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"/syncall  : syncs all set up pairs and then exists\n"
                              L"/progress : shows a progress dialog while syncing\n"
                              L"/logpath  : path to a logfile\n"
-                             L"/maxlog   : maximum number of lines the logfile can have";
+                             L"/maxlog   : maximum number of lines the logfile can have\n";
+                             L"/tray     : start in background without showing a dialog first";
         MessageBox(NULL, sInfo.c_str(), L"CryptSync Command Line Options", MB_ICONINFORMATION);
         return 1;
     }
