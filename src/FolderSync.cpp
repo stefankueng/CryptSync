@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013 - Stefan Kueng
+// Copyright (C) 2012-2014 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -440,8 +440,14 @@ void CFolderSync::SyncFolder( const PairData& pt )
         CCircularLog::Instance()(L"error accessing path \"%s\", skipped", pt.origpath.c_str());
         return;
     }
-    auto origFileList  = GetFileList(true, pt.origpath, pt.password, pt.encnames, pt.use7z);
-    auto cryptFileList = GetFileList(false, pt.cryptpath, pt.password, pt.encnames, pt.use7z);
+    DWORD dwErr = 0;
+    auto origFileList  = GetFileList(true, pt.origpath, pt.password, pt.encnames, pt.use7z, dwErr);
+    if (dwErr)
+    {
+        CCircularLog::Instance()(L"error enumerating path \"%s\", skipped", pt.origpath.c_str());
+        return;
+    }
+    auto cryptFileList = GetFileList(false, pt.cryptpath, pt.password, pt.encnames, pt.use7z, dwErr);
 
     m_progressTotal += DWORD(origFileList.size() + cryptFileList.size());
 
@@ -707,8 +713,9 @@ void CFolderSync::SyncFolder( const PairData& pt )
         PostMessage(m_TrayWnd, WM_PROGRESS, 0, 0);
 }
 
-std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z ) const
+std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, DWORD & error ) const
 {
+    error = 0;
     std::wstring enumpath = path;
     if ((enumpath.size() == 2)&&(enumpath[1]==':'))
         enumpath += L"\\";
@@ -749,8 +756,9 @@ std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( bool orig, co
         }
 
         filelist[relpath] = fd;
+        if (error == 0)
+            error = enumerator.GetError();
     }
-
     return filelist;
 }
 
