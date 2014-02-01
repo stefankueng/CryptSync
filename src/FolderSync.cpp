@@ -448,6 +448,11 @@ void CFolderSync::SyncFolder( const PairData& pt )
         return;
     }
     auto cryptFileList = GetFileList(false, pt.cryptpath, pt.password, pt.encnames, pt.use7z, dwErr);
+    if (dwErr)
+    {
+        CCircularLog::Instance()(L"error enumerating path \"%s\", skipped", pt.cryptpath.c_str());
+        return;
+    }
 
     m_progressTotal += DWORD(origFileList.size() + cryptFileList.size());
 
