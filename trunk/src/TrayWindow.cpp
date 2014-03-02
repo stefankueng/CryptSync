@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013 - Stefan Kueng
+// Copyright (C) 2012-2014 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -265,6 +265,31 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": remove notification for file %s\n"), foundIt->c_str());
                             m_lastChangedPaths.erase(foundIt);
                         }
+                    }
+                }
+
+                // if the number of watched paths is not what we expect,
+                // reinitialize the paths: the watching may have failed
+                // because the drive wasn't ready yet when CS started,
+                // or even due to an access violation (virus scanners, ...)
+                int watchpathcount = 0;
+                for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
+                {
+                    ++watchpathcount;
+                    if (!it->oneway)
+                        ++watchpathcount;
+                }
+
+                if (watcher.GetNumberOfWatchedPaths() != watchpathcount)
+                {
+                    watcher.ClearPaths();
+                    for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
+                    {
+                        std::wstring origpath = it->origpath;
+                        std::wstring cryptpath = it->cryptpath;
+                        watcher.AddPath(origpath);
+                        if (!it->oneway)
+                            watcher.AddPath(cryptpath);
                     }
                 }
             }
