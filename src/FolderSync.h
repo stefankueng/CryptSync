@@ -70,6 +70,7 @@ public:
     void                            SyncFolders(const PairVector& pv, HWND hWnd = NULL);
     void                            SyncFoldersWait(const PairVector& pv, HWND hWnd = NULL);
     void                            SyncFile(const std::wstring& path);
+    void                            SetPairs(const PairVector& pv);
     void                            Stop();
     std::map<std::wstring, SyncOp>  GetFailures();
     std::set<std::wstring>          GetNotifyIgnores();

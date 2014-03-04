@@ -75,6 +75,12 @@ void CFolderSync::Stop()
     }
 }
 
+void CFolderSync::SetPairs(const PairVector& pv)
+{
+    CAutoWriteLock locker(m_guard);
+    m_pairs = pv;
+}
+
 void CFolderSync::SyncFolders( const PairVector& pv, HWND hWnd )
 {
     if (m_bRunning)
