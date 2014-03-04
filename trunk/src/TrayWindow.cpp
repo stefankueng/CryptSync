@@ -178,6 +178,7 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             _beginthreadex(NULL, 0, UpdateCheckThreadEntry, this, 0, &threadId);
             if (!m_bTrayMode)
                 ::PostMessage(*this, WM_COMMAND, MAKEWPARAM(IDM_OPTIONS, 1), 0);
+            foldersyncer.SetPairs(g_pairs);
             foldersyncer.SetTrayWnd(m_hwnd);
         }
         break;
