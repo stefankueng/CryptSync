@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013 - Stefan Kueng
+// Copyright (C) 2012-2014 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,7 @@ public:
         : encnames(false)
         , oneway(false)
         , use7z(false)
+        , useGPG(false)
         , FAT(false)
     {
     }
@@ -40,6 +41,7 @@ public:
     bool                    encnames;
     bool                    oneway;
     bool                    use7z;
+    bool                    useGPG;
     bool                    FAT;
     std::wstring            nosync() const { return m_nosync; }
     void                    nosync(const std::wstring& c) { m_nosync = c; UpdateVec(m_nosync, m_nosyncvec); }
@@ -89,6 +91,7 @@ public:
                                     bool encryptnames,
                                     bool oneway,
                                     bool use7zext,
+                                    bool useGPGe,
                                     bool fat);
 protected:
     void                    InitPairList();

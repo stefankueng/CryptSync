@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013 - Stefan Kueng
+// Copyright (C) 2012-2014 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -88,6 +88,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"/encnames : encrypt file and folder names\n"
                              L"/mirror   : mirror only from src to dst\n"
                              L"/use7z    : use .7z instead of .cryptsync extension\n"
+                             L"/useGPG   : use GnuPG encryption\n"
                              L"/fat      : use FAT write time accuracy (2s)\n"
                              L"/ignore   : ignore patterns\n"
                              L"\n"
@@ -156,6 +157,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         bool encnames    = !!parser.HasKey(L"encnames");
         bool mirror      = !!parser.HasKey(L"mirror");
         bool use7z       = !!parser.HasKey(L"use7z");
+        bool useGPG      = !!parser.HasKey(L"useGPG");
         bool fat         = !!parser.HasKey(L"fat");
         std::wstring ign =   parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
 
@@ -165,7 +167,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
         CPairs pair;
         pair.clear();
-        pair.AddPair(src, dst, pw, cpy, nsy, encnames, mirror, use7z, fat);
+        pair.AddPair(src, dst, pw, cpy, nsy, encnames, mirror, use7z, useGPG, fat);
         CFolderSync foldersync;
         foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
         return 1;

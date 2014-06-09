@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013 - Stefan Kueng
+// Copyright (C) 2012-2014 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -128,6 +128,10 @@ void CPairs::InitPairList()
         CRegStdDWORD zextreg(key, FALSE);
         pd.use7z = !!(DWORD)zextreg;
 
+        swprintf_s(key, L"Software\\CryptSync\\UseGPG%d", p);
+        CRegStdDWORD zGPGreg(key, FALSE);
+        pd.useGPG = !!(DWORD)zGPGreg;
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
         CRegStdDWORD fatreg(key, FALSE);
         pd.FAT = !!(DWORD)fatreg;
@@ -178,6 +182,10 @@ void CPairs::SavePairs()
         CRegStdDWORD zextreg(key, FALSE, true);
         zextreg = (DWORD)it->use7z;
 
+        swprintf_s(key, L"Software\\CryptSync\\UseGPG%d", p);
+        CRegStdDWORD zGPGreg(key, FALSE, true);
+        zGPGreg = (DWORD)it->useGPG;
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
         CRegStdDWORD fatreg(key, FALSE, true);
         fatreg = (DWORD)it->FAT;
@@ -220,6 +228,10 @@ void CPairs::SavePairs()
         CRegStdDWORD zextreg(key);
         zextreg.removeValue();
 
+        swprintf_s(key, L"Software\\CryptSync\\UseGPG%d", p);
+        CRegStdDWORD zGPGreg(key);
+        zGPGreg.removeValue();
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
         CRegStdDWORD fatreg(key);
         fatreg.removeValue();
@@ -227,7 +239,7 @@ void CPairs::SavePairs()
     }
 }
 
-bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& copyonly, const std::wstring& nosync, bool encryptnames, bool oneway, bool use7zext, bool fat )
+bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& copyonly, const std::wstring& nosync, bool encryptnames, bool oneway, bool use7zext, bool useGPGe, bool fat)
 {
     PairData pd;
     pd.origpath = orig;
@@ -238,6 +250,7 @@ bool CPairs::AddPair( const std::wstring& orig, const std::wstring& crypt, const
     pd.encnames = encryptnames;
     pd.oneway = oneway;
     pd.use7z = use7zext;
+    pd.useGPG = useGPGe;
     pd.FAT = fat;
     if (std::find(cbegin(), cend(), pd) == cend())
     {
