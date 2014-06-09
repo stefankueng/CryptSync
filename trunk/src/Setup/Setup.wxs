@@ -45,7 +45,10 @@
           <Component Id="ZipExe" Guid="334DA1F3-3A8E-4F79-B6F8-DB7B28CB5FBE">
             <File Id="Z7Z.EXE" Name="7z.exe" DiskId="1" Source="../../tools/win32/7z.exe" Vital="yes" />
             <File Id="Z7Z.DLL" Name="7z.dll" DiskId="1" Source="../../tools/win32/7z.dll" Vital="yes" />
-            <RegistryValue Root="HKLM" Key="Software\CryptSync" Name="installDir" Value="[INSTALLDIR]" Type="string" />
+          </Component>
+          <Component Id="GPG" Guid="F80C3396-152B-475A-8341-77FA25241277">
+            <File Id="GPG.EXE" Name="gpg.exe" DiskId="1" Source="../../tools/gpg.exe" Vital="yes" />
+            <File Id="ICONV.DLL" Name="iconv.dll" DiskId="1" Source="../../tools/iconv.dll" Vital="yes" />
           </Component>
 
         </Directory>
@@ -70,6 +73,7 @@
       <Feature Id="MainEXE" Title="Program" Description="The main executable." Level="1">
         <ComponentRef Id="CryptSync.exe" />
         <ComponentRef Id="ZipExe" />
+        <ComponentRef Id="GPG" />
         <ComponentRef Id="StartMenuShortCut" />
       </Feature>
     </Feature>
