@@ -66,6 +66,8 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SendDlgItemMessage(*this, IDC_USEGPG, BM_SETCHECK, m_UseGPGe ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_FAT, BM_SETCHECK, m_FAT ? BST_CHECKED : BST_UNCHECKED, NULL);
 
+            DialogEnableWindow(IDC_USE7ZEXT, !m_UseGPGe);
+
             AddToolTip(IDC_ONEWAY, L"if this is checked, changes in the encrypted folder are not synchronized back to the original folder!");
             AddToolTip(IDC_NOCRYPT, L"File masks, separated by '|' example: *.jpg|*.zip");
             AddToolTip(IDC_NOSYNC, L"File masks, separated by '|' example: *.jpg|*.zip");
@@ -202,6 +204,10 @@ LRESULT CPairAddDlg::DoCommand(int id)
                 m_cryptpath = pathbuf.get();
             }
         }
+        break;
+    case IDC_USEGPG:
+        m_UseGPGe = !m_UseGPGe;
+        DialogEnableWindow(IDC_USE7ZEXT, !m_UseGPGe);
         break;
     }
     return 1;
