@@ -170,6 +170,11 @@ LRESULT CPairAddDlg::DoCommand(int id)
             m_7zExt = !!SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_GETCHECK, 0, NULL);
             m_UseGPGe = !!SendDlgItemMessage(*this, IDC_USEGPG, BM_GETCHECK, 0, NULL);
             m_FAT = !!SendDlgItemMessage(*this, IDC_FAT, BM_GETCHECK, 0, NULL);
+            if (m_UseGPGe && m_password.empty())
+            {
+                ::MessageBox(*this, L"empty passwords are not allowed when using GPG for encryption!", L"empty password", MB_ICONERROR);
+                return 0;
+            }
         }
         // fall through
     case IDCANCEL:
