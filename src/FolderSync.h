@@ -82,19 +82,20 @@ private:
     void                            SyncFile(const std::wstring& path, const PairData& pt);
     void                            SyncFolderThread();
     void                            SyncFolder(const PairData& pt);
-    std::map<std::wstring,FileData, ci_less> GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, DWORD & error) const;
-    bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd);
-    bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd);
-    std::wstring GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z) const;
-    std::wstring GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z) const;
+    std::map<std::wstring, FileData, ci_less> GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, bool useGPG, DWORD & error) const;
+    bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
+    bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
+    std::wstring GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG) const;
+    std::wstring GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG) const;
     std::wstring                    GetFileTimeStringForLog(const FILETIME & ft);
-    bool                            Run7Zip(LPWSTR cmdline, const std::wstring& cwd) const;
+    bool                            RunExtTool(LPWSTR cmdline, const std::wstring& cwd, bool useGPG) const;
 
     CReaderWriterLock               m_guard;
     CReaderWriterLock               m_failureguard;
     CReaderWriterLock               m_notignguard;
     PairVector                      m_pairs;
     std::wstring                    m_sevenzip;
+    std::wstring                    m_GnuPG;
     HWND                            m_parentWnd;
     HWND                            m_TrayWnd;
     CProgressDlg *                  m_pProgDlg;

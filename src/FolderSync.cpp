@@ -39,6 +39,7 @@ CFolderSync::CFolderSync(void)
     , m_TrayWnd(NULL)
     , m_pProgDlg(NULL)
     , m_sevenzip(L"%ProgramFiles%\\7-zip\\7z.exe")
+    , m_GnuPG(L"%ProgramFiles%\\GNU\\GnuPG\\Pub\\gpg.exe")
     , m_progress(0)
     , m_progressTotal(1)
     , m_bRunning(FALSE)
@@ -50,11 +51,42 @@ CFolderSync::CFolderSync(void)
     m_sevenzip = dir + L"\\7z.exe";
     if (!PathFileExists(m_sevenzip.c_str()))
     {
-        m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
+        m_sevenzip = CStringUtils::ExpandEnvironmentStrings(L"%ProgramFiles%\\7-zip\\7z.exe");
         if (!PathFileExists(m_sevenzip.c_str()))
         {
+#ifdef _WIN64
+            m_sevenzip = L"%ProgramFiles(x86)%\\7-zip\\7z.exe";
+#else
             m_sevenzip = L"%ProgramW6432%\\7-zip\\7z.exe";
+#endif
             m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
+        }
+    }
+    m_GnuPG = CStringUtils::ExpandEnvironmentStrings(m_GnuPG);
+    if (!PathFileExists(m_GnuPG.c_str()))
+    {
+#ifdef _WIN64
+        m_GnuPG = L"%ProgramFiles(x86)%\\GNU\\GnuPG\\Pub\\gpg.exe";
+#else
+        m_GnuPG = L"%ProgramW6432%\\GNU\\GnuPG\\Pub\\gpg.exe";
+#endif
+        m_GnuPG = CStringUtils::ExpandEnvironmentStrings(m_GnuPG);
+        if (!PathFileExists(m_GnuPG.c_str()))
+        {
+            // try the old version 1 of gpg
+            m_GnuPG = L"%ProgramFiles%\\GNU\\GnuPG\\gpg.exe";
+            m_GnuPG = CStringUtils::ExpandEnvironmentStrings(m_GnuPG);
+            if (!PathFileExists(m_GnuPG.c_str()))
+            {
+#ifdef _WIN64
+                m_GnuPG = L"%ProgramW6432%\\GNU\\GnuPG\\gpg.exe";
+#else
+                m_GnuPG = L"%ProgramW6432%\\GNU\\GnuPG\\gpg.exe";
+#endif
+                m_GnuPG = CStringUtils::ExpandEnvironmentStrings(m_GnuPG);
+                if (!PathFileExists(m_GnuPG.c_str()))
+                    m_GnuPG = dir + L"\\gpg.exe";
+            }
         }
     }
 }
@@ -219,7 +251,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         if (bCopyOnly)
             crypt = CPathUtils::Append(crypt, path.substr(orig.size()));
         else
-            crypt = CPathUtils::Append(crypt, GetEncryptedFilename(path.substr(orig.size()), pt.password, pt.encnames, pt.use7z));
+            crypt = CPathUtils::Append(crypt, GetEncryptedFilename(path.substr(orig.size()), pt.password, pt.encnames, pt.use7z, pt.useGPG));
         orig = path;
     }
     else
@@ -227,7 +259,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         if (bCopyOnly)
             orig = CPathUtils::Append(orig, path.substr(crypt.size()));
         else
-            orig = CPathUtils::Append(orig, GetDecryptedFilename(path.substr(crypt.size()), pt.password, pt.encnames, pt.use7z));
+            orig = CPathUtils::Append(orig, GetDecryptedFilename(path.substr(crypt.size()), pt.password, pt.encnames, pt.use7z, pt.useGPG));
         crypt = path;
     }
     crypt = CPathUtils::AdjustForMaxPath(crypt);
@@ -400,7 +432,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
             }
         }
         else
-            DecryptFile(orig, crypt, pt.password, fd);
+            DecryptFile(orig, crypt, pt.password, fd, pt.useGPG);
     }
     else if ((cmp > 0) || ((cmp < 0) && pt.oneway))
     {
@@ -422,7 +454,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
             }
         }
         else
-            EncryptFile(orig, crypt, pt.password, fd);
+            EncryptFile(orig, crypt, pt.password, fd, pt.useGPG);
     }
     else if (cmp == 0)
     {
@@ -447,13 +479,13 @@ void CFolderSync::SyncFolder( const PairData& pt )
         return;
     }
     DWORD dwErr = 0;
-    auto origFileList  = GetFileList(true, pt.origpath, pt.password, pt.encnames, pt.use7z, dwErr);
+    auto origFileList  = GetFileList(true, pt.origpath, pt.password, pt.encnames, pt.use7z, pt.useGPG, dwErr);
     if (dwErr)
     {
         CCircularLog::Instance()(L"error enumerating path \"%s\", skipped", pt.origpath.c_str());
         return;
     }
-    auto cryptFileList = GetFileList(false, pt.cryptpath, pt.password, pt.encnames, pt.use7z, dwErr);
+    auto cryptFileList = GetFileList(false, pt.cryptpath, pt.password, pt.encnames, pt.use7z, pt.useGPG, dwErr);
     if (dwErr)
     {
         CCircularLog::Instance()(L"error enumerating path \"%s\", skipped", pt.cryptpath.c_str());
@@ -506,9 +538,9 @@ void CFolderSync::SyncFolder( const PairData& pt )
             }
             else
             {
-                std::wstring cryptpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z)));
+                std::wstring cryptpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z, pt.useGPG)));
                 std::wstring origpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.origpath, it->first));
-                EncryptFile(origpath, cryptpath, pt.password, it->second);
+                EncryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG);
             }
         }
         else
@@ -550,7 +582,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 // then assume the times are equal.
                 if (qwResult > qwResult2)
                 {
-                    
+
                     if ((qwResult - qwResult2) < 40000000UL)
                         cmp = 0;
                 }
@@ -585,9 +617,9 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 }
                 else
                 {
-                    std::wstring cryptpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z)));
+                    std::wstring cryptpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z, pt.useGPG)));
                     std::wstring origpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.origpath, it->first));
-                    DecryptFile(origpath, cryptpath, pt.password, it->second);
+                    DecryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG);
                 }
             }
             else if (cmp > 0)
@@ -613,9 +645,9 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 }
                 else
                 {
-                    std::wstring cryptpath = CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z));
+                    std::wstring cryptpath = CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z, pt.useGPG));
                     std::wstring origpath = CPathUtils::Append(pt.origpath, it->first);
-                    EncryptFile(origpath, cryptpath, pt.password, it->second);
+                    EncryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG);
                 }
             }
             else if (cmp == 0)
@@ -706,7 +738,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
                     fname = it->first.substr(slashpos + 1);
                 std::wstring cryptpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.cryptpath, it->second.filerelpath));
                 std::wstring origpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.origpath, it->first));
-                if (!DecryptFile(origpath, cryptpath, pt.password, it->second))
+                if (!DecryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG))
                 {
                     if (!it->second.filenameEncrypted)
                     {
@@ -724,7 +756,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
         PostMessage(m_TrayWnd, WM_PROGRESS, 0, 0);
 }
 
-std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, DWORD & error ) const
+std::map<std::wstring, FileData, ci_less> CFolderSync::GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, bool useGPG, DWORD & error) const
 {
     error = 0;
     std::wstring enumpath = path;
@@ -759,7 +791,7 @@ std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( bool orig, co
 
         std::wstring decryptedRelPath = relpath;
         if (!orig)
-            decryptedRelPath = GetDecryptedFilename(relpath, password, encnames, use7z);
+            decryptedRelPath = GetDecryptedFilename(relpath, password, encnames, use7z, useGPG);
         fd.filenameEncrypted = (_wcsicmp(decryptedRelPath.c_str(), fd.filerelpath.c_str())!=0);
         if (fd.filenameEncrypted)
         {
@@ -773,7 +805,7 @@ std::map<std::wstring,FileData, ci_less> CFolderSync::GetFileList( bool orig, co
     return filelist;
 }
 
-bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd )
+bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG)
 {
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": encrypt file %s to %s\n"), orig.c_str(), crypt.c_str());
     CCircularLog::Instance()(_T("encrypt file %s to %s"), orig.c_str(), crypt.c_str());
@@ -808,10 +840,20 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
         compression = 0;    // turn off compression for files bigger than 100MB
 
     if (password.empty())
+    {
+        CCircularLog::Instance()(_T("password is blank - NOT secure - force 7z not GPG"), crypt.c_str());
         swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx%d -mhe=on -m0=lzma2 -mtc=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), compression);
+    }
     else
-        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -p\"%s\" -mx%d -mhe=on -m0=lzma2 -mtc=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str(), compression);
-    bool bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
+    {
+
+        if (useGPG)
+            swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" --batch --yes -c -a --passphrase \"%s\" -o \"%s\" \"%s\" ", m_GnuPG.c_str(), password.c_str(), cryptname.c_str(), orig.c_str());
+        else
+            swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -p\"%s\" -mx%d -mhe=on -m0=lzma2 -mtc=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str(), compression);
+    }
+
+    bool bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
     if (!bRet)
     {
         SHCreateDirectory(NULL, targetfolder.c_str());
@@ -819,7 +861,7 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
             CAutoWriteLock nlocker(m_notignguard);
             m_notifyignores.insert(crypt);
         }
-        bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
+        bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
     }
     if (bRet)
     {
@@ -853,7 +895,7 @@ bool CFolderSync::EncryptFile( const std::wstring& orig, const std::wstring& cry
     return bRet;
 }
 
-bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd )
+bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG )
 {
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), crypt.c_str(), orig.c_str());
     CCircularLog::Instance()(_T("decrypt file %s to %s"), crypt.c_str(), orig.c_str());
@@ -863,11 +905,20 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     std::wstring targetfolder = orig.substr(0, slashpos);
     size_t buflen = orig.size() + crypt.size() + password.size() + 1000;
     std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
+
     if (password.empty())
+    {
+        CCircularLog::Instance()(_T("password is blank - NOT secure - force 7z not GPG"), crypt.c_str());
         swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" e \"%s\" -o\"%s\" -y", m_sevenzip.c_str(), crypt.c_str(), targetfolder.c_str());
+    }
     else
-        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" e \"%s\" -o\"%s\" -p\"%s\" -y", m_sevenzip.c_str(), crypt.c_str(), targetfolder.c_str(), password.c_str());
-    bool bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
+    {
+        if (useGPG)
+            swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" --yes --batch --passphrase \"%s\" -o \"%s\" \"%s\" ", m_GnuPG.c_str(), password.c_str(), orig.c_str(), crypt.c_str());
+        else
+            swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" e \"%s\" -o\"%s\" -p\"%s\" -y", m_sevenzip.c_str(), crypt.c_str(), targetfolder.c_str(), password.c_str());
+    }
+    bool bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
     if (!bRet)
     {
         SHCreateDirectory(NULL, targetfolder.c_str());
@@ -875,7 +926,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
             CAutoWriteLock nlocker(m_notignguard);
             m_notifyignores.insert(orig);
         }
-        bRet = Run7Zip(cmdlinebuf.get(), targetfolder);
+        bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
     }
     if (bRet)
     {
@@ -908,7 +959,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     return bRet;
 }
 
-std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z ) const
+std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG) const
 {
     std::wstring decryptName = filename;
     size_t dotpos = filename.find_last_of('.');
@@ -922,22 +973,34 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
     {
         std::wstring f = filename;
         std::transform(f.begin(), f.end(), f.begin(), std::tolower);
-        if (use7z)
+        if (useGPG)
         {
-            size_t pos = f.rfind(L".7z");
-            if ((pos != std::string::npos) && (pos == (filename.size() - 3)))
+            size_t pos = f.rfind(L".gpg");
+            if ((pos != std::string::npos) && (pos == (filename.size() - 4)))
             {
                 return filename.substr(0, pos);
             }
         }
         else
         {
-            size_t pos = f.rfind(L".cryptsync");
-            if ((pos != std::string::npos) && (pos == (filename.size() - 10)))
+            if (use7z)
             {
-                return filename.substr(0, pos);
+                size_t pos = f.rfind(L".7z");
+                if ((pos != std::string::npos) && (pos == (filename.size() - 3)))
+                {
+                    return filename.substr(0, pos);
+                }
+            }
+            else
+            {
+                size_t pos = f.rfind(L".cryptsync");
+                if ((pos != std::string::npos) && (pos == (filename.size() - 10)))
+                {
+                    return filename.substr(0, pos);
+                }
             }
         }
+
         return filename;
     }
 
@@ -1027,22 +1090,31 @@ std::wstring CFolderSync::GetDecryptedFilename( const std::wstring& filename, co
     return decryptName;
 }
 
-std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z ) const
+std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG) const
 {
     std::wstring encryptFilename = filename;
     if (!encryptname)
     {
         std::wstring f = filename;
         std::transform(f.begin(), f.end(), f.begin(), std::tolower);
-        if (use7z)
+
+        if (useGPG)
         {
-            encryptFilename += L".7z";
+            encryptFilename += L".gpg";
             return encryptFilename;
         }
         else
         {
-            encryptFilename += L".cryptsync";
-            return encryptFilename;
+            if (use7z)
+            {
+                encryptFilename += L".7z";
+                return encryptFilename;
+            }
+            else
+            {
+                encryptFilename += L".cryptsync";
+                return encryptFilename;
+            }
         }
     }
 
@@ -1095,11 +1167,17 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
                             encryptFilename += L"\\";
                         encryptFilename += *it;
                     }
+                    if (useGPG)
+                    {
+                        encryptFilename += L".gpg";
+                    }
+                    else
+                    {
                     if (use7z)
                         encryptFilename += L".7z";
                     else
                         encryptFilename += L".cryptsync";
-
+                    }
                     CryptDestroyKey(hKey);  // Release provider handle.
                 }
                 else
@@ -1126,10 +1204,11 @@ std::wstring CFolderSync::GetEncryptedFilename( const std::wstring& filename, co
     return filename;
 }
 
-bool CFolderSync::Run7Zip( LPWSTR cmdline, const std::wstring& cwd ) const
+bool CFolderSync::RunExtTool( LPWSTR cmdline, const std::wstring& cwd, bool useGPG ) const
 {
     PROCESS_INFORMATION pi = {0};
-    if (CCreateProcessHelper::CreateProcess(m_sevenzip.c_str(), cmdline, cwd.c_str(), &pi, true, BELOW_NORMAL_PRIORITY_CLASS|CREATE_UNICODE_ENVIRONMENT))
+
+    if (CCreateProcessHelper::CreateProcess(useGPG ? m_GnuPG.c_str() : m_sevenzip.c_str(), cmdline, cwd.c_str(), &pi, true, BELOW_NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT))
     {
         // wait until the process terminates
         WaitForSingleObject(pi.hProcess, INFINITE);
@@ -1141,6 +1220,7 @@ bool CFolderSync::Run7Zip( LPWSTR cmdline, const std::wstring& cwd ) const
 
         return (exitcode == 0);
     }
+
     return false;
 }
 
