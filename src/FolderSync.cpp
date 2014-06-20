@@ -298,7 +298,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
 
         SHFILEOPSTRUCT fop = {0};
         fop.wFunc = FO_DELETE;
-        fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
+        fop.fFlags = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
         std::unique_ptr<wchar_t[]> delbuf(new wchar_t[crypt.size()+2]);
         wcscpy_s(delbuf.get(), crypt.size()+2, crypt.c_str());
         delbuf[crypt.size()] = 0;
@@ -353,7 +353,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
 
             SHFILEOPSTRUCT fop = {0};
             fop.wFunc = FO_DELETE;
-            fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
+            fop.fFlags = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
             std::unique_ptr<wchar_t[]> delbuf(new wchar_t[orig.size()+2]);
             wcscpy_s(delbuf.get(), orig.size()+2, orig.c_str());
             delbuf[orig.size()] = 0;
@@ -693,7 +693,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 CCircularLog::Instance()(_T("counterpart of file %s does not exist in src folder, delete file"), it->first.c_str());
                 SHFILEOPSTRUCT fop = {0};
                 fop.wFunc = FO_DELETE;
-                fop.fFlags = FOF_ALLOWUNDO|FOF_FILESONLY|FOF_NOCONFIRMATION|FOF_NO_CONNECTED_ELEMENTS|FOF_NOERRORUI|FOF_SILENT;
+                fop.fFlags = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
                 std::wstring crypt = CPathUtils::Append(pt.cryptpath, it->second.filerelpath);
                 std::unique_ptr<wchar_t[]> delbuf(new wchar_t[crypt.size()+2]);
                 wcscpy_s(delbuf.get(), crypt.size()+2, crypt.c_str());
