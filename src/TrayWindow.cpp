@@ -274,7 +274,7 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                 // reinitialize the paths: the watching may have failed
                 // because the drive wasn't ready yet when CS started,
                 // or even due to an access violation (virus scanners, ...)
-                int watchpathcount = 0;
+                size_t watchpathcount = 0;
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                 {
                     ++watchpathcount;
