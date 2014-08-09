@@ -107,6 +107,7 @@ bool CTrayWindow::RegisterAndCreateWindow()
                     (*m_pChangeWindowMessageFilter)(m_hwnd, WM_TASKBARCREATED, MSGFLT_ALLOW, NULL);
                     (*m_pChangeWindowMessageFilter)(m_hwnd, WM_SETTINGCHANGE, MSGFLT_ALLOW, NULL);
                 }
+                FreeLibrary(hLib);
             }
 
             ShowTrayIcon();
