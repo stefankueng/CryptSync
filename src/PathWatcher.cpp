@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013 - Stefan Kueng
+// Copyright (C) 2012-2014 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -228,7 +228,7 @@ void CPathWatcher::WorkerThread()
                     } while (nOffset);
 continuewatching:
                     SecureZeroMemory(pdi->m_Buffer, sizeof(pdi->m_Buffer));
-                    SecureZeroMemory(&pdi->m_Overlapped, sizeof(OVERLAPPED));
+                    SecureZeroMemory(&pdi->m_Overlapped, sizeof(pdi->m_Overlapped));
                     if (!ReadDirectoryChangesW(pdi->m_hDir,
                                                 pdi->m_Buffer,
                                                 READ_DIR_CHANGE_BUFFER_SIZE,
@@ -281,7 +281,7 @@ CPathWatcher::CDirWatchInfo::CDirWatchInfo(HANDLE hDir, const std::wstring& Dire
     , m_DirName(DirectoryName)
 {
     m_Buffer[0] = 0;
-    memset(&m_Overlapped, 0, sizeof(m_Overlapped));
+    SecureZeroMemory(&m_Overlapped, sizeof(m_Overlapped));
     m_DirPath = m_DirName.c_str();
     if (m_DirPath.at(m_DirPath.size()-1) != '\\')
         m_DirPath += _T("\\");

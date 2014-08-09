@@ -121,7 +121,7 @@ void CTrayWindow::ShowTrayIcon()
 {
     // since our main window is hidden most of the time
     // we have to add an auxiliary window to the system tray
-    SecureZeroMemory(&niData,sizeof(NOTIFYICONDATA));
+    SecureZeroMemory(&niData, sizeof(niData));
 
     ULONGLONG ullVersion = GetDllVersion(_T("Shell32.dll"));
     if (ullVersion >= MAKEDLLVERULL(6,0,0,0))

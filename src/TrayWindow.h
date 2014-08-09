@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013 - Stefan Kueng
+// Copyright (C) 2012-2014 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,6 +43,7 @@ public:
         , m_itemsprocessed(0)
         , m_totalitemstoprocess(0)
     {
+        SecureZeroMemory(&niData, sizeof(niData));
         SetWindowTitle((LPCTSTR)ResString(hResource, IDS_APP_TITLE));
     };
 
