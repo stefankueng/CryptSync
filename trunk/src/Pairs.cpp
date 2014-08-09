@@ -265,6 +265,8 @@ bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const 
 std::wstring CPairs::Decrypt( const std::wstring& pw )
 {
     DWORD dwLen = 0;
+    std::wstring result;
+
     if (CryptStringToBinary(pw.c_str(), (DWORD)pw.size(), CRYPT_STRING_HEX, NULL, &dwLen, NULL, NULL)==FALSE)
         return L"";
 
@@ -281,11 +283,14 @@ std::wstring CPairs::Decrypt( const std::wstring& pw )
         return L"";
     SecureZeroMemory(blobin.pbData, blobin.cbData);
 
-    wchar_t * result = new wchar_t[blobout.cbData+1];
-    wcsncpy_s(result, blobout.cbData+1, (const wchar_t*)blobout.pbData, blobout.cbData/sizeof(wchar_t));
+    std::unique_ptr<wchar_t[]> tempResult(new wchar_t[blobout.cbData + 1]);
+    wcsncpy_s(tempResult.get(), blobout.cbData + 1, (const wchar_t*)blobout.pbData, blobout.cbData / sizeof(wchar_t));
     SecureZeroMemory(blobout.pbData, blobout.cbData);
     LocalFree(blobout.pbData);
     LocalFree(descr);
+
+    result = tempResult.get();
+
     return result;
 }
 
