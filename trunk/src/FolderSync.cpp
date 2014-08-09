@@ -732,10 +732,6 @@ void CFolderSync::SyncFolder( const PairData& pt )
             {
                 // decrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), pt.origpath.c_str());
-                size_t slashpos = it->first.find_last_of('\\');
-                std::wstring fname = it->first;
-                if (slashpos != std::string::npos)
-                    fname = it->first.substr(slashpos + 1);
                 std::wstring cryptpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.cryptpath, it->second.filerelpath));
                 std::wstring origpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.origpath, it->first));
                 if (!DecryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG))
@@ -1008,7 +1004,6 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
     // Get handle to user default provider.
     if (CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT|CRYPT_SILENT))
     {
-        bool bResult = true;
         HCRYPTHASH hHash = NULL;
         // Create hash object.
         if (CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
@@ -1035,8 +1030,7 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
                         {
                             // copy encrypted password to temporary buffer
                             memcpy(buffer.get(), strIn.get(), name.size());
-                            if (!CryptDecrypt(hKey, 0, true, 0, (BYTE *)buffer.get(), &dwLength))
-                                bResult = false;
+                            CryptDecrypt(hKey, 0, true, 0, (BYTE *)buffer.get(), &dwLength);
                             decryptName = CUnicodeUtils::StdGetUnicode(std::string((char*)buffer.get(), name.size()/2));
                         }
                         else
@@ -1064,20 +1058,8 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
                         decryptName += *it;
                     }
                 }
-                else
-                {
-                    bResult = false;
-                }
-            }
-            else
-            {
-                bResult = false;
             }
             CryptDestroyHash(hHash); // Destroy session key.
-        }
-        else
-        {
-            bResult = false;
         }
         CryptReleaseContext(hProv, 0);
     }
