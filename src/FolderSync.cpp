@@ -179,6 +179,7 @@ void CFolderSync::SyncFolderThread()
     }
     if (m_pProgDlg)
     {
+        m_pProgDlg->Stop();
         delete m_pProgDlg;
         m_pProgDlg = NULL;
         CoUninitialize();
