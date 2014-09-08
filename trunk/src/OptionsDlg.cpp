@@ -36,6 +36,7 @@
 COptionsDlg::COptionsDlg(HWND hParent)
     : m_hParent(hParent)
     , m_bNewerVersionAvailable(false)
+    , m_exitaftersync(false)
 {
 }
 
@@ -88,8 +89,12 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
     case WM_COMMAND:
         return DoCommand(LOWORD(wParam));
     case WM_THREADENDED:
-        EndDialog(*this, IDEXIT);
-        return TRUE;
+        if (m_exitaftersync)
+        {
+            EndDialog(*this, IDEXIT);
+            return TRUE;
+        }
+        return FALSE;
     case WM_NOTIFY:
         {
             if (wParam == IDC_SYNCPAIRS)
@@ -97,6 +102,17 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
                 DoListNotify((LPNMITEMACTIVATE)lParam);
             }
         }
+        return FALSE;
+    case WM_CONTEXTMENU:
+    {
+        POINT pt;
+        GetCursorPos(&pt);
+        HMENU hMenu = LoadMenu(hResource, MAKEINTRESOURCE(IDR_PAIRMENU));
+        HMENU hPopMenu = GetSubMenu(hMenu, 0);
+        TrackPopupMenu(hPopMenu, TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, 0, *this, NULL);
+        DestroyMenu(hMenu);
+    }
+        return FALSE;
     default:
         return FALSE;
     }
@@ -141,6 +157,7 @@ LRESULT COptionsDlg::DoCommand(int id)
     case IDC_SYNCEXIT:
         {
             SaveSettings();
+            m_exitaftersync = true;
             m_foldersync.SyncFolders(g_pairs, *this);
         }
         break;
@@ -158,6 +175,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             }
         }
         break;
+    case ID_EDIT:
     case IDC_EDITPAIR:
         {
             HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
@@ -195,12 +213,14 @@ LRESULT COptionsDlg::DoCommand(int id)
             }
         }
         break;
+    case ID_DELETE:
     case IDC_DELETEPAIR:
         {
             HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
             int nCount = ListView_GetItemCount(hListControl);
             if (nCount == 0)
                 break;
+
             int iItem = -1;
             PairVector sels;
             while ((iItem = ListView_GetNextItem(hListControl, iItem, LVNI_SELECTED)) != (-1))
@@ -208,6 +228,14 @@ LRESULT COptionsDlg::DoCommand(int id)
                 if ((iItem < 0)||(iItem >= (int)g_pairs.size()))
                     continue;
                 sels.push_back(g_pairs[iItem]);
+            }
+
+            if (!sels.empty())
+            {
+                ResString rDelquestion(hResource, IDS_ASK_DELETEPAIR);
+                auto sQuestion = CStringUtils::Format(rDelquestion, (int)sels.size());
+                if (MessageBox(*this, sQuestion.c_str(), L"CryptSync", MB_YESNO|MB_DEFBUTTON2) != IDYES)
+                    break;
             }
 
             for (auto it = sels.cbegin(); it != sels.cend(); ++it)
@@ -243,6 +271,25 @@ LRESULT COptionsDlg::DoCommand(int id)
             CTextDlg dlg(*this);
             dlg.m_text = sFailures;
             dlg.DoModal(hResource, IDD_TEXTDLG, *this);
+        }
+        break;
+    case ID_SYNCNOW:
+    case ID_SYNCNOWANDEXIT:
+        {
+            HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
+            int nCount = ListView_GetItemCount(hListControl);
+            if (nCount == 0)
+                break;
+            int iItem = -1;
+            PairVector sels;
+            while ((iItem = ListView_GetNextItem(hListControl, iItem, LVNI_SELECTED)) != (-1))
+            {
+                if ((iItem < 0) || (iItem >= (int)g_pairs.size()))
+                    continue;
+                sels.push_back(g_pairs[iItem]);
+            }
+            m_exitaftersync = (id == ID_SYNCNOWANDEXIT);
+            m_foldersync.SyncFolders(sels, *this);
         }
         break;
     }

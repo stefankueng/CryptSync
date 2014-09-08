@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012, 2014 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -50,5 +50,6 @@ private:
     CHyperLink              m_link;
     CFolderSync             m_foldersync;
     bool                    m_bNewerVersionAvailable;
+    bool                    m_exitaftersync;
     std::map<std::wstring, SyncOp> m_failures;
 };
