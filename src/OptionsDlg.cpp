@@ -429,7 +429,7 @@ void COptionsDlg::SaveSettings()
     else
         regStartWithWindows.removeValue();
 
-    CRegStdString regIgnores = CRegStdString(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
+    CRegStdString regIgnores(L"Software\\CryptSync\\Ignores", DEFAULT_IGNORES);
     auto ignoreText = GetDlgItemText(IDC_IGNORE);
     regIgnores = ignoreText.get();
 
