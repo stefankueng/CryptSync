@@ -35,11 +35,11 @@
 
 
 CFolderSync::CFolderSync(void)
-    : m_parentWnd(NULL)
+    : m_sevenzip(L"%ProgramFiles%\\7-zip\\7z.exe")
+    , m_GnuPG(L"%ProgramFiles%\\GNU\\GnuPG\\Pub\\gpg.exe")
+    , m_parentWnd(NULL)
     , m_TrayWnd(NULL)
     , m_pProgDlg(NULL)
-    , m_sevenzip(L"%ProgramFiles%\\7-zip\\7z.exe")
-    , m_GnuPG(L"%ProgramFiles%\\GNU\\GnuPG\\Pub\\gpg.exe")
     , m_progress(0)
     , m_progressTotal(1)
     , m_bRunning(FALSE)

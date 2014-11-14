@@ -27,12 +27,12 @@
 #include <algorithm>
 
 CPairAddDlg::CPairAddDlg(HWND hParent)
-    : m_hParent(hParent)
-    , m_encnames(false)
+    : m_encnames(false)
     , m_oneway(false)
     , m_7zExt(false)
     , m_UseGPGe(false)
     , m_FAT(false)
+    , m_hParent(hParent)
     , m_pDropTargetOrig(nullptr)
     , m_pDropTargetCrypt(nullptr)
 {
