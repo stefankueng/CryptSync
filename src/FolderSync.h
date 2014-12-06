@@ -85,9 +85,9 @@ private:
     std::map<std::wstring, FileData, ci_less> GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, bool useGPG, DWORD & error) const;
     bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
     bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
-    std::wstring GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG) const;
-    std::wstring GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG) const;
-    std::wstring                    GetFileTimeStringForLog(const FILETIME & ft);
+    static std::wstring             GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG);
+    static std::wstring             GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG);
+    static std::wstring             GetFileTimeStringForLog(const FILETIME & ft);
     bool                            RunExtTool(LPWSTR cmdline, const std::wstring& cwd, bool useGPG) const;
 
     CReaderWriterLock               m_guard;
