@@ -62,8 +62,8 @@ public:
         return ((mk1.origpath==mk2.origpath)&&(mk1.cryptpath==mk2.cryptpath));
     }
 private:
-    void                        UpdateVec(std::wstring& s, std::vector<std::wstring>& v);
-    bool                        MatchInVec(const std::vector<std::wstring>& v, const std::wstring& s) const;
+    static void                 UpdateVec(std::wstring& s, std::vector<std::wstring>& v);
+    static bool                 MatchInVec(const std::vector<std::wstring>& v, const std::wstring& s);
 
     std::wstring                m_copyonly;
     std::vector<std::wstring>   m_copyonlyvec;

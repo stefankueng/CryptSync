@@ -956,7 +956,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     return bRet;
 }
 
-std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG) const
+std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG)
 {
     std::wstring decryptName = filename;
     size_t dotpos = filename.find_last_of('.');
@@ -1073,7 +1073,7 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
     return decryptName;
 }
 
-std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG) const
+std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG)
 {
     std::wstring encryptFilename = filename;
     if (!encryptname)

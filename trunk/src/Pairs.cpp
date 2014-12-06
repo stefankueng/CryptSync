@@ -44,7 +44,7 @@ bool PairData::IsIgnored( const std::wstring& s ) const
     return MatchInVec(m_nosyncvec, s);
 }
 
-bool PairData::MatchInVec( const std::vector<std::wstring>& v, const std::wstring& s ) const
+bool PairData::MatchInVec( const std::vector<std::wstring>& v, const std::wstring& s )
 {
     bool bMatched = false;
     if (v.empty())

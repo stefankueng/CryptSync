@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012, 2014 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -66,7 +66,7 @@ public:
     /**
      * Returns the number of recursively watched paths.
      */
-    size_t GetNumberOfWatchedPaths() {return watchedPaths.size();}
+    size_t GetNumberOfWatchedPaths() const { return watchedPaths.size(); }
 
     /**
      * Returns all changed paths since the last call to GetChangedPaths
