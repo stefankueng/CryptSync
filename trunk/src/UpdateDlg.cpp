@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013 - Stefan Kueng
+// Copyright (C) 2012-2013, 2015 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -126,7 +126,7 @@ bool CUpdateDlg::CheckNewer()
                     {
                         sCheckURL = (std::wstring)checkurlmachine;
                         if (sCheckURL.empty())
-                            sCheckURL = _T("http://cryptsync.googlecode.com/svn/trunk/version.txt");
+                            sCheckURL = _T("https://svn.code.sf.net/p/cryptsync-sk/code/trunk/version.txt");
                     }
                     HRESULT res = URLDownloadToFile(NULL, sCheckURL.c_str(), tempfile.c_str(), 0, NULL);
                     if (res == S_OK)
