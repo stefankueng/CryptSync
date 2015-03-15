@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014 - Stefan Kueng
+// Copyright (C) 2012-2015 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -687,7 +687,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
         if (origit == origFileList.end())
         {
             // file does not exist in the original folder:
-            if (pt.oneway)
+            if (pt.oneway && !origFileList.empty())
             {
                 // remove the encrypted file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in src folder, delete file\n"), it->first.c_str());
