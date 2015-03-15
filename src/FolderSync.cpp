@@ -783,7 +783,9 @@ std::map<std::wstring, FileData, ci_less> CFolderSync::GetFileList(bool orig, co
         if ((fd.ft.dwLowDateTime == 0) && (fd.ft.dwHighDateTime == 0))
             fd.ft = enumerator.GetCreateTime();
 
-        std::wstring relpath = filepath.substr(path.size()+1);
+        std::wstring relpath = filepath;
+        if (path.size() < filepath.size())
+            relpath = filepath.substr(path.size() + 1);
         fd.filerelpath = relpath;
 
         std::wstring decryptedRelPath = relpath;
