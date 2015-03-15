@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014 - Stefan Kueng
+// Copyright (C) 2012-2015 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -149,6 +149,8 @@ LRESULT CPairAddDlg::DoCommand(int id)
 
             std::wstring origpath = m_origpath;
             std::wstring cryptpath = m_cryptpath;
+            CreateDirectory(m_origpath.c_str(), NULL);
+            CreateDirectory(m_cryptpath.c_str(), NULL);
             std::transform(origpath.begin(), origpath.end(), origpath.begin(), std::tolower);
             std::transform(cryptpath.begin(), cryptpath.end(), cryptpath.begin(), std::tolower);
 
