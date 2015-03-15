@@ -595,7 +595,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
             }
             else
                 cmp = CompareFileTime(&it->second.ft, &cryptit->second.ft);
-            if (cmp < 0)
+            if ((cmp < 0) && !pt.oneway)
             {
                 CCircularLog::Instance()(L"original file is older: %s : %s, %s : %s",
                                          (pt.cryptpath + L"\\" + it->first).c_str(), GetFileTimeStringForLog(cryptit->second.ft).c_str(),
@@ -623,7 +623,8 @@ void CFolderSync::SyncFolder( const PairData& pt )
                     DecryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG);
                 }
             }
-            else if (cmp > 0)
+            else if ((cmp > 0) ||
+                     ((cmp < 0) && pt.oneway))
             {
                 CCircularLog::Instance()(L"encrypted file is older: %s : %s, %s : %s",
                                          (pt.origpath + L"\\" + it->first).c_str(), GetFileTimeStringForLog(it->second.ft).c_str(),
