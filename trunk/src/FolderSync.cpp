@@ -869,10 +869,10 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
         int retry = 5;
         do
         {
-            CAutoFile hFile = CreateFile(crypt.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-            if (hFile.IsValid())
+            CAutoFile hFileCrypt = CreateFile(crypt.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+            if (hFileCrypt.IsValid())
             {
-                bRet = !!SetFileTime(hFile, NULL, NULL, &fd.ft);
+                bRet = !!SetFileTime(hFileCrypt, NULL, NULL, &fd.ft);
             }
             else
                 bRet = false;

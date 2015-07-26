@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014 - Stefan Kueng
+// Copyright (C) 2012-2015 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -153,7 +153,7 @@ void CPathWatcher::WorkerThread()
                     {
                         // this could happen if a watched folder has been removed/renamed
                         m_hCompPort.CloseHandle();
-                        CAutoWriteLock locker(m_guard);
+                        CAutoWriteLock lockerw(m_guard);
                         watchedPaths.erase(p);
                         break;
                     }
@@ -163,7 +163,7 @@ void CPathWatcher::WorkerThread()
                     m_hCompPort = CreateIoCompletionPort(pDirInfo->m_hDir, m_hCompPort, (ULONG_PTR)pDirInfo.get(), 0);
                     if (m_hCompPort == NULL)
                     {
-                        CAutoWriteLock locker(m_guard);
+                        CAutoWriteLock lockerw(m_guard);
                         ClearInfoMap();
                         watchedPaths.erase(p);
                         break;
@@ -177,13 +177,13 @@ void CPathWatcher::WorkerThread()
                                                 &pDirInfo->m_Overlapped,
                                                 NULL))  //no completion routine!
                     {
-                        CAutoWriteLock locker(m_guard);
+                        CAutoWriteLock lockerw(m_guard);
                         ClearInfoMap();
                         watchedPaths.erase(p);
                         break;
                     }
                     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": watching path %s\n"), p->c_str());
-                    CAutoWriteLock locker(m_guard);
+                    CAutoWriteLock lockerw(m_guard);
                     watchInfoMap[pDirInfo->m_hDir] = pDirInfo.get();
                     pDirInfo.release();
                 }
