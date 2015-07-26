@@ -21,7 +21,10 @@
 #include <memory.h>
 #include <tchar.h>
 
+#pragma warning(push)
+#pragma warning(disable: 4458) // declaration of 'xxx' hides class member
 #include <GdiPlus.h>
+#pragma warning(pop)
 
 
 #pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
