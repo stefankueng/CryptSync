@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012, 2014 - Stefan Kueng
+// Copyright (C) 2012, 2014-2015 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -102,7 +102,7 @@ private:
         CDirWatchInfo();    // private & not implemented
         CDirWatchInfo & operator=(const CDirWatchInfo & rhs);   //so that they're aren't accidentally used. -- you'll get a linker error
     public:
-        CDirWatchInfo(HANDLE hDir, const std::wstring& DirectoryName);
+        CDirWatchInfo(CAutoFile && hDir, const std::wstring& DirectoryName);
         ~CDirWatchInfo();
 
     public:

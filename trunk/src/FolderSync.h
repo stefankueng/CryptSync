@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014 - Stefan Kueng
+// Copyright (C) 2012-2015 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,6 +23,7 @@
 #include "ReaderWriterLock.h"
 #include "ProgressDlg.h"
 #include "SmartHandle.h"
+#include "StringUtils.h"
 
 #include <string>
 #include <set>
@@ -53,13 +54,6 @@ enum SyncOp
     Decrypt,
 };
 
-struct ci_less
-{
-    bool operator() (const std::wstring & s1, const std::wstring & s2) const
-    {
-        return _wcsicmp(s1.c_str(), s2.c_str()) < 0;
-    }
-};
 
 class CFolderSync
 {
@@ -82,7 +76,7 @@ private:
     void                            SyncFile(const std::wstring& path, const PairData& pt);
     void                            SyncFolderThread();
     void                            SyncFolder(const PairData& pt);
-    std::map<std::wstring, FileData, ci_less> GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, bool useGPG, DWORD & error) const;
+    std::map<std::wstring, FileData, ci_lessW> GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, bool useGPG, DWORD & error) const;
     bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
     bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
     static std::wstring             GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG);

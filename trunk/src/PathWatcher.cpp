@@ -158,8 +158,7 @@ void CPathWatcher::WorkerThread()
                         break;
                     }
 
-                    std::unique_ptr<CDirWatchInfo> pDirInfo (new CDirWatchInfo(hDir, p->c_str()));
-                    hDir.Detach();  // the new CDirWatchInfo object owns the handle now
+                    std::unique_ptr<CDirWatchInfo> pDirInfo (new CDirWatchInfo(std::move(hDir), p->c_str()));
                     m_hCompPort = CreateIoCompletionPort(pDirInfo->m_hDir, m_hCompPort, (ULONG_PTR)pDirInfo.get(), 0);
                     if (m_hCompPort == NULL)
                     {
@@ -276,8 +275,8 @@ std::set<std::wstring> CPathWatcher::GetChangedPaths()
     return ret;
 }
 
-CPathWatcher::CDirWatchInfo::CDirWatchInfo(HANDLE hDir, const std::wstring& DirectoryName)
-    : m_hDir(hDir)
+CPathWatcher::CDirWatchInfo::CDirWatchInfo(CAutoFile && hDir, const std::wstring& DirectoryName)
+    : m_hDir(std::move(hDir))
     , m_DirName(DirectoryName)
 {
     m_Buffer[0] = 0;
