@@ -832,9 +832,6 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
     GetFileSizeEx(hFile, &filesize);
     hFile.CloseHandle();
 
-    // 7zip 9.30 has an option "-stl" which sets the timestamp of the archive
-    // to the most recent one of the compressed files
-    // add this flag as soon as 9.30 is stable and officially released.
     int compression = 9;
     if (filesize.QuadPart > 100*1024*1024)
         compression = 0;    // turn off compression for files bigger than 100MB
@@ -842,7 +839,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
     if (password.empty())
     {
         CCircularLog::Instance()(_T("password is blank - NOT secure - force 7z not GPG"), crypt.c_str());
-        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx%d -mhe=on -m0=lzma2 -mtc=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), compression);
+        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx%d -mhe=on -m0=lzma2 -mtc=on -w -stl", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), compression);
     }
     else
     {
@@ -850,7 +847,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
         if (useGPG)
             swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" --batch --yes -c -a --passphrase \"%s\" -o \"%s\" \"%s\" ", m_GnuPG.c_str(), password.c_str(), cryptname.c_str(), orig.c_str());
         else
-            swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -p\"%s\" -mx%d -mhe=on -m0=lzma2 -mtc=on -w", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str(), compression);
+            swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -p\"%s\" -mx%d -mhe=on -m0=lzma2 -mtc=on -w -stl", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str(), compression);
     }
 
     bool bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
