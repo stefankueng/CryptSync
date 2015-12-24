@@ -754,7 +754,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
         PostMessage(m_TrayWnd, WM_PROGRESS, 0, 0);
 }
 
-std::map<std::wstring, FileData, ci_less> CFolderSync::GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, bool useGPG, DWORD & error) const
+std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, bool useGPG, DWORD & error) const
 {
     error = 0;
     std::wstring enumpath = path;
@@ -762,7 +762,7 @@ std::map<std::wstring, FileData, ci_less> CFolderSync::GetFileList(bool orig, co
         enumpath += L"\\";
     CDirFileEnum enumerator(enumpath);
 
-    std::map<std::wstring,FileData, ci_less> filelist;
+    std::map<std::wstring,FileData, ci_lessW> filelist;
     std::wstring filepath;
     bool isDir = false;
     bool bRecurse = true;
