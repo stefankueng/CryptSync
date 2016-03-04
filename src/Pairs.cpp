@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,6 +51,16 @@ bool PairData::MatchInVec( const std::vector<std::wstring>& v, const std::wstrin
         return false;
     std::wstring scmp = s;
     std::transform(scmp.begin(), scmp.end(), scmp.begin(), std::tolower);
+
+    // first check if the whole path matches
+    for (auto it = v.cbegin(); it != v.cend(); ++it)
+    {
+        if (wcswildcmp(it->c_str(), scmp.c_str()))
+        {
+            return true;
+        }
+    }
+
     std::vector<std::wstring> pathelems;
     stringtok(pathelems, scmp, true, L"\\");
     for (auto pe:pathelems)
