@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2015 - Stefan Kueng
+// Copyright (C) 2012-2016 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -474,10 +474,21 @@ void CFolderSync::SyncFolder( const PairData& pt )
     }
     if (m_TrayWnd)
         PostMessage(m_TrayWnd, WM_PROGRESS, m_progress, m_progressTotal);
-    if (GetFileAttributes(CPathUtils::AdjustForMaxPath(pt.origpath).c_str()) == INVALID_FILE_ATTRIBUTES)
     {
-        CCircularLog::Instance()(L"error accessing path \"%s\", skipped", pt.origpath.c_str());
-        return;
+        CAutoFile hTest = CreateFile(CPathUtils::AdjustForMaxPath(pt.origpath).c_str(), GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+        if (!hTest)
+        {
+            CCircularLog::Instance()(L"error accessing path \"%s\", skipped", pt.origpath.c_str());
+            return;
+        }
+    }
+    {
+        CAutoFile hTest = CreateFile(CPathUtils::AdjustForMaxPath(pt.cryptpath).c_str(), GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+        if (!hTest)
+        {
+            CCircularLog::Instance()(L"error accessing path \"%s\", skipped", pt.origpath.c_str());
+            return;
+        }
     }
     DWORD dwErr = 0;
     auto origFileList  = GetFileList(true, pt.origpath, pt.password, pt.encnames, pt.use7z, pt.useGPG, dwErr);
