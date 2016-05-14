@@ -247,7 +247,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
     if (pt.IsIgnored(path))
         return;
     bool bCopyOnly = pt.IsCopyOnly(path);
-    if ((orig.size() < path.size())&&(_wcsicmp(path.substr(0, orig.size()).c_str(), orig.c_str())==0))
+    if ((orig.size() < path.size()) && (_wcsicmp(path.substr(0, orig.size()).c_str(), orig.c_str()) == 0) && ((path[orig.size()] == '\\') || (path[orig.size()] == '/')))
     {
         if (bCopyOnly)
             crypt = CPathUtils::Append(crypt, path.substr(orig.size()));
