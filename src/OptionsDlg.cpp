@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -139,7 +139,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             shex.cbSize = sizeof(SHELLEXECUTEINFO);
             shex.fMask = SEE_MASK_DOENVSUBST|SEE_MASK_ASYNCOK|SEE_MASK_CLASSNAME;
             shex.hwnd = *this;
-            shex.lpVerb = L"open";
+            shex.lpVerb = nullptr;
             shex.lpFile = path.c_str();
             shex.lpClass = L".txt";
             shex.nShow = SW_SHOWNORMAL;
