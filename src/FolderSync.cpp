@@ -790,6 +790,9 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
     bool bRecurse = true;
     while (enumerator.NextFile(filepath, &isDir, bRecurse))
     {
+        if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+            break;
+
         bRecurse = true;
         if (isDir)
         {
@@ -888,6 +891,8 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
         int retry = 5;
         do
         {
+            if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+                break;
             CAutoFile hFileCrypt = CreateFile(crypt.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
             if (hFileCrypt.IsValid())
             {
@@ -953,6 +958,8 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
         int retry = 5;
         do
         {
+            if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+                break;
             CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
             if (hFile.IsValid())
             {
@@ -1211,12 +1218,23 @@ std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, con
 
 bool CFolderSync::RunExtTool( LPWSTR cmdline, const std::wstring& cwd, bool useGPG ) const
 {
-    PROCESS_INFORMATION pi = {0};
+    if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+        return false;
+    PROCESS_INFORMATION pi = { 0 };
 
     if (CCreateProcessHelper::CreateProcess(useGPG ? m_GnuPG.c_str() : m_sevenzip.c_str(), cmdline, cwd.c_str(), &pi, true, BELOW_NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT))
     {
         // wait until the process terminates
-        WaitForSingleObject(pi.hProcess, INFINITE);
+        DWORD waitRet = 0;
+        do
+        {
+            waitRet = WaitForSingleObject(pi.hProcess, 2000);
+            if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+            {
+                TerminateProcess(pi.hProcess, 1);
+                break;
+            }
+        } while (waitRet == WAIT_TIMEOUT);
 
         DWORD exitcode = 0;
         GetExitCodeProcess(pi.hProcess, &exitcode);
