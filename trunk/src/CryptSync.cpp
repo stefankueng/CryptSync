@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -80,23 +80,24 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     CCmdLineParser parser(lpCmdLine);
     if (parser.HasKey(L"?") || parser.HasKey(L"help"))
     {
-        std::wstring sInfo = L"/src      : path to source folder with original content\n"
-                             L"/dst      : path to encrpyted folder\n"
-                             L"/pw       : password for encryption\n"
-                             L"/cpy      : copy only pattern\n"
-                             L"/nsy      : don't sync pattern\n"
-                             L"/encnames : encrypt file and folder names\n"
-                             L"/mirror   : mirror only from src to dst\n"
-                             L"/use7z    : use .7z instead of .cryptsync extension\n"
-                             L"/useGPG   : use GnuPG encryption\n"
-                             L"/fat      : use FAT write time accuracy (2s)\n"
-                             L"/ignore   : ignore patterns\n"
+        std::wstring sInfo = L"/src        : path to source folder with original content\n"
+                             L"/dst        : path to encrpyted folder\n"
+                             L"/pw         : password for encryption\n"
+                             L"/cpy        : copy only pattern\n"
+                             L"/nsy        : don't sync pattern\n"
+                             L"/encnames   : encrypt file and folder names\n"
+                             L"/mirror     : mirror only from src to dst\n"
+                             L"/mirrorback : mirror from dst to src\n"
+                             L"/use7z      : use .7z instead of .cryptsync extension\n"
+                             L"/useGPG     : use GnuPG encryption\n"
+                             L"/fat        : use FAT write time accuracy (2s)\n"
+                             L"/ignore     : ignore patterns\n"
                              L"\n"
-                             L"/syncall  : syncs all set up pairs and then exists\n"
-                             L"/progress : shows a progress dialog while syncing\n"
-                             L"/logpath  : path to a logfile\n"
-                             L"/maxlog   : maximum number of lines the logfile can have\n"
-                             L"/tray     : start in background without showing a dialog first";
+                             L"/syncall    : syncs all set up pairs and then exists\n"
+                             L"/progress   : shows a progress dialog while syncing\n"
+                             L"/logpath    : path to a logfile\n"
+                             L"/maxlog     : maximum number of lines the logfile can have\n"
+                             L"/tray       : start in background without showing a dialog first";
         MessageBox(NULL, sInfo.c_str(), L"CryptSync Command Line Options", MB_ICONINFORMATION);
         return 1;
     }
@@ -156,6 +157,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         std::wstring nsy =   parser.HasVal(L"nsy") ? parser.GetVal(L"nsy") : L"";
         bool encnames    = !!parser.HasKey(L"encnames");
         bool mirror      = !!parser.HasKey(L"mirror");
+        bool mirrorback  = !!parser.HasKey(L"mirrorback");
         bool use7z       = !!parser.HasKey(L"use7z");
         bool useGPG      = !!parser.HasKey(L"useGPG");
         bool fat         = !!parser.HasKey(L"fat");
@@ -169,6 +171,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         pair.clear();
         pair.AddPair(src, dst, pw, cpy, nsy, encnames, mirror, use7z, useGPG, fat);
         CFolderSync foldersync;
+        if (mirrorback)
+            foldersync.DecryptOnly(true);
         foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
         return 1;
     }
