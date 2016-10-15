@@ -131,8 +131,16 @@ void CPairs::InitPairList()
         pd.encnames = !!(DWORD)encnamesreg;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
-        CRegStdDWORD onewayreg(key, FALSE);
-        pd.oneway = !!(DWORD)onewayreg;
+        CRegStdDWORD onewayreg(key, (DWORD)-1);
+        if (DWORD(onewayreg) != (DWORD)-1)
+            pd.syncDir == !!(DWORD)onewayreg ? SrcToDst : BothWays;
+        else
+        {
+            swprintf_s(key, L"Software\\CryptSync\\SyncPairDir%d", p);
+            CRegStdDWORD syncdirreg(key, BothWays);
+            pd.syncDir = (SyncDir)(DWORD)syncdirreg;
+        }
+        onewayreg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
         CRegStdDWORD zextreg(key, FALSE);
@@ -184,9 +192,9 @@ void CPairs::SavePairs()
         CRegStdDWORD encnamesreg(key, TRUE, true);
         encnamesreg = (DWORD)it->encnames;
 
-        swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
-        CRegStdDWORD onewayreg(key, FALSE, true);
-        onewayreg = (DWORD)it->oneway;
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairDir%d", p);
+        CRegStdDWORD syncdirreg(key, BothWays, true);
+        syncdirreg = (DWORD)it->syncDir;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
         CRegStdDWORD zextreg(key, FALSE, true);
@@ -249,7 +257,7 @@ void CPairs::SavePairs()
     }
 }
 
-bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& copyonly, const std::wstring& nosync, bool encryptnames, bool oneway, bool use7zext, bool useGPGe, bool fat)
+bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& copyonly, const std::wstring& nosync, bool encryptnames, SyncDir syncDir, bool use7zext, bool useGPGe, bool fat)
 {
     PairData pd;
     pd.origpath = orig;
@@ -258,7 +266,7 @@ bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const 
     pd.copyonly(copyonly);
     pd.nosync(nosync);
     pd.encnames = encryptnames;
-    pd.oneway = oneway;
+    pd.syncDir = syncDir;
     pd.use7z = use7zext;
     pd.useGPG = useGPGe;
     pd.FAT = fat;

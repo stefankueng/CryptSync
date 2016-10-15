@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2015 - Stefan Kueng
+// Copyright (C) 2012-2016 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,7 +28,7 @@
 
 CPairAddDlg::CPairAddDlg(HWND hParent)
     : m_encnames(false)
-    , m_oneway(false)
+    , m_syncdir(BothWays)
     , m_7zExt(true)
     , m_UseGPGe(false)
     , m_FAT(true)
@@ -61,7 +61,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(hwndDlg, IDC_NOCRYPT, m_copyonly.c_str());
             SetDlgItemText(hwndDlg, IDC_NOSYNC, m_nosync.c_str());
             SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encnames ? BST_CHECKED : BST_UNCHECKED, NULL);
-            SendDlgItemMessage(*this, IDC_ONEWAY, BM_SETCHECK, m_oneway ? BST_CHECKED : BST_UNCHECKED, NULL);
+            CheckRadioButton(*this, IDC_SYNCBOTHRADIO, IDC_SYNCDSTTOSRCRADIO, m_syncdir == BothWays ? IDC_SYNCBOTHRADIO : (m_syncdir == SrcToDst ? IDC_SYNCSRCTODSTRADIO : IDC_SYNCDSTTOSRCRADIO));
             SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_SETCHECK, m_7zExt ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_USEGPG, BM_SETCHECK, m_UseGPGe ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_FAT, BM_SETCHECK, m_FAT ? BST_CHECKED : BST_UNCHECKED, NULL);
@@ -168,7 +168,11 @@ LRESULT CPairAddDlg::DoCommand(int id)
             }
 
             m_encnames = !!SendDlgItemMessage(*this, IDC_ENCNAMES, BM_GETCHECK, 0, NULL);
-            m_oneway = !!SendDlgItemMessage(*this, IDC_ONEWAY, BM_GETCHECK, 0, NULL);
+            m_syncdir = BothWays;
+            if (IsDlgButtonChecked(*this, IDC_SYNCDSTTOSRCRADIO))
+                m_syncdir = DstToSrc;
+            if (IsDlgButtonChecked(*this, IDC_SYNCSRCTODSTRADIO))
+                m_syncdir = SrcToDst;
             m_7zExt = !!SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_GETCHECK, 0, NULL);
             m_UseGPGe = !!SendDlgItemMessage(*this, IDC_USEGPG, BM_GETCHECK, 0, NULL);
             m_FAT = !!SendDlgItemMessage(*this, IDC_FAT, BM_GETCHECK, 0, NULL);

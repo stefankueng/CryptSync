@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,12 +23,19 @@
 #include <tuple>
 #include <string>
 
+enum SyncDir
+{
+    BothWays,
+    SrcToDst,
+    DstToSrc
+};
+
 class PairData
 {
 public:
     PairData()
         : encnames(false)
-        , oneway(false)
+        , syncDir(BothWays)
         , use7z(false)
         , useGPG(false)
         , FAT(false)
@@ -39,7 +46,7 @@ public:
     std::wstring            cryptpath;
     std::wstring            password;
     bool                    encnames;
-    bool                    oneway;
+    SyncDir                 syncDir;
     bool                    use7z;
     bool                    useGPG;
     bool                    FAT;
@@ -89,7 +96,7 @@ public:
                                     const std::wstring& copyonly,
                                     const std::wstring& nosync,
                                     bool encryptnames,
-                                    bool oneway,
+                                    SyncDir syncDir,
                                     bool use7zext,
                                     bool useGPGe,
                                     bool fat);

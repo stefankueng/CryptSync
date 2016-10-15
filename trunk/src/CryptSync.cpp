@@ -169,7 +169,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
         CPairs pair;
         pair.clear();
-        pair.AddPair(src, dst, pw, cpy, nsy, encnames, mirror, use7z, useGPG, fat);
+        pair.AddPair(src, dst, pw, cpy, nsy, encnames, mirror ? SrcToDst : BothWays, use7z, useGPG, fat);
         CFolderSync foldersync;
         if (mirrorback)
             foldersync.DecryptOnly(true);

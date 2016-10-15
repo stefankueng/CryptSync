@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -169,8 +169,9 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             {
                 std::wstring origpath = it->origpath;
                 std::wstring cryptpath = it->cryptpath;
-                watcher.AddPath(origpath);
-                if (!it->oneway)
+                if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
+                    watcher.AddPath(origpath);
+                if ((it->syncDir == BothWays)||(it->syncDir == DstToSrc))
                     watcher.AddPath(cryptpath);
             }
             SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
@@ -277,8 +278,9 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                 size_t watchpathcount = 0;
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                 {
-                    ++watchpathcount;
-                    if (!it->oneway)
+                    if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
+                        ++watchpathcount;
+                    if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
                         ++watchpathcount;
                 }
 
@@ -289,8 +291,9 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     {
                         std::wstring origpath = it->origpath;
                         std::wstring cryptpath = it->cryptpath;
-                        watcher.AddPath(origpath);
-                        if (!it->oneway)
+                        if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
+                            watcher.AddPath(origpath);
+                        if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
                             watcher.AddPath(cryptpath);
                     }
                 }
@@ -333,8 +336,9 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                 {
                     std::wstring origpath = it->origpath;
                     std::wstring cryptpath = it->cryptpath;
-                    watcher.AddPath(origpath);
-                    if (!it->oneway)
+                    if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
+                        watcher.AddPath(origpath);
+                    if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
                         watcher.AddPath(cryptpath);
                 }
                 SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, NULL);
@@ -395,8 +399,9 @@ LRESULT CTrayWindow::DoCommand(int id)
                 {
                     std::wstring origpath = it->origpath;
                     std::wstring cryptpath = it->cryptpath;
-                    watcher.AddPath(origpath);
-                    if (!it->oneway)
+                    if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
+                        watcher.AddPath(origpath);
+                    if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
                         watcher.AddPath(cryptpath);
                 }
                 SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, NULL);
