@@ -43,6 +43,7 @@ CFolderSync::CFolderSync(void)
     , m_progress(0)
     , m_progressTotal(1)
     , m_bRunning(FALSE)
+    , m_decryptonly(false)
 {
     wchar_t buf[1024] = {0};
     GetModuleFileName(NULL, buf, 1024);
@@ -492,11 +493,21 @@ void CFolderSync::SyncFolder( const PairData& pt )
     }
     DWORD dwErr = 0;
     auto origFileList  = GetFileList(true, pt.origpath, pt.password, pt.encnames, pt.use7z, pt.useGPG, dwErr);
+
     if (dwErr)
     {
         CCircularLog::Instance()(L"error enumerating path \"%s\", skipped", pt.origpath.c_str());
         return;
     }
+    if (m_decryptonly)
+    {
+        // to only decrypt the files to the source folder,
+        // we clear the list of files in the source folder:
+        // that will skip the encryption phase and go straight
+        // to the decrypting phase.
+        origFileList.clear();
+    }
+
     auto cryptFileList = GetFileList(false, pt.cryptpath, pt.password, pt.encnames, pt.use7z, pt.useGPG, dwErr);
     if (dwErr)
     {

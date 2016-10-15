@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2015 - Stefan Kueng
+// Copyright (C) 2012-2016 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -70,6 +70,7 @@ public:
     std::set<std::wstring>          GetNotifyIgnores();
     size_t                          GetFailureCount();
     void                            SetTrayWnd(HWND hTray) { m_TrayWnd = hTray; }
+    void                            DecryptOnly(bool b) { m_decryptonly = b; }
 
 private:
     static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
@@ -100,4 +101,5 @@ private:
     PairData                        m_currentPath;
     std::map<std::wstring, SyncOp>  m_failures;
     std::set<std::wstring>          m_notifyignores;
+    bool                            m_decryptonly;
 };
