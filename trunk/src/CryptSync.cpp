@@ -173,8 +173,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         CFolderSync foldersync;
         if (mirrorback)
             foldersync.DecryptOnly(true);
-        foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
-        return 1;
+        auto ret = foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
+        CCircularLog::Instance()(L"INFO:    exiting CryptSync");
+        CCircularLog::Instance().Save();
+        return ret;
     }
     if (parser.HasKey(L"syncall"))
     {
@@ -182,8 +184,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
         CPairs pair;
         CFolderSync foldersync;
-        foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
-        return 1;
+        auto ret = foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
+        CCircularLog::Instance()(L"INFO:    exiting CryptSync");
+        CCircularLog::Instance().Save();
+        return ret;
     }
 
     MSG msg;
@@ -196,6 +200,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         OleUninitialize();
         if (hReloadProtection)
             CloseHandle(hReloadProtection);
+        CCircularLog::Instance()(L"INFO:    An instance of CryptSync is already running - exiting");
+        CCircularLog::Instance().Save();
         return 0;
     }
 
@@ -221,5 +227,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     CoUninitialize();
     OleUninitialize();
     CloseHandle(hReloadProtection);
+    CCircularLog::Instance()(L"INFO:    exiting CryptSync");
+    CCircularLog::Instance().Save();
     return 1;
 }
