@@ -431,7 +431,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
                 if (!CopyFile(crypt.c_str(), orig.c_str(), FALSE))
                 {
                     std::wstring targetfolder = orig.substr(0, orig.find_last_of('\\'));
-                    SHCreateDirectory(NULL, targetfolder.c_str());
+                    CPathUtils::CreateRecursiveDirectory(targetfolder);
                     CopyFile(crypt.c_str(), orig.c_str(), FALSE);
                 }
             }
@@ -456,7 +456,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
                 if (!CopyFile(orig.c_str(), crypt.c_str(), FALSE))
                 {
                     std::wstring targetfolder = crypt.substr(0, crypt.find_last_of('\\'));
-                    SHCreateDirectory(NULL, targetfolder.c_str());
+                    CPathUtils::CreateRecursiveDirectory(targetfolder);
                     CopyFile(orig.c_str(), crypt.c_str(), FALSE);
                 }
             }
@@ -563,7 +563,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
                     {
                         std::wstring targetfolder = cryptpath;
                         targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
-                        SHCreateDirectory(NULL, targetfolder.c_str());
+                        CPathUtils::CreateRecursiveDirectory(targetfolder);
                         CopyFile(origpath.c_str(), cryptpath.c_str(), FALSE);
                     }
                 }
@@ -645,7 +645,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
                         {
                             std::wstring targetfolder = pt.origpath + L"\\" + it->first;
                             targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
-                            SHCreateDirectory(NULL, targetfolder.c_str());
+                            CPathUtils::CreateRecursiveDirectory(targetfolder);
                             CopyFile(cryptpath.c_str(), origpath.c_str(), FALSE);
                         }
                     }
@@ -676,7 +676,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
                         {
                             std::wstring targetfolder = pt.cryptpath + L"\\" + it->first;
                             targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
-                            SHCreateDirectory(NULL, targetfolder.c_str());
+                            CPathUtils::CreateRecursiveDirectory(targetfolder);
                             CopyFile(origpath.c_str(), cryptpath.c_str(), FALSE);
                         }
                     }
@@ -758,7 +758,7 @@ void CFolderSync::SyncFolder( const PairData& pt )
                 {
                     std::wstring targetfolder = pt.origpath + L"\\" + it->first;
                     targetfolder = targetfolder.substr(0, targetfolder.find_last_of('\\'));
-                    SHCreateDirectory(NULL, targetfolder.c_str());
+                    CPathUtils::CreateRecursiveDirectory(targetfolder);
                     {
                         CAutoWriteLock nlocker(m_notignguard);
                         m_notifyignores.insert(CPathUtils::Append(pt.origpath, it->first));
@@ -892,7 +892,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
     bool bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
     if (!bRet)
     {
-        SHCreateDirectory(NULL, targetfolder.c_str());
+        CPathUtils::CreateRecursiveDirectory(targetfolder);
         {
             CAutoWriteLock nlocker(m_notignguard);
             m_notifyignores.insert(crypt);
@@ -959,7 +959,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     bool bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
     if (!bRet)
     {
-        SHCreateDirectory(NULL, targetfolder.c_str());
+        CPathUtils::CreateRecursiveDirectory(targetfolder);
         {
             CAutoWriteLock nlocker(m_notignguard);
             m_notifyignores.insert(orig);
