@@ -54,6 +54,11 @@ enum SyncOp
     Decrypt,
 };
 
+const int ErrorNone = 0;
+const int ErrorCancelled = 1;
+const int ErrorAccess = 2;
+const int ErrorCrypt = 4;
+const int ErrorCopy = 8;
 
 class CFolderSync
 {
@@ -62,7 +67,7 @@ public:
     ~CFolderSync(void);
 
     void                            SyncFolders(const PairVector& pv, HWND hWnd = NULL);
-    void                            SyncFoldersWait(const PairVector& pv, HWND hWnd = NULL);
+    int                             SyncFoldersWait(const PairVector& pv, HWND hWnd = NULL);
     void                            SyncFile(const std::wstring& path);
     void                            SetPairs(const PairVector& pv);
     void                            Stop();
@@ -75,8 +80,8 @@ public:
 private:
     static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
     void                            SyncFile(const std::wstring& path, const PairData& pt);
-    void                            SyncFolderThread();
-    void                            SyncFolder(const PairData& pt);
+    int                             SyncFolderThread();
+    int                             SyncFolder(const PairData& pt);
     std::map<std::wstring, FileData, ci_lessW> GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, bool useGPG, DWORD & error) const;
     bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
     bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
