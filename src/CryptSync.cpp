@@ -97,7 +97,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"/progress   : shows a progress dialog while syncing\n"
                              L"/logpath    : path to a logfile\n"
                              L"/maxlog     : maximum number of lines the logfile can have\n"
-                             L"/tray       : start in background without showing a dialog first";
+                             L"/tray       : start in background without showing a dialog first\n\n"
+                             L"the %ERRORLEVEL% is set to a bitmask on return, or zero on success:\n"
+                             L"1: Cancelled\n"
+                             L"2: Access denied\n"
+                             L"4: en/decryption error\n"
+                             L"8: copy error";
         MessageBox(NULL, sInfo.c_str(), L"CryptSync Command Line Options", MB_ICONINFORMATION);
         return 1;
     }
