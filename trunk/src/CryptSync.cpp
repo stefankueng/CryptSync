@@ -146,7 +146,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     }
 
     CCircularLog::Instance().Init(lp, maxlog);
-    CCircularLog::Instance()(L"Starting CryptSync");
+    CCircularLog::Instance()(L"INFO:    Starting CryptSync");
 
     if (parser.HasVal(L"src") && parser.HasVal(L"dst"))
     {
