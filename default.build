@@ -68,6 +68,10 @@
       </filterchain>
     </loadfile>
     <echo file="src\version.h" message="${versionheaderfile}" />
+    <!-- now write the version.txt file -->
+    <property name="verstring" value="${environment::get-variable('MajorVersion')}.${environment::get-variable('MinorVersion')}.${environment::get-variable('MicroVersion')}" />
+    <property name="verstringfull" value="${verstring}.${environment::get-variable('WCREV')}" />
+    <echo file="version.txt">${verstringfull}</echo>
   </target>
 
   <target name="CryptSync" depends="VersionInfo">
