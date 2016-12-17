@@ -134,7 +134,7 @@ LRESULT COptionsDlg::DoCommand(int id)
     case IDC_SHOWLOG:
         {
             CCircularLog::Instance().Save();
-            std::wstring path = CCircularLog::Instance().GetSavePath().c_str();
+            std::wstring path = CCircularLog::Instance().GetSavePath();
             SHELLEXECUTEINFO shex = {0};
             shex.cbSize = sizeof(SHELLEXECUTEINFO);
             shex.fMask = SEE_MASK_DOENVSUBST|SEE_MASK_ASYNCOK|SEE_MASK_CLASSNAME;

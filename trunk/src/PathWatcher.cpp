@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2015 - Stefan Kueng
+// Copyright (C) 2012-2016 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -281,7 +281,7 @@ CPathWatcher::CDirWatchInfo::CDirWatchInfo(CAutoFile && hDir, const std::wstring
 {
     m_Buffer[0] = 0;
     SecureZeroMemory(&m_Overlapped, sizeof(m_Overlapped));
-    m_DirPath = m_DirName.c_str();
+    m_DirPath = m_DirName;
     if (m_DirPath.at(m_DirPath.size()-1) != '\\')
         m_DirPath += _T("\\");
 }
