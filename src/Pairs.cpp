@@ -133,7 +133,7 @@ void CPairs::InitPairList()
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
         CRegStdDWORD onewayreg(key, (DWORD)-1);
         if (DWORD(onewayreg) != (DWORD)-1)
-            pd.syncDir == !!(DWORD)onewayreg ? SrcToDst : BothWays;
+            pd.syncDir = (!!(DWORD)onewayreg ? SrcToDst : BothWays);
         else
         {
             swprintf_s(key, L"Software\\CryptSync\\SyncPairDir%d", p);
