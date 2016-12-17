@@ -88,6 +88,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"/encnames   : encrypt file and folder names\n"
                              L"/mirror     : mirror only from src to dst\n"
                              L"/mirrorback : mirror from dst to src\n"
+                             L"/decryptonly: mirrors from dst to src, but does not mirror deletions\n"
                              L"/use7z      : use .7z instead of .cryptsync extension\n"
                              L"/useGPG     : use GnuPG encryption\n"
                              L"/fat        : use FAT write time accuracy (2s)\n"
@@ -163,6 +164,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         bool encnames    = !!parser.HasKey(L"encnames");
         bool mirror      = !!parser.HasKey(L"mirror");
         bool mirrorback  = !!parser.HasKey(L"mirrorback");
+        bool decryptonly = !!parser.HasKey(L"decryptonly");
         bool use7z       = !!parser.HasKey(L"use7z");
         bool useGPG      = !!parser.HasKey(L"useGPG");
         bool fat         = !!parser.HasKey(L"fat");
@@ -174,9 +176,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
         CPairs pair;
         pair.clear();
-        pair.AddPair(src, dst, pw, cpy, nsy, encnames, mirror ? SrcToDst : BothWays, use7z, useGPG, fat);
+        SyncDir syncDir = BothWays;
+        if (mirror && !mirrorback)
+            syncDir = SrcToDst;
+        if (mirrorback && !mirror)
+            syncDir = DstToSrc;
+        pair.AddPair(src, dst, pw, cpy, nsy, encnames, syncDir, use7z, useGPG, fat);
         CFolderSync foldersync;
-        if (mirrorback)
+        if (decryptonly)
             foldersync.DecryptOnly(true);
         auto ret = foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
         CCircularLog::Instance()(L"INFO:    exiting CryptSync");
