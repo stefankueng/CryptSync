@@ -199,6 +199,7 @@
     <None Include="Setup\setup.build" />
     <None Include="Setup\Setup.wxs" />
     <None Include="Setup\Setup64.wxs" />
+    <None Include="version.in" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\sktoolslib\AeroControls.h" />

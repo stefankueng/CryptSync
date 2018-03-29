@@ -1,0 +1,8 @@
+/default.build.user
+/signinfo.txt
+/.vs
+/bin
+/obj
+/src/CryptSync.vcxproj.user
+/src/version.h
+/version.build
