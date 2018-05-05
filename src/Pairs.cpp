@@ -30,7 +30,7 @@
 
 void PairData::UpdateVec(std::wstring& s, std::vector<std::wstring>& v)
 {
-    std::transform(s.begin(), s.end(), s.begin(), std::tolower);
+    std::transform(s.begin(), s.end(), s.begin(), ::towlower);
     stringtok(v, s, true);
 }
 
@@ -50,7 +50,7 @@ bool PairData::MatchInVec( const std::vector<std::wstring>& v, const std::wstrin
     if (v.empty())
         return false;
     std::wstring scmp = s;
-    std::transform(scmp.begin(), scmp.end(), scmp.begin(), std::tolower);
+    std::transform(scmp.begin(), scmp.end(), scmp.begin(), ::towlower);
 
     // first check if the whole path matches
     for (auto it = v.cbegin(); it != v.cend(); ++it)

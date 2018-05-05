@@ -43,7 +43,7 @@ bool CIgnores::IsIgnored( const std::wstring& s )
     bool bIgnored = false;
 
     std::wstring scmp = s;
-    std::transform(scmp.begin(), scmp.end(), scmp.begin(), std::tolower);
+    std::transform(scmp.begin(), scmp.end(), scmp.begin(), ::towlower);
     std::vector<std::wstring> pathelems;
     stringtok(pathelems, scmp, true, L"\\");
     for (auto pe:pathelems)
@@ -74,7 +74,7 @@ void CIgnores::Reload(const std::wstring& s /* = std::wstring() */)
     stringtok(ignores, sIgnores, true);
     for (auto it = ignores.begin(); it != ignores.end(); ++it)
     {
-        std::transform(it->begin(), it->end(), it->begin(), std::tolower);
+        std::transform(it->begin(), it->end(), it->begin(), ::towlower);
     }
 }
 

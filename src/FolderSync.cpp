@@ -1066,7 +1066,7 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
     if (!encryptname)
     {
         std::wstring f = filename;
-        std::transform(f.begin(), f.end(), f.begin(), std::tolower);
+        std::transform(f.begin(), f.end(), f.begin(), ::towlower);
         if (useGPG)
         {
             size_t pos = f.rfind(L".gpg");
@@ -1176,7 +1176,7 @@ std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, con
     if (!encryptname)
     {
         std::wstring f = filename;
-        std::transform(f.begin(), f.end(), f.begin(), std::tolower);
+        std::transform(f.begin(), f.end(), f.begin(), ::towlower);
 
         if (useGPG)
         {
