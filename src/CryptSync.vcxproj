@@ -276,6 +276,11 @@
   <ItemGroup>
     <ResourceCompile Include="CryptSync.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\lzma\lzma.vcxproj">
+      <Project>{db510b6f-f32c-4e6d-a0c6-5a14562a4639}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
