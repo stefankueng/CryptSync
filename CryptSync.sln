@@ -4,6 +4,8 @@ VisualStudioVersion = 15.0.26430.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CryptSync", "src\CryptSync.vcxproj", "{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lzma", "lzma\lzma.vcxproj", "{DB510B6F-F32C-4E6D-A0C6-5A14562A4639}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -20,8 +22,19 @@ Global
 		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Release|Win32.Build.0 = Release|Win32
 		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Release|x64.ActiveCfg = Release|x64
 		{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}.Release|x64.Build.0 = Release|x64
+		{DB510B6F-F32C-4E6D-A0C6-5A14562A4639}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DB510B6F-F32C-4E6D-A0C6-5A14562A4639}.Debug|Win32.Build.0 = Debug|Win32
+		{DB510B6F-F32C-4E6D-A0C6-5A14562A4639}.Debug|x64.ActiveCfg = Debug|x64
+		{DB510B6F-F32C-4E6D-A0C6-5A14562A4639}.Debug|x64.Build.0 = Debug|x64
+		{DB510B6F-F32C-4E6D-A0C6-5A14562A4639}.Release|Win32.ActiveCfg = Release|Win32
+		{DB510B6F-F32C-4E6D-A0C6-5A14562A4639}.Release|Win32.Build.0 = Release|Win32
+		{DB510B6F-F32C-4E6D-A0C6-5A14562A4639}.Release|x64.ActiveCfg = Release|x64
+		{DB510B6F-F32C-4E6D-A0C6-5A14562A4639}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {99874E95-64C2-4B41-B00B-AD1C0F436AF5}
 	EndGlobalSection
 EndGlobal
