@@ -223,30 +223,38 @@
   <ItemGroup>
     <CustomBuild Include="Asm\x86\7zAsm.asm" />
     <CustomBuild Include="Asm\x86\7zCrcOpt.asm">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ml.exe -c -omf -Fo$(OutDir)%(Filename).obj %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)\%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ml.exe -c -Fo$(OutDir)%(Filename).obj %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)\%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </Outputs>
     </CustomBuild>
     <CustomBuild Include="Asm\x86\AesOpt.asm">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ml.exe -c -omf -WX -W3 -Fo$(OutDir)%(Filename).obj %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)\%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ml.exe -c -Fo$(OutDir)%(Filename).obj %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)\%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </Outputs>
     </CustomBuild>
@@ -276,10 +284,10 @@
       </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="C\7zCrcOpt.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="C\7zStream.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -304,10 +312,10 @@
       </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="C\AesOpt.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="C\Alloc.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
