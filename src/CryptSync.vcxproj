@@ -93,7 +93,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\sktoolslib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sktoolslib;.;last</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -110,11 +110,12 @@
     </Manifest>
     <ResourceCompile>
       <Culture>0x0409</Culture>
+      <AdditionalIncludeDirectories>.;last</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\sktoolslib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sktoolslib;.;last</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>_WIN64;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -132,11 +133,12 @@
     <ResourceCompile>
       <Culture>0x0409</Culture>
       <PreprocessorDefinitions>_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;last</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\sktoolslib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sktoolslib;.;last</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -160,11 +162,12 @@
     </Manifest>
     <ResourceCompile>
       <Culture>0x0409</Culture>
+      <AdditionalIncludeDirectories>.;last</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\sktoolslib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\sktoolslib;.;last</AdditionalIncludeDirectories>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -188,6 +191,7 @@
     <ResourceCompile>
       <Culture>0x0409</Culture>
       <PreprocessorDefinitions>_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;last</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -277,8 +281,9 @@
     <ResourceCompile Include="CryptSync.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\lzma\lzma.vcxproj">
-      <Project>{db510b6f-f32c-4e6d-a0c6-5a14562a4639}</Project>
+    <ProjectReference Include="..\lzma\7Zip.vcxproj">
+      <Project>{1eb8b4af-2f14-4379-8875-b75c1ec7c9f2}</Project>
+      <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
