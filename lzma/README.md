@@ -40,3 +40,13 @@ This is a simple to use wrapper for the 7zip library.
     extractor.SetCallback(progressFunc);
     extractor.Extract(L"D:\\extract_out");
 ```
+
+# linking
+The 7zip-Library is linked statically.
+For this to work properly, you have to add the library as a reference and then set the library-inputs flag. So, in the VS Solution explorer:
+1. right click on "References" in your VS project, select "Add Reference".
+2. Select the 7zip library from the list - the library is added to your project.
+3. click on the 7zip library in the References folder, hit F4
+4. In the properties window, find the option "Use Library dependency inputs" and set this to "true".
+
+Without this setting, the archive handlers are not registered and you'll get errors when trying to use the library.
