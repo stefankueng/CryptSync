@@ -7,4 +7,3 @@
 #include <atlbase.h>
 #include <vector>
 #include <deque>
-#include "SevenString.h"
