@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016 - Stefan Kueng
+// Copyright (C) 2012-2016, 2018 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,11 +32,11 @@
 #include <shlobj.h>
 #include <cctype>
 #include <algorithm>
+#include "../lzma/Wrapper-CPP/C7Zip.h"
 
 
 CFolderSync::CFolderSync(void)
-    : m_sevenzip(L"%ProgramFiles%\\7-zip\\7z.exe")
-    , m_GnuPG(L"%ProgramFiles%\\GNU\\GnuPG\\Pub\\gpg.exe")
+    : m_GnuPG(L"%ProgramFiles%\\GNU\\GnuPG\\Pub\\gpg.exe")
     , m_parentWnd(NULL)
     , m_TrayWnd(NULL)
     , m_pProgDlg(NULL)
@@ -45,24 +45,10 @@ CFolderSync::CFolderSync(void)
     , m_bRunning(FALSE)
     , m_decryptonly(false)
 {
-    wchar_t buf[1024] = {0};
+    wchar_t buf[1024] = { 0 };
     GetModuleFileName(NULL, buf, 1024);
     std::wstring dir = buf;
     dir = dir.substr(0, dir.find_last_of('\\'));
-    m_sevenzip = dir + L"\\7z.exe";
-    if (!PathFileExists(m_sevenzip.c_str()))
-    {
-        m_sevenzip = CStringUtils::ExpandEnvironmentStrings(L"%ProgramFiles%\\7-zip\\7z.exe");
-        if (!PathFileExists(m_sevenzip.c_str()))
-        {
-#ifdef _WIN64
-            m_sevenzip = L"%ProgramFiles(x86)%\\7-zip\\7z.exe";
-#else
-            m_sevenzip = L"%ProgramW6432%\\7-zip\\7z.exe";
-#endif
-            m_sevenzip = CStringUtils::ExpandEnvironmentStrings(m_sevenzip);
-        }
-    }
     m_GnuPG = CStringUtils::ExpandEnvironmentStrings(m_GnuPG);
     if (!PathFileExists(m_GnuPG.c_str()))
     {
@@ -908,42 +894,83 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
         return false;
     std::wstring targetfolder = crypt.substr(0, slashpos);
     std::wstring cryptname = crypt.substr(slashpos+1);
-    size_t buflen = orig.size() + crypt.size() + password.size() + 1000;
-    std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
-    if ((!cryptname.empty()) && (cryptname[0] == '-'))
-        cryptname = L".\\" + cryptname;
 
     // try to open the source file in read mode:
     // if we can't open the file, then it is locked and 7-zip would fail.
     // But when 7-zip fails, it destroys a possible already existing encrypted file instead of
     // just leaving it as it is. So by first checking if the source file
     // can be read, we reduce the chances of 7-zip destroying the target file.
-    CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, NULL, OPEN_EXISTING, 0, NULL);
+    CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, 0, NULL);
     if (!hFile.IsValid())
         return false;
-    LARGE_INTEGER filesize = {0};
+    LARGE_INTEGER filesize = { 0 };
     GetFileSizeEx(hFile, &filesize);
     hFile.CloseHandle();
 
     int compression = 9;
-    if (filesize.QuadPart > 100*1024*1024)
+    if (filesize.QuadPart > 100 * 1024 * 1024)
         compression = 0;    // turn off compression for files bigger than 100MB
 
-    if (password.empty())
+    if (!useGPG || password.empty())
     {
-        CCircularLog::Instance()(_T("ERROR:   password is blank - NOT secure - force 7z not GPG"), crypt.c_str());
-        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -mx%d -mhe=on -m0=lzma2 -mtc=on -w -stl", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), compression);
-    }
-    else
-    {
+        if (password.empty())
+            CCircularLog::Instance()(_T("ERROR:   password is blank - NOT secure - force 7z not GPG"), crypt.c_str());
+        auto progressFunc = [&](UInt64, UInt64, const std::wstring&)
+        {
+            if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+                return E_ABORT;
+            return S_OK;
+        };
 
-        if (useGPG)
-            swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" --batch --yes -c -a --passphrase \"%s\" -o \"%s\" \"%s\" ", m_GnuPG.c_str(), password.c_str(), cryptname.c_str(), orig.c_str());
+        C7Zip compressor;
+        compressor.SetPassword(password);
+        compressor.SetArchivePath(targetfolder + L"\\" + cryptname);
+        compressor.SetCompressionFormat(CompressionFormat::SevenZip, compression);
+        compressor.SetCallback(progressFunc);
+        if (compressor.AddPath(orig))
+        {
+            // set the file timestamp
+            int retry = 5;
+            bool bRet = true;
+            do
+            {
+                if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+                    break;
+                CAutoFile hFileCrypt = CreateFile(crypt.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+                if (hFileCrypt.IsValid())
+                {
+                    bRet = !!SetFileTime(hFileCrypt, NULL, NULL, &fd.ft);
+                }
+                else
+                    bRet = false;
+                if (!bRet)
+                    Sleep(200);
+            } while (!bRet && (retry-- > 0));
+            if (!bRet)
+                CCircularLog::Instance()(_T("failed to set file time on %s"), crypt.c_str());
+            CAutoWriteLock locker(m_failureguard);
+            m_failures.erase(orig);
+            return true;
+        }
         else
-            swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" a -t7z -ssw \"%s\" \"%s\" -p\"%s\" -mx%d -mhe=on -m0=lzma2 -mtc=on -w -stl", m_sevenzip.c_str(), cryptname.c_str(), orig.c_str(), password.c_str(), compression);
+        {
+            // If encrypting failed, remove the leftover file
+            DeleteFile(crypt.c_str());
+            CAutoWriteLock locker(m_failureguard);
+            m_failures[orig] = Encrypt;
+            CCircularLog::Instance()(L"ERROR:   Failed to encrypt file \"%s\" to \"%s\"", orig.c_str(), crypt.c_str());
+            return false;
+        }
     }
 
-    bool bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
+    size_t buflen = orig.size() + crypt.size() + password.size() + 1000;
+    std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
+    if ((!cryptname.empty()) && (cryptname[0] == '-'))
+        cryptname = L".\\" + cryptname;
+
+    swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" --batch --yes -c -a --passphrase \"%s\" -o \"%s\" \"%s\" ", m_GnuPG.c_str(), password.c_str(), cryptname.c_str(), orig.c_str());
+
+    bool bRet = RunGPG(cmdlinebuf.get(), targetfolder);
     if (!bRet)
     {
         CPathUtils::CreateRecursiveDirectory(targetfolder);
@@ -951,7 +978,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
             CAutoWriteLock nlocker(m_notignguard);
             m_notifyignores.insert(crypt);
         }
-        bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
+        bRet = RunGPG(cmdlinebuf.get(), targetfolder);
     }
     if (bRet)
     {
@@ -998,19 +1025,60 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
     size_t buflen = orig.size() + crypt.size() + password.size() + 1000;
     std::unique_ptr<wchar_t[]> cmdlinebuf(new wchar_t[buflen]);
 
-    if (password.empty())
+    if (!useGPG || password.empty())
     {
-        CCircularLog::Instance()(_T("WARNING: password is blank - NOT secure - force 7z not GPG"), crypt.c_str());
-        swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" e \"%s\" -o\"%s\" -y", m_sevenzip.c_str(), crypt.c_str(), targetfolder.c_str());
-    }
-    else
-    {
-        if (useGPG)
-            swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" --yes --batch --passphrase \"%s\" -o \"%s\" \"%s\" ", m_GnuPG.c_str(), password.c_str(), orig.c_str(), crypt.c_str());
+        if (password.empty())
+            CCircularLog::Instance()(_T("WARNING: password is blank - NOT secure - force 7z not GPG"), crypt.c_str());
+
+        auto progressFunc = [&](UInt64, UInt64, const std::wstring&)
+        {
+            if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+                return E_ABORT;
+            return S_OK;
+        };
+
+        C7Zip extractor;
+        extractor.SetPassword(password);
+        extractor.SetArchivePath(crypt);
+        extractor.SetCompressionFormat(CompressionFormat::SevenZip, 9);
+        extractor.SetCallback(progressFunc);
+        if (extractor.Extract(targetfolder))
+        {
+            // set the file timestamp
+            int retry = 5;
+            bool bRet = true;
+            do
+            {
+                if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+                    break;
+                CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+                if (hFile.IsValid())
+                {
+                    bRet = !!SetFileTime(hFile, NULL, NULL, &fd.ft);
+                }
+                else
+                    bRet = false;
+                if (!bRet)
+                    Sleep(200);
+            } while (!bRet && (retry-- > 0));
+            if (!bRet)
+                CCircularLog::Instance()(_T("ERROR:   failed to set file time on %s"), orig.c_str());
+            CAutoWriteLock locker(m_failureguard);
+            m_failures.erase(orig);
+            return true;
+        }
         else
-            swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" e \"%s\" -o\"%s\" -p\"%s\" -y", m_sevenzip.c_str(), crypt.c_str(), targetfolder.c_str(), password.c_str());
+        {
+            DeleteFile(orig.c_str());
+            CAutoWriteLock locker(m_failureguard);
+            m_failures[orig] = Decrypt;
+            CCircularLog::Instance()(L"ERROR:   Failed to decrypt file \"%s\" to \"%s\"", crypt.c_str(), orig.c_str());
+            return false;
+        }
     }
-    bool bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
+
+    swprintf_s(cmdlinebuf.get(), buflen, L"\"%s\" --yes --batch --passphrase \"%s\" -o \"%s\" \"%s\" ", m_GnuPG.c_str(), password.c_str(), orig.c_str(), crypt.c_str());
+    bool bRet = RunGPG(cmdlinebuf.get(), targetfolder);
     if (!bRet)
     {
         CPathUtils::CreateRecursiveDirectory(targetfolder);
@@ -1018,7 +1086,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
             CAutoWriteLock nlocker(m_notignguard);
             m_notifyignores.insert(orig);
         }
-        bRet = RunExtTool(cmdlinebuf.get(), targetfolder, useGPG);
+        bRet = RunGPG(cmdlinebuf.get(), targetfolder);
     }
     if (bRet)
     {
@@ -1284,13 +1352,13 @@ std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, con
     return filename;
 }
 
-bool CFolderSync::RunExtTool( LPWSTR cmdline, const std::wstring& cwd, bool useGPG ) const
+bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
 {
     if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
         return false;
     PROCESS_INFORMATION pi = { 0 };
 
-    if (CCreateProcessHelper::CreateProcess(useGPG ? m_GnuPG.c_str() : m_sevenzip.c_str(), cmdline, cwd.c_str(), &pi, true, BELOW_NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT))
+    if (CCreateProcessHelper::CreateProcess(m_GnuPG.c_str(), cmdline, cwd.c_str(), &pi, true, BELOW_NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT))
     {
         // wait until the process terminates
         DWORD waitRet = 0;

@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016 - Stefan Kueng
+// Copyright (C) 2012-2016, 2018 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -88,13 +88,12 @@ private:
     static std::wstring             GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG);
     static std::wstring             GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG);
     static std::wstring             GetFileTimeStringForLog(const FILETIME & ft);
-    bool                            RunExtTool(LPWSTR cmdline, const std::wstring& cwd, bool useGPG) const;
+    bool                            RunGPG(LPWSTR cmdline, const std::wstring& cwd) const;
 
     CReaderWriterLock               m_guard;
     CReaderWriterLock               m_failureguard;
     CReaderWriterLock               m_notignguard;
     PairVector                      m_pairs;
-    std::wstring                    m_sevenzip;
     std::wstring                    m_GnuPG;
     HWND                            m_parentWnd;
     HWND                            m_TrayWnd;

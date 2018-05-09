@@ -8,3 +8,6 @@
 /version.build
 /lzma/lzma.vcxproj.user
 /lzma/7Zip.vcxproj.user
+/src/*.aps
+/test_crypt
+/test_orig
