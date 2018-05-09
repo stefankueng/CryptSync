@@ -1217,6 +1217,7 @@
     <ClCompile Include="Wrapper-CPP\CallbackBase.cpp" />
     <ClCompile Include="Wrapper-CPP\DirFileEnum.cpp" />
     <ClCompile Include="Wrapper-CPP\GUIDs.cpp" />
+    <ClCompile Include="Wrapper-CPP\Helper.cpp" />
     <ClCompile Include="Wrapper-CPP\InStreamWrapper.cpp" />
     <ClCompile Include="Wrapper-CPP\OutStreamWrapper.cpp" />
   </ItemGroup>
@@ -1450,6 +1451,7 @@
     <ClInclude Include="Wrapper-CPP\CallbackBase.h" />
     <ClInclude Include="Wrapper-CPP\DirFileEnum.h" />
     <ClInclude Include="Wrapper-CPP\GUIDs.h" />
+    <ClInclude Include="Wrapper-CPP\Helper.h" />
     <ClInclude Include="Wrapper-CPP\InStreamWrapper.h" />
     <ClInclude Include="Wrapper-CPP\OutStreamWrapper.h" />
   </ItemGroup>

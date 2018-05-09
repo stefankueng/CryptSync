@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ArchiveExtractCallback.h"
 #include "OutStreamWrapper.h"
+#include "Helper.h"
 #include <comdef.h>
 #include <Shlwapi.h>
 #include "../CPP/Windows/PropVariant.h"
@@ -10,34 +11,6 @@
 namespace SevenZip
 {
 const std::wstring EmptyFileAlias = L"[Content]";
-
-bool CreateRecursiveDirectory(const std::wstring& path)
-{
-    if (path.empty() || PathIsRoot(path.c_str()))
-        return false;
-
-    auto ret = CreateDirectory(path.c_str(), nullptr);
-    if (ret == FALSE)
-    {
-        if (GetLastError() == ERROR_PATH_NOT_FOUND)
-        {
-            if (CreateRecursiveDirectory(path.substr(0, path.find_last_of('\\'))))
-            {
-                // some file systems (e.g. webdav mounted drives) take time until
-                // a dir is properly created. So we try a few times with a wait in between
-                // to create the sub dir after just having created the parent dir.
-                int retrycount = 5;
-                do
-                {
-                    ret = CreateDirectory(path.c_str(), nullptr);
-                    if (ret == FALSE)
-                        Sleep(50);
-                } while (retrycount-- && (ret == FALSE));
-            }
-        }
-    }
-    return ret != FALSE;
-}
 
 ArchiveExtractCallback::ArchiveExtractCallback(const CMyComPtr<IInArchive>& archiveHandler, const std::wstring& directory, const std::wstring& password)
     : CallbackBase()

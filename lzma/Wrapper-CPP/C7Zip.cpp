@@ -5,8 +5,10 @@
 #include "ArchiveUpdateCallback.h"
 #include "DirFileEnum.h"
 #include "ArchiveExtractCallback.h"
+#include "Helper.h"
 #include "../CPP/7zip/IDecl.h"
 #include "../CPP/Windows/PropVariant.h"
+
 
 C7Zip::C7Zip()
     : m_compressionFormat(CompressionFormat::Unknown)
@@ -213,7 +215,13 @@ bool C7Zip::AddPath(const std::wstring& path)
     CMyComPtr<IStream> fileStream;
     const WCHAR*       filePathStr = m_archivePath.c_str();
     if (FAILED(SHCreateStreamOnFileEx(filePathStr, STGM_CREATE | STGM_WRITE, FILE_ATTRIBUTE_NORMAL, TRUE, NULL, &fileStream)))
-        return false;
+    {
+        CreateRecursiveDirectory(m_archivePath.substr(0, m_archivePath.find_last_of('\\')));
+        if (FAILED(SHCreateStreamOnFileEx(filePathStr, STGM_CREATE | STGM_WRITE, FILE_ATTRIBUTE_NORMAL, TRUE, NULL, &fileStream)))
+        {
+            return false;
+        }
+    }
 
     CMyComPtr<OutStreamWrapper> outFile   = new OutStreamWrapper(fileStream);
     std::wstring                dirPrefix = path;

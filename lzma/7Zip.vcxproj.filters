@@ -966,6 +966,9 @@
     <ClCompile Include="Wrapper-CPP\GUIDs.cpp">
       <Filter>Wrapper-CPP</Filter>
     </ClCompile>
+    <ClCompile Include="Wrapper-CPP\Helper.cpp">
+      <Filter>Wrapper-CPP</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CPP\7zip\Bundles\Format7zF\resource.rc" />
@@ -1651,6 +1654,9 @@
       <Filter>Wrapper-CPP</Filter>
     </ClInclude>
     <ClInclude Include="Wrapper-CPP\GUIDs.h">
+      <Filter>Wrapper-CPP</Filter>
+    </ClInclude>
+    <ClInclude Include="Wrapper-CPP\Helper.h">
       <Filter>Wrapper-CPP</Filter>
     </ClInclude>
   </ItemGroup>
