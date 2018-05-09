@@ -66,24 +66,42 @@ public:
     C7Zip();
     ~C7Zip();
 
+    /// Set the path of the compressed file.
     void SetArchivePath(const std::wstring& path)
     {
         m_archivePath       = path;
         m_compressionFormat = GetCompressionFormatFromPath();
     }
+
+    /// Sets a password for encryption or decryption. Only used for
+    /// archive formats that support it.
     void SetPassword(const std::wstring& pw) { m_password = pw; }
+
+    /// Sets the compression format to use, and the compression level between 0-9.
+    /// for unpacking, if the format is not set (CompressionFormat::Unknown) or
+    /// opening the archive fails with the compression format set,
+    /// all available compression formats are tried in sequence until opening
+    /// the archive succeeds.
     void SetCompressionFormat(CompressionFormat f, int compressionlevel)
     {
         m_compressionFormat = f;
         m_compressionLevel  = compressionlevel;
     }
+
+    /// sets a callback function that can be used to show progress info
+    /// and/or to cancel the operation. Return S_OK from the callback
+    /// to continue, or E_ABORT to cancel.
     void SetCallback(const std::function<HRESULT(UInt64 pos, UInt64 total, const std::wstring& path)>& callback) { m_callback = callback; }
+
+    /// Add paths to compress into the archive file.
+    /// if the path ends with a backslash, the directory is not added itselb but only
+    /// the contents.
     bool AddPath(const std::wstring& path);
+
+    /// Extracts the contents of the archive to the destPath.
     bool Extract(const std::wstring& destPath);
 
-    CompressionFormat GetCompressionFormatFromPath();
-    const GUID*       GetGUIDFromFormat(CompressionFormat format);
-
+    /// Lists all files inside an archive to the container. container can be std:vector, std::list, ...
     template <class Container>
     bool ListFiles(Container& container)
     {
@@ -154,6 +172,9 @@ public:
         return !container.empty();
     }
 
+private:
+    CompressionFormat GetCompressionFormatFromPath();
+    const GUID*       GetGUIDFromFormat(CompressionFormat format);
     const GUID* GetGUIDByTrying(CompressionFormat& format, CMyComPtr<IStream>& fileStream);
 
 private:
