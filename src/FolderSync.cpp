@@ -684,7 +684,7 @@ int CFolderSync::SyncFolder( const PairData& pt )
                     {
                         std::wstring cryptpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z, pt.useGPG)));
                         std::wstring origpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.origpath, it->first));
-                        if (!DecryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG))
+                        if (!DecryptFile(origpath, cryptpath, pt.password, cryptit->second, pt.useGPG))
                             retVal |= ErrorCrypt;
                     }
                 }
