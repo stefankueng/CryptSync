@@ -151,8 +151,8 @@ LRESULT CPairAddDlg::DoCommand(int id)
             std::wstring cryptpath = m_cryptpath;
             CreateDirectory(m_origpath.c_str(), NULL);
             CreateDirectory(m_cryptpath.c_str(), NULL);
-            std::transform(origpath.begin(), origpath.end(), origpath.begin(), std::tolower);
-            std::transform(cryptpath.begin(), cryptpath.end(), cryptpath.begin(), std::tolower);
+            std::transform(origpath.begin(), origpath.end(), origpath.begin(), ::towlower);
+            std::transform(cryptpath.begin(), cryptpath.end(), cryptpath.begin(), ::towlower);
 
             if (origpath == cryptpath)
             {
