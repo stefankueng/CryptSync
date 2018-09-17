@@ -79,6 +79,8 @@ ArchiveOpenCallback::Release()
 
 STDMETHODIMP ArchiveOpenCallback::SetTotal(const UInt64* files, const UInt64* /*bytes*/)
 {
+    if (files == nullptr)
+        return E_FAIL;
     m_progress = *files;
     if (m_callback)
         return m_callback(m_progress, m_total, m_progressPath);
@@ -87,6 +89,8 @@ STDMETHODIMP ArchiveOpenCallback::SetTotal(const UInt64* files, const UInt64* /*
 
 STDMETHODIMP ArchiveOpenCallback::SetCompleted(const UInt64* files, const UInt64* /*bytes*/)
 {
+    if (files == nullptr)
+        return E_FAIL;
     m_progress = *files;
     if (m_callback)
         return m_callback(m_progress, m_total, m_progressPath);

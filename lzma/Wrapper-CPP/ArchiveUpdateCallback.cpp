@@ -104,6 +104,8 @@ STDMETHODIMP ArchiveUpdateCallback::SetTotal(UInt64 size)
 
 STDMETHODIMP ArchiveUpdateCallback::SetCompleted(const UInt64* completeValue)
 {
+    if (completeValue == nullptr)
+        return E_FAIL;
     m_progress = *completeValue;
     if (m_callback)
         return m_callback(m_progress, m_total, m_progressPath);
