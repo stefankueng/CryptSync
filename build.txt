@@ -1,11 +1,11 @@
 First, you need to install the compiler package.
 
-- You need VS2015.
+- You need VS2017.
   If you want to build the msi make sure the "Tools for Redistributing
   Applications" are installed.
 
 Next you need to install some utilities/programs:
-- TortoiseSVN           : http://tortoisesvn.net
+- TortoiseGit           : https://tortoisegit.org/
 - WiX 3.10(*)           : http://wixtoolset.org/
 - NAnt 0.92 (*)         : http://nant.sourceforge.net
 
@@ -14,7 +14,7 @@ Next you need to install some utilities/programs:
 
 
 Now you're almost ready. Only a few more steps to do:
-- Checkout the CryptSync sources from the Subversion repository
+- Clone the source code from the Git repository
 - Make a copy of the file default.build.user.tmpl in the CryptSync root folder and
   rename that copy to default.build.user. Then adjust the paths as mentioned
   in that file.
@@ -39,4 +39,4 @@ Building packages
   After the script finished, the packages can be found in .\bin.
 
 Once CryptSync has been built with the NAnt script, you can build it again
-with VS2015 alone.
+with VS2017 alone.
