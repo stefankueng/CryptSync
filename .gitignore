@@ -11,3 +11,4 @@
 /src/*.aps
 /test_crypt
 /test_orig
+/src/Setup/VersionNumberInclude.wxi
