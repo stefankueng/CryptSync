@@ -129,6 +129,8 @@ LRESULT COptionsDlg::DoCommand(int id)
         // fall through
     case IDCANCEL:
     case IDEXIT:
+        if (MessageBox(*this, L"Are you sure you want to quit?", L"CryptSync", MB_ICONQUESTION | MB_YESNO) != IDYES)
+            return 1;
         EndDialog(*this, id);
         break;
     case IDC_SHOWLOG:
