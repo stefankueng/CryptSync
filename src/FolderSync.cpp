@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016, 2018 - Stefan Kueng
+// Copyright (C) 2012-2016, 2018-2019 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -235,6 +235,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         return;
     if (pt.IsIgnored(path))
         return;
+    bool bCryptOnly = pt.IsCryptOnly(path);
     bool bCopyOnly = pt.IsCopyOnly(path);
     if ((orig.size() < path.size()) && (_wcsicmp(path.substr(0, orig.size()).c_str(), orig.c_str()) == 0) && ((path[orig.size()] == '\\') || (path[orig.size()] == '/')))
     {
@@ -449,7 +450,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
                 }
             }
             else
-                EncryptFile(orig, crypt, pt.password, fd, pt.useGPG);
+                EncryptFile(orig, crypt, pt.password, fd, pt.useGPG, bCryptOnly);
         }
     }
     else if (cmp == 0)
@@ -549,6 +550,7 @@ int CFolderSync::SyncFolder( const PairData& pt )
             continue;
         if (pt.IsIgnored(CPathUtils::Append(pt.origpath, it->first)))
             continue;
+        bool bCryptOnly = pt.IsCryptOnly(CPathUtils::Append(pt.origpath, it->first));
         bool bCopyOnly = pt.IsCopyOnly(CPathUtils::Append(pt.origpath, it->first));
         auto cryptit = cryptFileList.find(it->first);
         if (cryptit == cryptFileList.end())
@@ -576,7 +578,7 @@ int CFolderSync::SyncFolder( const PairData& pt )
                 {
                     std::wstring cryptpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z, pt.useGPG)));
                     std::wstring origpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.origpath, it->first));
-                    if (!EncryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG))
+                    if (!EncryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG, bCryptOnly))
                         retVal |= ErrorCrypt;
                 }
             }
@@ -717,7 +719,7 @@ int CFolderSync::SyncFolder( const PairData& pt )
                     {
                         std::wstring cryptpath = CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z, pt.useGPG));
                         std::wstring origpath = CPathUtils::Append(pt.origpath, it->first);
-                        if (!EncryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG))
+                        if (!EncryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG, bCryptOnly))
                             retVal |= ErrorCrypt;
                     }
                 }
@@ -884,7 +886,7 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
     return filelist;
 }
 
-bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG)
+bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG, bool noCompress)
 {
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": encrypt file %s to %s\n"), orig.c_str(), crypt.c_str());
     CCircularLog::Instance()(_T("INFO:    encrypt file %s to %s"), orig.c_str(), crypt.c_str());
@@ -895,21 +897,24 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
     std::wstring targetfolder = crypt.substr(0, slashpos);
     std::wstring cryptname = crypt.substr(slashpos+1);
 
-    // try to open the source file in read mode:
-    // if we can't open the file, then it is locked and 7-zip would fail.
-    // But when 7-zip fails, it destroys a possible already existing encrypted file instead of
-    // just leaving it as it is. So by first checking if the source file
-    // can be read, we reduce the chances of 7-zip destroying the target file.
-    CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, 0, NULL);
-    if (!hFile.IsValid())
-        return false;
-    LARGE_INTEGER filesize = { 0 };
-    GetFileSizeEx(hFile, &filesize);
-    hFile.CloseHandle();
+    int compression = noCompress ? 0 : 9;
+    if (!noCompress)
+    {
+        // try to open the source file in read mode:
+        // if we can't open the file, then it is locked and 7-zip would fail.
+        // But when 7-zip fails, it destroys a possible already existing encrypted file instead of
+        // just leaving it as it is. So by first checking if the source file
+        // can be read, we reduce the chances of 7-zip destroying the target file.
+        CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, 0, NULL);
+        if (!hFile.IsValid())
+            return false;
+        LARGE_INTEGER filesize = { 0 };
+        GetFileSizeEx(hFile, &filesize);
+        hFile.CloseHandle();
 
-    int compression = 9;
-    if (filesize.QuadPart > 100 * 1024 * 1024)
-        compression = 0;    // turn off compression for files bigger than 100MB
+        if (filesize.QuadPart > 100 * 1024 * 1024)
+            compression = 0;    // turn off compression for files bigger than 100MB
+    }
 
     if (!useGPG || password.empty())
     {

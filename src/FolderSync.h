@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016, 2018 - Stefan Kueng
+// Copyright (C) 2012-2016, 2018-2019 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -83,7 +83,7 @@ private:
     int                             SyncFolderThread();
     int                             SyncFolder(const PairData& pt);
     std::map<std::wstring, FileData, ci_lessW> GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, bool useGPG, DWORD & error) const;
-    bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
+    bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG, bool noCompress);
     bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
     static std::wstring             GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG);
     static std::wstring             GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG);

@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2019 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,6 +36,7 @@ public:
     std::wstring            m_origpath;
     std::wstring            m_cryptpath;
     std::wstring            m_password;
+    std::wstring            m_cryptonly;
     std::wstring            m_copyonly;
     std::wstring            m_nosync;
     bool                    m_encnames;

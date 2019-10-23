@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016 - Stefan Kueng
+// Copyright (C) 2012-2016, 2019 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -58,6 +58,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(hwndDlg, IDC_CRYPTPATH, m_cryptpath.c_str());
             SetDlgItemText(hwndDlg, IDC_PASSWORD, m_password.c_str());
             SetDlgItemText(hwndDlg, IDC_PASSWORD2, m_password.c_str());
+            SetDlgItemText(hwndDlg, IDC_NOCOMPRESS, m_cryptonly.c_str());
             SetDlgItemText(hwndDlg, IDC_NOCRYPT, m_copyonly.c_str());
             SetDlgItemText(hwndDlg, IDC_NOSYNC, m_nosync.c_str());
             SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encnames ? BST_CHECKED : BST_UNCHECKED, NULL);
@@ -69,6 +70,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             DialogEnableWindow(IDC_USE7ZEXT, !m_UseGPGe);
 
             AddToolTip(IDC_ONEWAY, L"if this is checked, changes in the encrypted folder are not synchronized back to the original folder!");
+            AddToolTip(IDC_NOCOMPRESS, L"File masks, separated by '|' example: *.jpg|*.zip");
             AddToolTip(IDC_NOCRYPT, L"File masks, separated by '|' example: *.jpg|*.zip");
             AddToolTip(IDC_NOSYNC, L"File masks, separated by '|' example: *.jpg|*.zip");
 
@@ -121,9 +123,13 @@ LRESULT CPairAddDlg::DoCommand(int id)
             m_cryptpath = buf.get();
             m_cryptpath.erase(m_cryptpath.find_last_not_of(L" \n\r\t\\")+1);
 
+            buf = GetDlgItemText(IDC_NOCOMPRESS);
+            m_cryptonly = buf.get();
+            m_cryptonly.erase(m_cryptonly.find_last_not_of(L" \n\r\t\\")+1);
+
             buf = GetDlgItemText(IDC_NOCRYPT);
             m_copyonly = buf.get();
-            m_copyonly.erase(m_copyonly.find_last_not_of(L" \n\r\t\\")+1);
+            m_copyonly.erase(m_copyonly.find_last_not_of(L" \n\r\t\\") + 1);
 
             buf = GetDlgItemText(IDC_NOSYNC);
             m_nosync = buf.get();

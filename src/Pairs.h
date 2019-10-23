@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2019 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -53,6 +53,9 @@ public:
     std::wstring            nosync() const { return m_nosync; }
     void                    nosync(const std::wstring& c) { m_nosync = c; UpdateVec(m_nosync, m_nosyncvec); }
     bool                    IsIgnored(const std::wstring& s) const;
+    std::wstring            cryptonly() const { return m_cryptonly; }
+    void                    cryptonly(const std::wstring& c) { m_cryptonly = c; UpdateVec(m_cryptonly, m_cryptonlyvec); }
+    bool                    IsCryptOnly(const std::wstring& s) const;
     std::wstring            copyonly() const { return m_copyonly; }
     void                    copyonly(const std::wstring& c) { m_copyonly = c; UpdateVec(m_copyonly, m_copyonlyvec); }
     bool                    IsCopyOnly(const std::wstring& s) const;
@@ -72,6 +75,8 @@ private:
     static void                 UpdateVec(std::wstring& s, std::vector<std::wstring>& v);
     static bool                 MatchInVec(const std::vector<std::wstring>& v, const std::wstring& s);
 
+    std::wstring                m_cryptonly;
+    std::vector<std::wstring>   m_cryptonlyvec;
     std::wstring                m_copyonly;
     std::vector<std::wstring>   m_copyonlyvec;
     std::wstring                m_nosync;
@@ -93,6 +98,7 @@ public:
     bool                    AddPair(const std::wstring& orig,
                                     const std::wstring& crypt,
                                     const std::wstring& password,
+                                    const std::wstring& cryptonly,
                                     const std::wstring& copyonly,
                                     const std::wstring& nosync,
                                     bool encryptnames,

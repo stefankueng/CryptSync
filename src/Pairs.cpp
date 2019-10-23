@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2019 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,6 +32,11 @@ void PairData::UpdateVec(std::wstring& s, std::vector<std::wstring>& v)
 {
     std::transform(s.begin(), s.end(), s.begin(), ::towlower);
     stringtok(v, s, true);
+}
+
+bool PairData::IsCryptOnly(const std::wstring& s) const
+{
+    return MatchInVec(m_cryptonlyvec, s);
 }
 
 bool PairData::IsCopyOnly( const std::wstring& s ) const
@@ -118,6 +123,10 @@ void CPairs::InitPairList()
             break;
         pd.password = Decrypt(pd.password);
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairCryptOnly%d", p);
+        CRegStdString cryptonlyreg(key);
+        pd.cryptonly(cryptonlyreg);
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCopyOnly%d", p);
         CRegStdString copyonlyreg(key);
         pd.copyonly(copyonlyreg);
@@ -180,6 +189,10 @@ void CPairs::SavePairs()
         CRegStdString passwordreg(key, L"", true);
         passwordreg = Encrypt(it->password);
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairCryptOnly%d", p);
+        CRegStdString cryptonlyreg(key, L"", true);
+        cryptonlyreg = it->cryptonly();
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCopyOnly%d", p);
         CRegStdString copyonlyreg(key, L"", true);
         copyonlyreg = it->copyonly();
@@ -226,6 +239,10 @@ void CPairs::SavePairs()
         CRegStdString passwordreg(key);
         passwordreg.removeValue();
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairCryptOnly%d", p);
+        CRegStdString cryptonlyreg(key);
+        cryptonlyreg.removeValue();
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCopyOnly%d", p);
         CRegStdString copyonlyreg(key);
         copyonlyreg.removeValue();
@@ -257,12 +274,13 @@ void CPairs::SavePairs()
     }
 }
 
-bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& copyonly, const std::wstring& nosync, bool encryptnames, SyncDir syncDir, bool use7zext, bool useGPGe, bool fat)
+bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptonly, const std::wstring& copyonly, const std::wstring& nosync, bool encryptnames, SyncDir syncDir, bool use7zext, bool useGPGe, bool fat)
 {
     PairData pd;
     pd.origpath = orig;
     pd.cryptpath = crypt;
     pd.password = password;
+    pd.cryptonly(cryptonly);
     pd.copyonly(copyonly);
     pd.nosync(nosync);
     pd.encnames = encryptnames;

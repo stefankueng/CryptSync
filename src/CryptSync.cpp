@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2019 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -83,6 +83,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         std::wstring sInfo = L"/src        : path to source folder with original content\n"
                              L"/dst        : path to encrpyted folder\n"
                              L"/pw         : password for encryption\n"
+                             L"/ncp        : encrypt only/don't compress pattern\n"
                              L"/cpy        : copy only pattern\n"
                              L"/nsy        : don't sync pattern\n"
                              L"/encnames   : encrypt file and folder names\n"
@@ -159,6 +160,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         std::wstring src =   parser.GetVal(L"src");
         std::wstring dst =   parser.GetVal(L"dst");
         std::wstring pw  =   parser.HasVal(L"pw") ? parser.GetVal(L"pw") : L"";
+        std::wstring ncp =   parser.HasVal(L"ncp") ? parser.GetVal(L"ncp") : L"";
         std::wstring cpy =   parser.HasVal(L"cpy") ? parser.GetVal(L"cpy") : L"";
         std::wstring nsy =   parser.HasVal(L"nsy") ? parser.GetVal(L"nsy") : L"";
         bool encnames    = !!parser.HasKey(L"encnames");
@@ -181,7 +183,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             syncDir = SrcToDst;
         if (mirrorback && !mirror)
             syncDir = DstToSrc;
-        pair.AddPair(src, dst, pw, cpy, nsy, encnames, syncDir, use7z, useGPG, fat);
+        pair.AddPair(src, dst, pw, ncp, cpy, nsy, encnames, syncDir, use7z, useGPG, fat);
         CFolderSync foldersync;
         if (decryptonly)
             foldersync.DecryptOnly(true);
