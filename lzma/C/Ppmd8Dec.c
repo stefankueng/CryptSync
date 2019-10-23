@@ -11,7 +11,7 @@ This code is based on:
 #define kTop (1 << 24)
 #define kBot (1 << 15)
 
-Bool Ppmd8_RangeDec_Init(CPpmd8 *p)
+BoolInt Ppmd8_RangeDec_Init(CPpmd8 *p)
 {
   unsigned i;
   p->Low = 0;
