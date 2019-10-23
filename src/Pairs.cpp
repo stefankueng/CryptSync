@@ -288,6 +288,13 @@ bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const 
     pd.use7z = use7zext;
     pd.useGPG = useGPGe;
     pd.FAT = fat;
+
+    // make sure the paths are not root names but if root then root paths (i.e., ends with a backslash)
+    if (*pd.origpath.rbegin() == ':')
+        pd.origpath += '\\';
+    if (*pd.cryptpath.rbegin() == ':')
+        pd.cryptpath += '\\';
+
     if (std::find(cbegin(), cend(), pd) == cend())
     {
         push_back(pd);
