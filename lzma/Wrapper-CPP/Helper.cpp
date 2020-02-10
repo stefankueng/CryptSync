@@ -31,7 +31,7 @@ bool CreateRecursiveDirectory(const std::wstring& path)
     auto ret = CreateDirectory(path.c_str(), nullptr);
     if (ret == FALSE)
     {
-        if (GetLastError() == ERROR_PATH_NOT_FOUND)
+        if (GetLastError() != ERROR_ALREADY_EXISTS)//on Win10 with webdav mounted drives GetLastError return with ERROR_FILE_NOT_FOUND(2) (or  Error not set)
         {
             if (CreateRecursiveDirectory(path.substr(0, path.find_last_of('\\'))))
             {
