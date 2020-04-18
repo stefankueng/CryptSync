@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016, 2018-2019 - Stefan Kueng
+// Copyright (C) 2012-2016, 2018-2020 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -867,7 +867,12 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
 
         std::wstring relpath = filepath;
         if (path.size() < filepath.size())
-            relpath = filepath.substr(path.size() + 1);
+        {
+            if (*path.rbegin() == '\\')
+                relpath = filepath.substr(path.size());
+            else
+                relpath = filepath.substr(path.size() + 1);
+        }
         fd.filerelpath = relpath;
 
         std::wstring decryptedRelPath = relpath;
