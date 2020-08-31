@@ -932,40 +932,48 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
             return S_OK;
         };
 
+        std::wstring encryptTmpFile = CPathUtils::GetTempFilePath();
         C7Zip compressor;
         compressor.SetPassword(password);
-        compressor.SetArchivePath(targetfolder + L"\\" + cryptname);
+        compressor.SetArchivePath(encryptTmpFile);
         compressor.SetCompressionFormat(CompressionFormat::SevenZip, compression);
         compressor.SetCallback(progressFunc);
         if (compressor.AddPath(orig))
         {
-            // set the file timestamp
-            int retry = 5;
-            bool bRet = true;
-            do
+            if (MoveFileEx(encryptTmpFile.c_str(), (targetfolder + L"\\" + cryptname).c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING))
             {
-                if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
-                    break;
-                CAutoFile hFileCrypt = CreateFile(crypt.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-                if (hFileCrypt.IsValid())
+                DeleteFile(encryptTmpFile.c_str());
+
+                // set the file timestamp
+                int retry = 5;
+                bool bRet = true;
+                do
                 {
-                    bRet = !!SetFileTime(hFileCrypt, NULL, NULL, &fd.ft);
-                }
-                else
-                    bRet = false;
+                    if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+                        break;
+                    CAutoFile hFileCrypt = CreateFile(crypt.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+                    if (hFileCrypt.IsValid())
+                    {
+                        bRet = !!SetFileTime(hFileCrypt, NULL, NULL, &fd.ft);
+                    }
+                    else
+                        bRet = false;
+                    if (!bRet)
+                        Sleep(200);
+                } while (!bRet && (retry-- > 0));
                 if (!bRet)
-                    Sleep(200);
-            } while (!bRet && (retry-- > 0));
-            if (!bRet)
-                CCircularLog::Instance()(_T("failed to set file time on %s"), crypt.c_str());
-            CAutoWriteLock locker(m_failureguard);
-            m_failures.erase(orig);
-            return true;
+                    CCircularLog::Instance()(_T("failed to set file time on %s"), crypt.c_str());
+                CAutoWriteLock locker(m_failureguard);
+                m_failures.erase(orig);
+                return true;
+            }
+            DeleteFile(encryptTmpFile.c_str());
+            return false;
         }
         else
         {
             // If encrypting failed, remove the leftover file
-            DeleteFile(crypt.c_str());
+            DeleteFile(encryptTmpFile.c_str());
             CAutoWriteLock locker(m_failureguard);
             m_failures[orig] = Encrypt;
             CCircularLog::Instance()(L"ERROR:   Failed to encrypt file \"%s\" to \"%s\"", orig.c_str(), crypt.c_str());
