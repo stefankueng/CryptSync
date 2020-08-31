@@ -126,7 +126,7 @@ public:
     {
         CMyComPtr<IStream> fileStream;
         const WCHAR*       filePathStr = m_archivePath.c_str();
-        if (FAILED(SHCreateStreamOnFileEx(filePathStr, STGM_READ, FILE_ATTRIBUTE_NORMAL, FALSE, NULL, &fileStream)))
+        if (FAILED(SHCreateStreamOnFileEx(filePathStr, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_NORMAL, FALSE, NULL, &fileStream)))
         {
             return false;
         }

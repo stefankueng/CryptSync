@@ -197,7 +197,7 @@ STDMETHODIMP ArchiveUpdateCallback::GetStream(UInt32 index, ISequentialInStream*
     }
 
     CMyComPtr<IStream> fileStream;
-    if (FAILED(SHCreateStreamOnFileEx(fileInfo.FilePath.c_str(), STGM_READ, FILE_ATTRIBUTE_NORMAL, FALSE, NULL, &fileStream)))
+    if (FAILED(SHCreateStreamOnFileEx(fileInfo.FilePath.c_str(), STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_NORMAL, FALSE, NULL, &fileStream)))
     {
         return HRESULT_FROM_WIN32(GetLastError());
     }
