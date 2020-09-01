@@ -239,18 +239,33 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
     bool bCopyOnly = pt.IsCopyOnly(path);
     if ((orig.size() < path.size()) && (_wcsicmp(path.substr(0, orig.size()).c_str(), orig.c_str()) == 0) && ((path[orig.size()] == '\\') || (path[orig.size()] == '/')))
     {
+
+        crypt = CPathUtils::Append(crypt, GetEncryptedFilename(path.substr(orig.size()), pt.password, pt.encnames, pt.use7z, pt.useGPG));
         if (bCopyOnly)
-            crypt = CPathUtils::Append(crypt, path.substr(orig.size()));
-        else
-            crypt = CPathUtils::Append(crypt, GetEncryptedFilename(path.substr(orig.size()), pt.password, pt.encnames, pt.use7z, pt.useGPG));
+        {
+            if (!PathFileExists(crypt.c_str()))
+                crypt = CPathUtils::Append(crypt, path.substr(orig.size()));
+            else
+                bCopyOnly = false;
+        }
         orig = path;
     }
     else
     {
+        orig = CPathUtils::Append(orig, GetDecryptedFilename(path.substr(crypt.size()), pt.password, pt.encnames, pt.use7z, pt.useGPG));
         if (bCopyOnly)
-            orig = CPathUtils::Append(orig, path.substr(crypt.size()));
-        else
-            orig = CPathUtils::Append(orig, GetDecryptedFilename(path.substr(crypt.size()), pt.password, pt.encnames, pt.use7z, pt.useGPG));
+        {
+            if (!PathFileExists(orig.c_str()))
+            {
+                auto origCopy = CPathUtils::Append(orig, path.substr(crypt.size()));
+                if (PathFileExists(origCopy.c_str()))
+                    orig = origCopy;
+                else
+                    bCopyOnly = false;
+            }
+            else
+                bCopyOnly = false;
+        }
         crypt = path;
     }
     crypt = CPathUtils::AdjustForMaxPath(crypt);
