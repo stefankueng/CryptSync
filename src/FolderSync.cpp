@@ -940,6 +940,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
         compressor.SetCallback(progressFunc);
         if (compressor.AddPath(orig))
         {
+            CPathUtils::CreateRecursiveDirectory(targetfolder);
             if (MoveFileEx(encryptTmpFile.c_str(), (targetfolder + L"\\" + cryptname).c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING))
             {
                 DeleteFile(encryptTmpFile.c_str());
@@ -1060,6 +1061,7 @@ bool CFolderSync::DecryptFile( const std::wstring& orig, const std::wstring& cry
         extractor.SetArchivePath(crypt);
         extractor.SetCompressionFormat(CompressionFormat::SevenZip, 9);
         extractor.SetCallback(progressFunc);
+        CPathUtils::CreateRecursiveDirectory(targetfolder);
         if (extractor.Extract(targetfolder))
         {
             // set the file timestamp
