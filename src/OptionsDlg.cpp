@@ -157,9 +157,10 @@ LRESULT COptionsDlg::DoCommand(int id)
         }
         break;
     case IDC_SYNCEXIT:
+    case ID_FILE_SYNCNOW:
         {
             SaveSettings();
-            m_exitaftersync = true;
+            m_exitaftersync = id == IDC_SYNCEXIT;
             m_foldersync.SyncFolders(g_pairs, *this);
         }
         break;
