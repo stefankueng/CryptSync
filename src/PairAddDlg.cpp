@@ -32,6 +32,7 @@ CPairAddDlg::CPairAddDlg(HWND hParent)
     , m_7zExt(true)
     , m_UseGPGe(false)
     , m_FAT(true)
+    , m_compresssize(100)
     , m_hParent(hParent)
     , m_pDropTargetOrig(nullptr)
     , m_pDropTargetCrypt(nullptr)
@@ -61,6 +62,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(hwndDlg, IDC_NOCOMPRESS, m_cryptonly.c_str());
             SetDlgItemText(hwndDlg, IDC_NOCRYPT, m_copyonly.c_str());
             SetDlgItemText(hwndDlg, IDC_NOSYNC, m_nosync.c_str());
+            SetDlgItemText(hwndDlg, IDC_COMPRESSSIZE, std::to_wstring(m_compresssize).c_str());
             SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encnames ? BST_CHECKED : BST_UNCHECKED, NULL);
             CheckRadioButton(*this, IDC_SYNCBOTHRADIO, IDC_SYNCDSTTOSRCRADIO, m_syncdir == BothWays ? IDC_SYNCBOTHRADIO : (m_syncdir == SrcToDst ? IDC_SYNCSRCTODSTRADIO : IDC_SYNCDSTTOSRCRADIO));
             SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_SETCHECK, m_7zExt ? BST_CHECKED : BST_UNCHECKED, NULL);
@@ -134,6 +136,9 @@ LRESULT CPairAddDlg::DoCommand(int id)
             buf = GetDlgItemText(IDC_NOSYNC);
             m_nosync = buf.get();
             m_nosync.erase(m_nosync.find_last_not_of(L" \n\r\t\\")+1);
+
+            buf = GetDlgItemText(IDC_COMPRESSSIZE);
+            m_compresssize = _wtoi(buf.get());
 
             buf = GetDlgItemText(IDC_PASSWORD);
             m_password = buf.get();

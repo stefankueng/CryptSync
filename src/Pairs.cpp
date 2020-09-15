@@ -163,6 +163,10 @@ void CPairs::InitPairList()
         CRegStdDWORD fatreg(key, FALSE);
         pd.FAT = !!(DWORD)fatreg;
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
+        CRegStdDWORD compresssizereg(key, 100);
+        pd.compresssize = (DWORD)compresssizereg;
+
         if (std::find(cbegin(), cend(), pd) == cend())
             push_back(pd);
         ++p;
@@ -221,6 +225,10 @@ void CPairs::SavePairs()
         CRegStdDWORD fatreg(key, FALSE, true);
         fatreg = (DWORD)it->FAT;
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
+        CRegStdDWORD compresssizereg(key, 100, true);
+        fatreg = (DWORD)it->compresssize;
+
         ++p;
     }
     // delete all possible remaining registry entries
@@ -270,11 +278,16 @@ void CPairs::SavePairs()
         swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
         CRegStdDWORD fatreg(key);
         fatreg.removeValue();
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
+        CRegStdDWORD compresssizereg(key);
+        compresssizereg.removeValue();
+
         ++p;
     }
 }
 
-bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptonly, const std::wstring& copyonly, const std::wstring& nosync, bool encryptnames, SyncDir syncDir, bool use7zext, bool useGPGe, bool fat)
+bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptonly, const std::wstring& copyonly, const std::wstring& nosync, int compresssize, bool encryptnames, SyncDir syncDir, bool use7zext, bool useGPGe, bool fat)
 {
     PairData pd;
     pd.origpath = orig;
@@ -288,6 +301,7 @@ bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const 
     pd.use7z = use7zext;
     pd.useGPG = useGPGe;
     pd.FAT = fat;
+    pd.compresssize = compresssize;
 
     // make sure the paths are not root names but if root then root paths (i.e., ends with a backslash)
     if (*pd.origpath.rbegin() == ':')

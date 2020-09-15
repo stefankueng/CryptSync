@@ -39,6 +39,7 @@ public:
         , use7z(false)
         , useGPG(false)
         , FAT(false)
+        , compresssize(100)
     {
     }
 
@@ -50,6 +51,7 @@ public:
     bool                    use7z;
     bool                    useGPG;
     bool                    FAT;
+    int                     compresssize;
     std::wstring            nosync() const { return m_nosync; }
     void                    nosync(const std::wstring& c) { m_nosync = c; UpdateVec(m_nosync, m_nosyncvec); }
     bool                    IsIgnored(const std::wstring& s) const;
@@ -101,6 +103,7 @@ public:
                                     const std::wstring& cryptonly,
                                     const std::wstring& copyonly,
                                     const std::wstring& nosync,
+                                    int compresssize,
                                     bool encryptnames,
                                     SyncDir syncDir,
                                     bool use7zext,

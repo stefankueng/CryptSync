@@ -170,6 +170,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         bool use7z       = !!parser.HasKey(L"use7z");
         bool useGPG      = !!parser.HasKey(L"useGPG");
         bool fat         = !!parser.HasKey(L"fat");
+        int compresssize = _wtoi(parser.GetVal(L"compresssize"));
         std::wstring ign =   parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
 
         CIgnores::Instance().Reload();
@@ -183,7 +184,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             syncDir = SrcToDst;
         if (mirrorback && !mirror)
             syncDir = DstToSrc;
-        pair.AddPair(src, dst, pw, ncp, cpy, nsy, encnames, syncDir, use7z, useGPG, fat);
+        pair.AddPair(src, dst, pw, ncp, cpy, nsy, compresssize, encnames, syncDir, use7z, useGPG, fat);
         CFolderSync foldersync;
         if (decryptonly)
             foldersync.DecryptOnly(true);

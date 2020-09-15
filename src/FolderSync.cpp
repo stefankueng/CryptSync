@@ -465,7 +465,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
                 }
             }
             else
-                EncryptFile(orig, crypt, pt.password, fd, pt.useGPG, bCryptOnly);
+                EncryptFile(orig, crypt, pt.password, fd, pt.useGPG, bCryptOnly, pt.compresssize);
         }
     }
     else if (cmp == 0)
@@ -593,7 +593,7 @@ int CFolderSync::SyncFolder( const PairData& pt )
                 {
                     std::wstring cryptpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z, pt.useGPG)));
                     std::wstring origpath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.origpath, it->first));
-                    if (!EncryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG, bCryptOnly))
+                    if (!EncryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG, bCryptOnly, pt.compresssize))
                         retVal |= ErrorCrypt;
                 }
             }
@@ -734,7 +734,7 @@ int CFolderSync::SyncFolder( const PairData& pt )
                     {
                         std::wstring cryptpath = CPathUtils::Append(pt.cryptpath, GetEncryptedFilename(it->first, pt.password, pt.encnames, pt.use7z, pt.useGPG));
                         std::wstring origpath = CPathUtils::Append(pt.origpath, it->first);
-                        if (!EncryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG, bCryptOnly))
+                        if (!EncryptFile(origpath, cryptpath, pt.password, it->second, pt.useGPG, bCryptOnly, pt.compresssize))
                             retVal |= ErrorCrypt;
                     }
                 }
@@ -906,7 +906,7 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
     return filelist;
 }
 
-bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG, bool noCompress)
+bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG, bool noCompress, int compresssize)
 {
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": encrypt file %s to %s\n"), orig.c_str(), crypt.c_str());
     CCircularLog::Instance()(_T("INFO:    encrypt file %s to %s"), orig.c_str(), crypt.c_str());
@@ -932,8 +932,8 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
         GetFileSizeEx(hFile, &filesize);
         hFile.CloseHandle();
 
-        if (filesize.QuadPart > 100 * 1024 * 1024)
-            compression = 0;    // turn off compression for files bigger than 100MB
+        if (filesize.QuadPart > (compresssize * 1024 * 1024))
+            compression = 0;    // turn off compression for files bigger than compresssize MB
     }
 
     if (!useGPG || password.empty())

@@ -39,6 +39,7 @@ public:
     std::wstring            m_cryptonly;
     std::wstring            m_copyonly;
     std::wstring            m_nosync;
+    int                     m_compresssize;
     bool                    m_encnames;
     SyncDir                 m_syncdir;
     bool                    m_7zExt;

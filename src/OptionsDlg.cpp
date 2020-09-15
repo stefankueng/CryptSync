@@ -126,8 +126,9 @@ LRESULT COptionsDlg::DoCommand(int id)
         {
             SaveSettings();
         }
-        // fall through
+        [[fallthrough]];
     case IDCANCEL:
+        [[fallthrough]];
     case IDEXIT:
         if ((id == IDEXIT) && MessageBox(*this, L"Are you sure you want to quit?", L"CryptSync", MB_ICONQUESTION | MB_YESNO) != IDYES)
             return 1;
@@ -171,7 +172,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                 {
-                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_cryptonly, dlg.m_copyonly, dlg.m_nosync, dlg.m_encnames, dlg.m_syncdir, dlg.m_7zExt, dlg.m_UseGPGe, dlg.m_FAT))
+                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_cryptonly, dlg.m_copyonly, dlg.m_nosync, dlg.m_compresssize, dlg.m_encnames, dlg.m_syncdir, dlg.m_7zExt, dlg.m_UseGPGe, dlg.m_FAT))
                         InitPairList();
                     g_pairs.SavePairs();
                 }
@@ -203,12 +204,13 @@ LRESULT COptionsDlg::DoCommand(int id)
                 dlg.m_7zExt = t.use7z;
                 dlg.m_UseGPGe = t.useGPG;
                 dlg.m_FAT = t.FAT;
+                dlg.m_compresssize = t.compresssize;
                 if (dlg.DoModal(hResource, IDD_PAIRADD, *this)==IDOK)
                 {
                     if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                     {
                         g_pairs.erase(g_pairs.begin()+iItem);
-                        if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_cryptonly, dlg.m_copyonly, dlg.m_nosync, dlg.m_encnames, dlg.m_syncdir, dlg.m_7zExt, dlg.m_UseGPGe, dlg.m_FAT))
+                        if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_cryptonly, dlg.m_copyonly, dlg.m_nosync, dlg.m_compresssize, dlg.m_encnames, dlg.m_syncdir, dlg.m_7zExt, dlg.m_UseGPGe, dlg.m_FAT))
                             InitPairList();
                         g_pairs.SavePairs();
                     }
@@ -380,12 +382,13 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             dlg.m_7zExt = t.use7z;
             dlg.m_UseGPGe = t.useGPG;
             dlg.m_FAT = t.FAT;
+            dlg.m_compresssize = t.compresssize;
             if (dlg.DoModal(hResource, IDD_PAIRADD, *this)==IDOK)
             {
                 if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
                 {
                     g_pairs.erase(g_pairs.begin()+lpNMItemActivate->iItem);
-                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_cryptonly, dlg.m_copyonly, dlg.m_nosync, dlg.m_encnames, dlg.m_syncdir, dlg.m_7zExt, dlg.m_UseGPGe, dlg.m_FAT))
+                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_cryptonly, dlg.m_copyonly, dlg.m_nosync, dlg.m_compresssize, dlg.m_encnames, dlg.m_syncdir, dlg.m_7zExt, dlg.m_UseGPGe, dlg.m_FAT))
                         InitPairList();
                     g_pairs.SavePairs();
                 }
