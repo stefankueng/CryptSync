@@ -2,3 +2,6 @@
 	cmdline = WScript %root%\\\\tools\\\\checkyear.js
 	wait = true
 	show = false
+[bugtraq]
+	url = https://github.com/stefankueng/CryptSync/issues/%BUGID%
+	logregex = "([Cc]loses?)?:?(\\s*(,|and)?\\s*#\\d+)+\n(\\d+)"
