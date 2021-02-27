@@ -34,7 +34,7 @@
 #include <algorithm>
 #include "../lzma/Wrapper-CPP/C7Zip.h"
 
-CFolderSync::CFolderSync(void)
+CFolderSync::CFolderSync()
     : m_gnuPg(L"%ProgramFiles%\\GNU\\GnuPG\\Pub\\gpg.exe")
     , m_parentWnd(nullptr)
     , m_trayWnd(nullptr)
@@ -77,7 +77,7 @@ CFolderSync::CFolderSync(void)
     }
 }
 
-CFolderSync::~CFolderSync(void)
+CFolderSync::~CFolderSync()
 {
 }
 
