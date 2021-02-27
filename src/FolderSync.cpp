@@ -244,7 +244,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         if (bCopyOnly)
         {
             if (!PathFileExists(crypt.c_str()))
-                crypt = CPathUtils::Append(crypt, path.substr(orig.size()));
+                crypt = CPathUtils::Append(pt.cryptpath, path.substr(orig.size()));
             else
                 bCopyOnly = false;
         }
@@ -257,7 +257,7 @@ void CFolderSync::SyncFile( const std::wstring& path, const PairData& pt )
         {
             if (!PathFileExists(orig.c_str()))
             {
-                auto origCopy = CPathUtils::Append(orig, path.substr(crypt.size()));
+                auto origCopy = CPathUtils::Append(pt.origpath, path.substr(crypt.size()));
                 if (PathFileExists(origCopy.c_str()))
                     orig = origCopy;
                 else
