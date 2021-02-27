@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013 - Stefan Kueng
+// Copyright (C) 2012-2013, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,27 +26,26 @@
 
 CIgnores* CIgnores::m_pInstance;
 
-CIgnores::CIgnores(void)
+CIgnores::CIgnores()
 {
     Reload();
 }
 
-
-CIgnores::~CIgnores(void)
+CIgnores::~CIgnores()
 {
     delete m_pInstance;
 }
 
-bool CIgnores::IsIgnored( const std::wstring& s )
+bool CIgnores::IsIgnored(const std::wstring& s)
 {
     CAutoReadLock locker(m_guard);
-    bool bIgnored = false;
+    bool          bIgnored = false;
 
-    std::wstring scmp = s;
-    std::transform(scmp.begin(), scmp.end(), scmp.begin(), ::towlower);
+    std::wstring sCmp = s;
+    std::transform(sCmp.begin(), sCmp.end(), sCmp.begin(), ::towlower);
     std::vector<std::wstring> pathelems;
-    stringtok(pathelems, scmp, true, L"\\");
-    for (auto pe:pathelems)
+    stringtok(pathelems, sCmp, true, L"\\");
+    for (auto pe : pathelems)
     {
         for (auto it = ignores.cbegin(); it != ignores.cend(); ++it)
         {
@@ -80,7 +79,7 @@ void CIgnores::Reload(const std::wstring& s /* = std::wstring() */)
 
 CIgnores& CIgnores::Instance()
 {
-    if (m_pInstance == NULL)
+    if (m_pInstance == nullptr)
         m_pInstance = new CIgnores();
     return *m_pInstance;
 }

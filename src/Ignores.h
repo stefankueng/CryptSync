@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,21 +23,20 @@
 
 #define DEFAULT_IGNORES L"*.tmp*|~*.*|thumbs.db|desktop.ini"
 
-
 class CIgnores
 {
 public:
     static CIgnores& Instance();
-    bool IsIgnored(const std::wstring& s);
-    void Reload(const std::wstring& s = std::wstring());
-private:
-    CIgnores(void);
-    ~CIgnores(void);
-
+    bool             IsIgnored(const std::wstring& s);
+    void             Reload(const std::wstring& s = std::wstring());
 
 private:
-    static CIgnores *               m_pInstance;
-    CReaderWriterLock               m_guard;
-    std::wstring                    sIgnores;
-    std::vector<std::wstring>       ignores;
+    CIgnores();
+    ~CIgnores();
+
+private:
+    static CIgnores*          m_pInstance;
+    CReaderWriterLock         m_guard;
+    std::wstring              sIgnores;
+    std::vector<std::wstring> ignores;
 };
