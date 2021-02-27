@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016, 2019 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2019, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,7 +23,6 @@
 #include "AeroControls.h"
 #include "FileDropTarget.h"
 
-
 /**
  * options dialog.
  */
@@ -31,27 +30,28 @@ class CPairAddDlg : public CDialog
 {
 public:
     CPairAddDlg(HWND hParent);
-    ~CPairAddDlg(void);
+    ~CPairAddDlg();
 
-    std::wstring            m_origpath;
-    std::wstring            m_cryptpath;
-    std::wstring            m_password;
-    std::wstring            m_cryptonly;
-    std::wstring            m_copyonly;
-    std::wstring            m_nosync;
-    int                     m_compresssize;
-    bool                    m_encnames;
-    SyncDir                 m_syncdir;
-    bool                    m_7zExt;
-    bool                    m_UseGPGe;
-    bool                    m_FAT;
+    std::wstring m_origPath;
+    std::wstring m_cryptPath;
+    std::wstring m_password;
+    std::wstring m_cryptOnly;
+    std::wstring m_copyOnly;
+    std::wstring m_noSync;
+    int          m_compressSize;
+    bool         m_encNames;
+    SyncDir      m_syncDir;
+    bool         m_7ZExt;
+    bool         m_useGpg;
+    bool         m_fat;
+
 protected:
-    LRESULT CALLBACK        DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    LRESULT                 DoCommand(int id);
+    LRESULT CALLBACK DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+    LRESULT          DoCommand(int id);
 
 private:
-    HWND                    m_hParent;
-    AeroControlBase         m_aerocontrols;
-    CFileDropTarget *       m_pDropTargetOrig;
-    CFileDropTarget *       m_pDropTargetCrypt;
+    HWND             m_hParent;
+    AeroControlBase  m_aeroControls;
+    CFileDropTarget* m_pDropTargetOrig;
+    CFileDropTarget* m_pDropTargetCrypt;
 };

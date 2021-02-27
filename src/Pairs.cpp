@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016, 2019 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2019, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -18,15 +18,11 @@
 //
 
 #include "stdafx.h"
-#include "resource.h"
 #include "Pairs.h"
 #include "Registry.h"
 #include "StringUtils.h"
 #include <algorithm>
 #include <assert.h>
-#include <cctype>
-
-
 
 void PairData::UpdateVec(std::wstring& s, std::vector<std::wstring>& v)
 {
@@ -36,39 +32,39 @@ void PairData::UpdateVec(std::wstring& s, std::vector<std::wstring>& v)
 
 bool PairData::IsCryptOnly(const std::wstring& s) const
 {
-    return MatchInVec(m_cryptonlyvec, s);
+    return MatchInVec(m_cryptOnlyVec, s);
 }
 
-bool PairData::IsCopyOnly( const std::wstring& s ) const
+bool PairData::IsCopyOnly(const std::wstring& s) const
 {
-    return MatchInVec(m_copyonlyvec, s);
+    return MatchInVec(m_copyOnlyVec, s);
 }
 
-bool PairData::IsIgnored( const std::wstring& s ) const
+bool PairData::IsIgnored(const std::wstring& s) const
 {
-    return MatchInVec(m_nosyncvec, s);
+    return MatchInVec(m_noSyncVec, s);
 }
 
-bool PairData::MatchInVec( const std::vector<std::wstring>& v, const std::wstring& s )
+bool PairData::MatchInVec(const std::vector<std::wstring>& v, const std::wstring& s)
 {
     bool bMatched = false;
     if (v.empty())
         return false;
-    std::wstring scmp = s;
-    std::transform(scmp.begin(), scmp.end(), scmp.begin(), ::towlower);
+    std::wstring sCmp = s;
+    std::transform(sCmp.begin(), sCmp.end(), sCmp.begin(), ::towlower);
 
     // first check if the whole path matches
     for (auto it = v.cbegin(); it != v.cend(); ++it)
     {
-        if (wcswildcmp(it->c_str(), scmp.c_str()))
+        if (wcswildcmp(it->c_str(), sCmp.c_str()))
         {
             return true;
         }
     }
 
     std::vector<std::wstring> pathelems;
-    stringtok(pathelems, scmp, true, L"\\");
-    for (auto pe:pathelems)
+    stringtok(pathelems, sCmp, true, L"\\");
+    for (auto pe : pathelems)
     {
         for (auto it = v.cbegin(); it != v.cend(); ++it)
         {
@@ -84,7 +80,6 @@ bool PairData::MatchInVec( const std::vector<std::wstring>& v, const std::wstrin
     return bMatched;
 }
 
-
 CPairs::CPairs()
 {
     InitPairList();
@@ -93,7 +88,6 @@ CPairs::CPairs()
 CPairs::~CPairs(void)
 {
 }
-
 
 void CPairs::InitPairList()
 {
@@ -105,67 +99,67 @@ void CPairs::InitPairList()
 
         WCHAR key[MAX_PATH];
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOrig%d", p);
-        CRegStdString origpathreg(key);
-        pd.origpath = origpathreg;
-        if (pd.origpath.empty())
+        CRegStdString origPathReg(key);
+        pd.origPath = origPathReg;
+        if (pd.origPath.empty())
             break;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCrypt%d", p);
-        CRegStdString cryptpathreg(key);
-        pd.cryptpath = cryptpathreg;
-        if (pd.cryptpath.empty())
+        CRegStdString cryptPathReg(key);
+        pd.cryptPath = cryptPathReg;
+        if (pd.cryptPath.empty())
             break;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
-        CRegStdString passwordreg(key);
-        pd.password = passwordreg;
+        CRegStdString passwordReg(key);
+        pd.password = passwordReg;
         if (pd.password.empty())
             break;
         pd.password = Decrypt(pd.password);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCryptOnly%d", p);
-        CRegStdString cryptonlyreg(key);
-        pd.cryptonly(cryptonlyreg);
+        CRegStdString cryptOnlyReg(key);
+        pd.cryptOnly(cryptOnlyReg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCopyOnly%d", p);
-        CRegStdString copyonlyreg(key);
-        pd.copyonly(copyonlyreg);
+        CRegStdString copyOnlyReg(key);
+        pd.copyOnly(copyOnlyReg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairNoSync%d", p);
-        CRegStdString nosyncreg(key);
-        pd.nosync(nosyncreg);
+        CRegStdString noSyncReg(key);
+        pd.noSync(noSyncReg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
-        CRegStdDWORD encnamesreg(key, TRUE);
-        pd.encnames = !!(DWORD)encnamesreg;
+        CRegStdDWORD encNamesReg(key, TRUE);
+        pd.encNames = !!static_cast<DWORD>(encNamesReg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
-        CRegStdDWORD onewayreg(key, (DWORD)-1);
-        if (DWORD(onewayreg) != (DWORD)-1)
-            pd.syncDir = (!!(DWORD)onewayreg ? SrcToDst : BothWays);
+        CRegStdDWORD oneWayReg(key, static_cast<DWORD>(-1));
+        if (static_cast<DWORD>(oneWayReg) != static_cast<DWORD>(-1))
+            pd.syncDir = (!!static_cast<DWORD>(oneWayReg) ? SrcToDst : BothWays);
         else
         {
             swprintf_s(key, L"Software\\CryptSync\\SyncPairDir%d", p);
-            CRegStdDWORD syncdirreg(key, BothWays);
-            pd.syncDir = (SyncDir)(DWORD)syncdirreg;
+            CRegStdDWORD syncDirReg(key, BothWays);
+            pd.syncDir = static_cast<SyncDir>(static_cast<DWORD>(syncDirReg));
         }
-        onewayreg.removeValue();
+        oneWayReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
-        CRegStdDWORD zextreg(key, FALSE);
-        pd.use7z = !!(DWORD)zextreg;
+        CRegStdDWORD zExtReg(key, FALSE);
+        pd.m_use7Z = !!static_cast<DWORD>(zExtReg);
 
         swprintf_s(key, L"Software\\CryptSync\\UseGPG%d", p);
-        CRegStdDWORD zGPGreg(key, FALSE);
-        pd.useGPG = !!(DWORD)zGPGreg;
+        CRegStdDWORD zGpgReg(key, FALSE);
+        pd.m_useGpg = !!static_cast<DWORD>(zGpgReg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
-        CRegStdDWORD fatreg(key, FALSE);
-        pd.FAT = !!(DWORD)fatreg;
+        CRegStdDWORD fatReg(key, FALSE);
+        pd.m_fat = !!static_cast<DWORD>(fatReg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
-        CRegStdDWORD compresssizereg(key, 100);
-        pd.compresssize = (DWORD)compresssizereg;
+        CRegStdDWORD compressSizeReg(key, 100);
+        pd.m_compressSize = static_cast<DWORD>(compressSizeReg);
 
         if (std::find(cbegin(), cend(), pd) == cend())
             push_back(pd);
@@ -182,52 +176,54 @@ void CPairs::SavePairs()
     {
         WCHAR key[MAX_PATH];
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOrig%d", p);
-        CRegStdString origpathreg(key, L"", true);
-        origpathreg = it->origpath;
+        // ReSharper disable CppEntityAssignedButNoRead
+        CRegStdString origPathReg(key, L"", true);
+        origPathReg = it->origPath;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCrypt%d", p);
-        CRegStdString cryptpathreg(key, L"", true);
-        cryptpathreg = it->cryptpath;
+        CRegStdString cryptPathReg(key, L"", true);
+        cryptPathReg = it->cryptPath;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
-        CRegStdString passwordreg(key, L"", true);
-        passwordreg = Encrypt(it->password);
+        CRegStdString passwordReg(key, L"", true);
+        passwordReg = Encrypt(it->password);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCryptOnly%d", p);
-        CRegStdString cryptonlyreg(key, L"", true);
-        cryptonlyreg = it->cryptonly();
+        CRegStdString cryptOnlyReg(key, L"", true);
+        cryptOnlyReg = it->cryptOnly();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCopyOnly%d", p);
-        CRegStdString copyonlyreg(key, L"", true);
-        copyonlyreg = it->copyonly();
+        CRegStdString copyOnlyReg(key, L"", true);
+        copyOnlyReg = it->copyOnly();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairNoSync%d", p);
-        CRegStdString nosyncreg(key, L"", true);
-        nosyncreg = it->nosync();
+        CRegStdString noSyncReg(key, L"", true);
+        noSyncReg = it->noSync();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
-        CRegStdDWORD encnamesreg(key, TRUE, true);
-        encnamesreg = (DWORD)it->encnames;
+        CRegStdDWORD encNamesReg(key, TRUE, true);
+        encNamesReg = static_cast<DWORD>(it->encNames);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairDir%d", p);
-        CRegStdDWORD syncdirreg(key, BothWays, true);
-        syncdirreg = (DWORD)it->syncDir;
+        CRegStdDWORD syncDirReg(key, BothWays, true);
+        syncDirReg = static_cast<DWORD>(it->syncDir);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
-        CRegStdDWORD zextreg(key, FALSE, true);
-        zextreg = (DWORD)it->use7z;
+        CRegStdDWORD zExtReg(key, FALSE, true);
+        zExtReg = static_cast<DWORD>(it->m_use7Z);
 
         swprintf_s(key, L"Software\\CryptSync\\UseGPG%d", p);
-        CRegStdDWORD zGPGreg(key, FALSE, true);
-        zGPGreg = (DWORD)it->useGPG;
+        CRegStdDWORD zGpgReg(key, FALSE, true);
+        zGpgReg = static_cast<DWORD>(it->m_useGpg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
-        CRegStdDWORD fatreg(key, FALSE, true);
-        fatreg = (DWORD)it->FAT;
+        CRegStdDWORD fatReg(key, FALSE, true);
+        fatReg = static_cast<DWORD>(it->m_fat);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
-        CRegStdDWORD compresssizereg(key, 100, true);
-        fatreg = (DWORD)it->compresssize;
+        CRegStdDWORD compressSizeReg(key, 100, true);
+        fatReg = static_cast<DWORD>(it->m_compressSize);
+        // ReSharper restore CppEntityAssignedButNoRead
 
         ++p;
     }
@@ -236,78 +232,78 @@ void CPairs::SavePairs()
     {
         WCHAR key[MAX_PATH];
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOrig%d", p);
-        CRegStdString origpathreg(key);
-        origpathreg.removeValue();
+        CRegStdString origPathReg(key);
+        origPathReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCrypt%d", p);
-        CRegStdString cryptpathreg(key);
-        cryptpathreg.removeValue();
+        CRegStdString cryptPathReg(key);
+        cryptPathReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
-        CRegStdString passwordreg(key);
-        passwordreg.removeValue();
+        CRegStdString passwordReg(key);
+        passwordReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCryptOnly%d", p);
-        CRegStdString cryptonlyreg(key);
-        cryptonlyreg.removeValue();
+        CRegStdString cryptOnlyReg(key);
+        cryptOnlyReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCopyOnly%d", p);
-        CRegStdString copyonlyreg(key);
-        copyonlyreg.removeValue();
+        CRegStdString copyOnlyReg(key);
+        copyOnlyReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairNoSync%d", p);
-        CRegStdString nosyncreg(key);
-        nosyncreg.removeValue();
+        CRegStdString noSyncReg(key);
+        noSyncReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
-        CRegStdDWORD encnamesreg(key);
-        encnamesreg.removeValue();
+        CRegStdDWORD encNamesReg(key);
+        encNamesReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
-        CRegStdDWORD onewayreg(key);
-        onewayreg.removeValue();
+        CRegStdDWORD oneWayReg(key);
+        oneWayReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
-        CRegStdDWORD zextreg(key);
-        zextreg.removeValue();
+        CRegStdDWORD zExtReg(key);
+        zExtReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\UseGPG%d", p);
-        CRegStdDWORD zGPGreg(key);
-        zGPGreg.removeValue();
+        CRegStdDWORD zGpgReg(key);
+        zGpgReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
-        CRegStdDWORD fatreg(key);
-        fatreg.removeValue();
+        CRegStdDWORD fatReg(key);
+        fatReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
-        CRegStdDWORD compresssizereg(key);
-        compresssizereg.removeValue();
+        CRegStdDWORD compressSizeReg(key);
+        compressSizeReg.removeValue();
 
         ++p;
     }
 }
 
-bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptonly, const std::wstring& copyonly, const std::wstring& nosync, int compresssize, bool encryptnames, SyncDir syncDir, bool use7zext, bool useGPGe, bool fat)
+bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat)
 {
     PairData pd;
-    pd.origpath = orig;
-    pd.cryptpath = crypt;
-    pd.password = password;
-    pd.cryptonly(cryptonly);
-    pd.copyonly(copyonly);
-    pd.nosync(nosync);
-    pd.encnames = encryptnames;
-    pd.syncDir = syncDir;
-    pd.use7z = use7zext;
-    pd.useGPG = useGPGe;
-    pd.FAT = fat;
-    pd.compresssize = compresssize;
+    pd.origPath  = orig;
+    pd.cryptPath = crypt;
+    pd.password  = password;
+    pd.cryptOnly(cryptOnly);
+    pd.copyOnly(copyOnly);
+    pd.noSync(noSync);
+    pd.encNames     = encryptNames;
+    pd.syncDir      = syncDir;
+    pd.m_use7Z        = use7ZExt;
+    pd.m_useGpg       = useGpg;
+    pd.m_fat          = fat;
+    pd.m_compressSize = compressSize;
 
     // make sure the paths are not root names but if root then root paths (i.e., ends with a backslash)
-    if (*pd.origpath.rbegin() == ':')
-        pd.origpath += '\\';
-    if (*pd.cryptpath.rbegin() == ':')
-        pd.cryptpath += '\\';
+    if (*pd.origPath.rbegin() == ':')
+        pd.origPath += '\\';
+    if (*pd.cryptPath.rbegin() == ':')
+        pd.cryptPath += '\\';
 
     if (std::find(cbegin(), cend(), pd) == cend())
     {
@@ -319,79 +315,76 @@ bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const 
     return false;
 }
 
-std::wstring CPairs::Decrypt( const std::wstring& pw )
+std::wstring CPairs::Decrypt(const std::wstring& pw) const
 {
     DWORD dwLen = 0;
-    std::wstring result;
 
-    if (CryptStringToBinary(pw.c_str(), (DWORD)pw.size(), CRYPT_STRING_HEX, NULL, &dwLen, NULL, NULL)==FALSE)
+    if (CryptStringToBinary(pw.c_str(), static_cast<DWORD>(pw.size()), CRYPT_STRING_HEX, nullptr, &dwLen, nullptr, nullptr) == FALSE)
         return L"";
 
-    std::unique_ptr<BYTE[]> strIn(new BYTE[dwLen + 1]);
-    if (CryptStringToBinary(pw.c_str(), (DWORD)pw.size(), CRYPT_STRING_HEX, strIn.get(), &dwLen, NULL, NULL)==FALSE)
+    auto strIn = std::make_unique<BYTE[]>(dwLen + 1);
+    if (CryptStringToBinary(pw.c_str(), static_cast<DWORD>(pw.size()), CRYPT_STRING_HEX, strIn.get(), &dwLen, nullptr, nullptr) == FALSE)
         return L"";
 
-    DATA_BLOB blobin;
-    blobin.cbData = dwLen;
-    blobin.pbData = strIn.get();
-    LPWSTR descr;
-    DATA_BLOB blobout = {0};
-    if (CryptUnprotectData(&blobin, &descr, NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN, &blobout)==FALSE)
+    DATA_BLOB blobIn;
+    blobIn.cbData = dwLen;
+    blobIn.pbData = strIn.get();
+    LPWSTR    descr;
+    DATA_BLOB blobOut = {0};
+    if (CryptUnprotectData(&blobIn, &descr, nullptr, nullptr, nullptr, CRYPTPROTECT_UI_FORBIDDEN, &blobOut) == FALSE)
         return L"";
-    SecureZeroMemory(blobin.pbData, blobin.cbData);
+    SecureZeroMemory(blobIn.pbData, blobIn.cbData);
 
-    std::unique_ptr<wchar_t[]> tempResult(new wchar_t[blobout.cbData + 1]);
-    wcsncpy_s(tempResult.get(), blobout.cbData + 1, (const wchar_t*)blobout.pbData, blobout.cbData / sizeof(wchar_t));
-    SecureZeroMemory(blobout.pbData, blobout.cbData);
-    LocalFree(blobout.pbData);
+    auto tempResult = std::make_unique<wchar_t[]>(blobOut.cbData + 1);
+    wcsncpy_s(tempResult.get(), blobOut.cbData + 1, reinterpret_cast<const wchar_t*>(blobOut.pbData), blobOut.cbData / sizeof(wchar_t));
+    SecureZeroMemory(blobOut.pbData, blobOut.cbData);
+    LocalFree(blobOut.pbData);
     LocalFree(descr);
 
-    result = tempResult.get();
+    std::wstring result = tempResult.get();
 
     return result;
 }
 
-std::wstring CPairs::Encrypt( const std::wstring& pw )
+std::wstring CPairs::Encrypt(const std::wstring& pw)
 {
-    DATA_BLOB blobin = {0};
-    DATA_BLOB blobout = {0};
+    DATA_BLOB    blobIn  = {0};
+    DATA_BLOB    blobOut = {0};
     std::wstring result;
 
-    blobin.cbData = (DWORD)pw.size()*sizeof(wchar_t);
-    blobin.pbData = (BYTE*)pw.c_str();
-    if (CryptProtectData(&blobin, L"CryptSyncRegPWs", NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN, &blobout)==FALSE)
+    blobIn.cbData = static_cast<DWORD>(pw.size()) * sizeof(wchar_t);
+    blobIn.pbData = reinterpret_cast<BYTE*>(const_cast<wchar_t*>(pw.c_str()));
+    if (CryptProtectData(&blobIn, L"CryptSyncRegPWs", nullptr, nullptr, nullptr, CRYPTPROTECT_UI_FORBIDDEN, &blobOut) == FALSE)
         return result;
     DWORD dwLen = 0;
-    if (CryptBinaryToString(blobout.pbData, blobout.cbData, CRYPT_STRING_HEX, NULL, &dwLen)==FALSE)
+    if (CryptBinaryToString(blobOut.pbData, blobOut.cbData, CRYPT_STRING_HEX, nullptr, &dwLen) == FALSE)
         return result;
-    std::unique_ptr<wchar_t[]> strOut(new wchar_t[dwLen + 1]);
-    if (CryptBinaryToString(blobout.pbData, blobout.cbData, CRYPT_STRING_HEX, strOut.get(), &dwLen)==FALSE)
+    auto strOut = std::make_unique<wchar_t[]>(dwLen + 1);
+    if (CryptBinaryToString(blobOut.pbData, blobOut.cbData, CRYPT_STRING_HEX, strOut.get(), &dwLen) == FALSE)
         return result;
-    LocalFree(blobout.pbData);
+    LocalFree(blobOut.pbData);
 
     result = strOut.get();
 
     return result;
 }
 
-
 #if defined(_DEBUG)
 // Some test cases for these classes
-static class CPairsTests
+[[maybe_unused]] static class CPairsTests
 {
 public:
     CPairsTests()
     {
-        CPairs p;
+        CPairs       p;
         std::wstring pw = p.Encrypt(L"password");
-        pw = p.Decrypt(pw);
+        pw              = p.Decrypt(pw);
         assert(pw == L"password");
 
         std::wstring pw2 = p.Encrypt(L"");
-        pw2 = p.Decrypt(pw2);
+        pw2              = p.Decrypt(pw2);
         assert(pw2 == L"");
     }
 
-
-} CPairsTestsobject;
+} cPairsTestsobject;
 #endif

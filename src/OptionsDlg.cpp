@@ -171,9 +171,9 @@ LRESULT COptionsDlg::DoCommand(int id)
             CPairAddDlg dlg(*this);
             if (dlg.DoModal(hResource, IDD_PAIRADD, *this) == IDOK)
             {
-                if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
+                if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                 {
-                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_cryptonly, dlg.m_copyonly, dlg.m_nosync, dlg.m_compresssize, dlg.m_encnames, dlg.m_syncdir, dlg.m_7zExt, dlg.m_UseGPGe, dlg.m_FAT))
+                    if (g_pairs.AddPair(dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat))
                         InitPairList();
                     g_pairs.SavePairs();
                 }
@@ -194,24 +194,24 @@ LRESULT COptionsDlg::DoCommand(int id)
                     continue;
                 auto        t = g_pairs[iItem];
                 CPairAddDlg dlg(*this);
-                dlg.m_origpath     = t.origpath;
-                dlg.m_cryptpath    = t.cryptpath;
+                dlg.m_origPath     = t.origPath;
+                dlg.m_cryptPath    = t.cryptPath;
                 dlg.m_password     = t.password;
-                dlg.m_cryptonly    = t.cryptonly();
-                dlg.m_copyonly     = t.copyonly();
-                dlg.m_nosync       = t.nosync();
-                dlg.m_encnames     = t.encnames;
-                dlg.m_syncdir      = t.syncDir;
-                dlg.m_7zExt        = t.use7z;
-                dlg.m_UseGPGe      = t.useGPG;
-                dlg.m_FAT          = t.FAT;
-                dlg.m_compresssize = t.compresssize;
+                dlg.m_cryptOnly    = t.cryptOnly();
+                dlg.m_copyOnly     = t.copyOnly();
+                dlg.m_noSync       = t.noSync();
+                dlg.m_encNames     = t.encNames;
+                dlg.m_syncDir      = t.syncDir;
+                dlg.m_7ZExt        = t.m_use7Z;
+                dlg.m_useGpg      = t.m_useGpg;
+                dlg.m_fat          = t.m_fat;
+                dlg.m_compressSize = t.m_compressSize;
                 if (dlg.DoModal(hResource, IDD_PAIRADD, *this) == IDOK)
                 {
-                    if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
+                    if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                     {
                         g_pairs.erase(g_pairs.begin() + iItem);
-                        if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_cryptonly, dlg.m_copyonly, dlg.m_nosync, dlg.m_compresssize, dlg.m_encnames, dlg.m_syncdir, dlg.m_7zExt, dlg.m_UseGPGe, dlg.m_FAT))
+                        if (g_pairs.AddPair(dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat))
                             InitPairList();
                         g_pairs.SavePairs();
                     }
@@ -327,8 +327,8 @@ void COptionsDlg::InitPairList()
 
     for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
     {
-        std::wstring origPath  = it->origpath;
-        std::wstring cryptPath = it->cryptpath;
+        std::wstring origPath  = it->origPath;
+        std::wstring cryptPath = it->cryptPath;
         LVITEM       lv        = {0};
         lv.mask                = LVIF_TEXT;
         std::unique_ptr<WCHAR[]> varBuf(new WCHAR[origPath.size() + 1]);
@@ -371,24 +371,24 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             auto t = g_pairs[lpNMItemActivate->iItem];
 
             CPairAddDlg dlg(*this);
-            dlg.m_origpath     = t.origpath;
-            dlg.m_cryptpath    = t.cryptpath;
+            dlg.m_origPath     = t.origPath;
+            dlg.m_cryptPath    = t.cryptPath;
             dlg.m_password     = t.password;
-            dlg.m_cryptonly    = t.cryptonly();
-            dlg.m_copyonly     = t.copyonly();
-            dlg.m_nosync       = t.nosync();
-            dlg.m_encnames     = t.encnames;
-            dlg.m_syncdir      = t.syncDir;
-            dlg.m_7zExt        = t.use7z;
-            dlg.m_UseGPGe      = t.useGPG;
-            dlg.m_FAT          = t.FAT;
-            dlg.m_compresssize = t.compresssize;
+            dlg.m_cryptOnly    = t.cryptOnly();
+            dlg.m_copyOnly     = t.copyOnly();
+            dlg.m_noSync       = t.noSync();
+            dlg.m_encNames     = t.encNames;
+            dlg.m_syncDir      = t.syncDir;
+            dlg.m_7ZExt        = t.m_use7Z;
+            dlg.m_useGpg      = t.m_useGpg;
+            dlg.m_fat          = t.m_fat;
+            dlg.m_compressSize = t.m_compressSize;
             if (dlg.DoModal(hResource, IDD_PAIRADD, *this) == IDOK)
             {
-                if (!dlg.m_origpath.empty() && !dlg.m_cryptpath.empty())
+                if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                 {
                     g_pairs.erase(g_pairs.begin() + lpNMItemActivate->iItem);
-                    if (g_pairs.AddPair(dlg.m_origpath, dlg.m_cryptpath, dlg.m_password, dlg.m_cryptonly, dlg.m_copyonly, dlg.m_nosync, dlg.m_compresssize, dlg.m_encnames, dlg.m_syncdir, dlg.m_7zExt, dlg.m_UseGPGe, dlg.m_FAT))
+                    if (g_pairs.AddPair(dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat))
                         InitPairList();
                     g_pairs.SavePairs();
                 }

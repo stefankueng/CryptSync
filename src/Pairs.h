@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016, 2019 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2019, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,7 +20,6 @@
 #pragma once
 
 #include <vector>
-#include <tuple>
 #include <string>
 
 enum SyncDir
@@ -34,58 +33,71 @@ class PairData
 {
 public:
     PairData()
-        : encnames(false)
+        : encNames(false)
         , syncDir(BothWays)
-        , use7z(false)
-        , useGPG(false)
-        , FAT(false)
-        , compresssize(100)
+        , m_use7Z(false)
+        , m_useGpg(false)
+        , m_fat(false)
+        , m_compressSize(100)
     {
     }
 
-    std::wstring            origpath;
-    std::wstring            cryptpath;
-    std::wstring            password;
-    bool                    encnames;
-    SyncDir                 syncDir;
-    bool                    use7z;
-    bool                    useGPG;
-    bool                    FAT;
-    int                     compresssize;
-    std::wstring            nosync() const { return m_nosync; }
-    void                    nosync(const std::wstring& c) { m_nosync = c; UpdateVec(m_nosync, m_nosyncvec); }
-    bool                    IsIgnored(const std::wstring& s) const;
-    std::wstring            cryptonly() const { return m_cryptonly; }
-    void                    cryptonly(const std::wstring& c) { m_cryptonly = c; UpdateVec(m_cryptonly, m_cryptonlyvec); }
-    bool                    IsCryptOnly(const std::wstring& s) const;
-    std::wstring            copyonly() const { return m_copyonly; }
-    void                    copyonly(const std::wstring& c) { m_copyonly = c; UpdateVec(m_copyonly, m_copyonlyvec); }
-    bool                    IsCopyOnly(const std::wstring& s) const;
+    std::wstring origPath;
+    std::wstring cryptPath;
+    std::wstring password;
+    bool         encNames;
+    SyncDir      syncDir;
+    bool         m_use7Z;
+    bool         m_useGpg;
+    bool         m_fat;
+    int          m_compressSize;
+    std::wstring noSync() const { return m_noSync; }
+    void         noSync(const std::wstring& c)
+    {
+        m_noSync = c;
+        UpdateVec(m_noSync, m_noSyncVec);
+    }
+    bool         IsIgnored(const std::wstring& s) const;
+    std::wstring cryptOnly() const { return m_cryptOnly; }
+    void         cryptOnly(const std::wstring& c)
+    {
+        m_cryptOnly = c;
+        UpdateVec(m_cryptOnly, m_cryptOnlyVec);
+    }
+    bool         IsCryptOnly(const std::wstring& s) const;
+    std::wstring copyOnly() const { return m_copyOnly; }
+    void         copyOnly(const std::wstring& c)
+    {
+        m_copyOnly = c;
+        UpdateVec(m_copyOnly, m_copyOnlyVec);
+    }
+    bool IsCopyOnly(const std::wstring& s) const;
 
     friend bool operator<(const PairData& mk1, const PairData& mk2)
     {
-        if (mk1.origpath != mk2.origpath )
-            return mk1.origpath < mk2.origpath;
+        if (mk1.origPath != mk2.origPath)
+            return mk1.origPath < mk2.origPath;
 
-        return mk1.cryptpath < mk2.cryptpath;
+        return mk1.cryptPath < mk2.cryptPath;
     }
     friend bool operator==(const PairData& mk1, const PairData& mk2)
     {
-        return ((mk1.origpath==mk2.origpath)&&(mk1.cryptpath==mk2.cryptpath));
+        return ((mk1.origPath == mk2.origPath) && (mk1.cryptPath == mk2.cryptPath));
     }
-private:
-    static void                 UpdateVec(std::wstring& s, std::vector<std::wstring>& v);
-    static bool                 MatchInVec(const std::vector<std::wstring>& v, const std::wstring& s);
 
-    std::wstring                m_cryptonly;
-    std::vector<std::wstring>   m_cryptonlyvec;
-    std::wstring                m_copyonly;
-    std::vector<std::wstring>   m_copyonlyvec;
-    std::wstring                m_nosync;
-    std::vector<std::wstring>   m_nosyncvec;
+private:
+    static void UpdateVec(std::wstring& s, std::vector<std::wstring>& v);
+    static bool MatchInVec(const std::vector<std::wstring>& v, const std::wstring& s);
+
+    std::wstring              m_cryptOnly;
+    std::vector<std::wstring> m_cryptOnlyVec;
+    std::wstring              m_copyOnly;
+    std::vector<std::wstring> m_copyOnlyVec;
+    std::wstring              m_noSync;
+    std::vector<std::wstring> m_noSyncVec;
 };
 
-typedef std::vector<PairData>   PairVector;
+typedef std::vector<PairData> PairVector;
 
 /**
  * class to handle pairs of synced folders
@@ -94,27 +106,28 @@ class CPairs : public PairVector
 {
 public:
     CPairs();
-    ~CPairs(void);
+    ~CPairs();
 
-    void                    SavePairs();
-    bool                    AddPair(const std::wstring& orig,
-                                    const std::wstring& crypt,
-                                    const std::wstring& password,
-                                    const std::wstring& cryptonly,
-                                    const std::wstring& copyonly,
-                                    const std::wstring& nosync,
-                                    int compresssize,
-                                    bool encryptnames,
-                                    SyncDir syncDir,
-                                    bool use7zext,
-                                    bool useGPGe,
-                                    bool fat);
+    void SavePairs();
+    bool AddPair(const std::wstring& orig,
+                 const std::wstring& crypt,
+                 const std::wstring& password,
+                 const std::wstring& cryptOnly,
+                 const std::wstring& copyOnly,
+                 const std::wstring& noSync,
+                 int                 compressSize,
+                 bool                encryptNames,
+                 SyncDir             syncDir,
+                 bool                use7ZExt,
+                 bool                useGpg,
+                 bool                fat);
+
 protected:
-    void                    InitPairList();
+    void InitPairList();
 
 private:
-    std::wstring            Decrypt(const std::wstring& pw);
-    std::wstring            Encrypt(const std::wstring& pw);
+    std::wstring        Decrypt(const std::wstring& pw) const;
+    static std::wstring Encrypt(const std::wstring& pw);
 
     friend class CPairsTests;
 };

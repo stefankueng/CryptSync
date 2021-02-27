@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016, 2019 - Stefan Kueng
+// Copyright (C) 2012-2016, 2019, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,12 +28,12 @@
 #include <shlwapi.h>
 
 CPairAddDlg::CPairAddDlg(HWND hParent)
-    : m_encnames(false)
-    , m_syncdir(BothWays)
-    , m_7zExt(true)
-    , m_UseGPGe(false)
-    , m_FAT(true)
-    , m_compresssize(100)
+    : m_compressSize(100)
+    , m_encNames(false)
+    , m_syncDir(BothWays)
+    , m_7ZExt(true)
+    , m_useGpg(false)
+    , m_fat(true)
     , m_hParent(hParent)
     , m_pDropTargetOrig(nullptr)
     , m_pDropTargetCrypt(nullptr)
@@ -51,26 +51,26 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
     UNREFERENCED_PARAMETER(lParam);
     switch (uMsg)
     {
-    case WM_INITDIALOG:
+        case WM_INITDIALOG:
         {
             InitDialog(hwndDlg, IDI_CryptSync);
 
             // initialize the controls
-            SetDlgItemText(hwndDlg, IDC_ORIGPATH, m_origpath.c_str());
-            SetDlgItemText(hwndDlg, IDC_CRYPTPATH, m_cryptpath.c_str());
+            SetDlgItemText(hwndDlg, IDC_ORIGPATH, m_origPath.c_str());
+            SetDlgItemText(hwndDlg, IDC_CRYPTPATH, m_cryptPath.c_str());
             SetDlgItemText(hwndDlg, IDC_PASSWORD, m_password.c_str());
             SetDlgItemText(hwndDlg, IDC_PASSWORD2, m_password.c_str());
-            SetDlgItemText(hwndDlg, IDC_NOCOMPRESS, m_cryptonly.c_str());
-            SetDlgItemText(hwndDlg, IDC_NOCRYPT, m_copyonly.c_str());
-            SetDlgItemText(hwndDlg, IDC_NOSYNC, m_nosync.c_str());
-            SetDlgItemText(hwndDlg, IDC_COMPRESSSIZE, std::to_wstring(m_compresssize).c_str());
-            SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encnames ? BST_CHECKED : BST_UNCHECKED, NULL);
-            CheckRadioButton(*this, IDC_SYNCBOTHRADIO, IDC_SYNCDSTTOSRCRADIO, m_syncdir == BothWays ? IDC_SYNCBOTHRADIO : (m_syncdir == SrcToDst ? IDC_SYNCSRCTODSTRADIO : IDC_SYNCDSTTOSRCRADIO));
-            SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_SETCHECK, m_7zExt ? BST_CHECKED : BST_UNCHECKED, NULL);
-            SendDlgItemMessage(*this, IDC_USEGPG, BM_SETCHECK, m_UseGPGe ? BST_CHECKED : BST_UNCHECKED, NULL);
-            SendDlgItemMessage(*this, IDC_FAT, BM_SETCHECK, m_FAT ? BST_CHECKED : BST_UNCHECKED, NULL);
+            SetDlgItemText(hwndDlg, IDC_NOCOMPRESS, m_cryptOnly.c_str());
+            SetDlgItemText(hwndDlg, IDC_NOCRYPT, m_copyOnly.c_str());
+            SetDlgItemText(hwndDlg, IDC_NOSYNC, m_noSync.c_str());
+            SetDlgItemText(hwndDlg, IDC_COMPRESSSIZE, std::to_wstring(m_compressSize).c_str());
+            SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encNames ? BST_CHECKED : BST_UNCHECKED, NULL);
+            CheckRadioButton(*this, IDC_SYNCBOTHRADIO, IDC_SYNCDSTTOSRCRADIO, m_syncDir == BothWays ? IDC_SYNCBOTHRADIO : (m_syncDir == SrcToDst ? IDC_SYNCSRCTODSTRADIO : IDC_SYNCDSTTOSRCRADIO));
+            SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_SETCHECK, m_7ZExt ? BST_CHECKED : BST_UNCHECKED, NULL);
+            SendDlgItemMessage(*this, IDC_USEGPG, BM_SETCHECK, m_useGpg ? BST_CHECKED : BST_UNCHECKED, NULL);
+            SendDlgItemMessage(*this, IDC_FAT, BM_SETCHECK, m_fat ? BST_CHECKED : BST_UNCHECKED, NULL);
 
-            DialogEnableWindow(IDC_USE7ZEXT, !m_UseGPGe);
+            DialogEnableWindow(IDC_USE7ZEXT, !m_useGpg);
 
             AddToolTip(IDC_ONEWAY, L"if this is checked, changes in the encrypted folder are not synchronized back to the original folder!");
             AddToolTip(IDC_NOCOMPRESS, L"File masks, separated by '|' example: *.jpg|*.zip");
@@ -78,37 +78,36 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             AddToolTip(IDC_NOSYNC, L"File masks, separated by '|' example: *.jpg|*.zip");
 
             // the path edit control should work as a drop target for files and folders
-            HWND hOrigPath = GetDlgItem(hwndDlg, IDC_ORIGPATH);
+            HWND hOrigPath    = GetDlgItem(hwndDlg, IDC_ORIGPATH);
             m_pDropTargetOrig = new CFileDropTarget(hOrigPath);
             RegisterDragDrop(hOrigPath, m_pDropTargetOrig);
-            FORMATETC ftetc={0};
-            ftetc.cfFormat = CF_TEXT;
-            ftetc.dwAspect = DVASPECT_CONTENT;
-            ftetc.lindex = -1;
-            ftetc.tymed = TYMED_HGLOBAL;
-            m_pDropTargetOrig->AddSuportedFormat(ftetc);
-            ftetc.cfFormat=CF_HDROP;
-            m_pDropTargetOrig->AddSuportedFormat(ftetc);
-            SHAutoComplete(GetDlgItem(*this, IDC_ORIGPATH), SHACF_FILESYSTEM|SHACF_AUTOSUGGEST_FORCE_ON);
+            FORMATETC ftEtc = {0};
+            ftEtc.cfFormat  = CF_TEXT;
+            ftEtc.dwAspect  = DVASPECT_CONTENT;
+            ftEtc.lindex    = -1;
+            ftEtc.tymed     = TYMED_HGLOBAL;
+            m_pDropTargetOrig->AddSuportedFormat(ftEtc);
+            ftEtc.cfFormat = CF_HDROP;
+            m_pDropTargetOrig->AddSuportedFormat(ftEtc);
+            SHAutoComplete(GetDlgItem(*this, IDC_ORIGPATH), SHACF_FILESYSTEM | SHACF_AUTOSUGGEST_FORCE_ON);
 
-            HWND hCryptPath = GetDlgItem(hwndDlg, IDC_CRYPTPATH);
+            HWND hCryptPath    = GetDlgItem(hwndDlg, IDC_CRYPTPATH);
             m_pDropTargetCrypt = new CFileDropTarget(hCryptPath);
             RegisterDragDrop(hCryptPath, m_pDropTargetCrypt);
-            ftetc.cfFormat = CF_TEXT;
-            ftetc.dwAspect = DVASPECT_CONTENT;
-            ftetc.lindex = -1;
-            ftetc.tymed = TYMED_HGLOBAL;
-            m_pDropTargetCrypt->AddSuportedFormat(ftetc);
-            ftetc.cfFormat = CF_HDROP;
-            m_pDropTargetCrypt->AddSuportedFormat(ftetc);
-            SHAutoComplete(GetDlgItem(*this, IDC_CRYPTPATH), SHACF_FILESYSTEM|SHACF_AUTOSUGGEST_FORCE_ON);
-
+            ftEtc.cfFormat = CF_TEXT;
+            ftEtc.dwAspect = DVASPECT_CONTENT;
+            ftEtc.lindex   = -1;
+            ftEtc.tymed    = TYMED_HGLOBAL;
+            m_pDropTargetCrypt->AddSuportedFormat(ftEtc);
+            ftEtc.cfFormat = CF_HDROP;
+            m_pDropTargetCrypt->AddSuportedFormat(ftEtc);
+            SHAutoComplete(GetDlgItem(*this, IDC_CRYPTPATH), SHACF_FILESYSTEM | SHACF_AUTOSUGGEST_FORCE_ON);
         }
-        return TRUE;
-    case WM_COMMAND:
-        return DoCommand(LOWORD(wParam));
-    default:
-        return FALSE;
+            return TRUE;
+        case WM_COMMAND:
+            return DoCommand(LOWORD(wParam));
+        default:
+            return FALSE;
     }
 }
 
@@ -116,122 +115,122 @@ LRESULT CPairAddDlg::DoCommand(int id)
 {
     switch (id)
     {
-    case IDOK:
+        case IDOK:
         {
-            auto buf = GetDlgItemText(IDC_ORIGPATH);
-            m_origpath = buf.get();
-            m_origpath.erase(m_origpath.find_last_not_of(L" \n\r\t\\")+1);
+            auto buf   = GetDlgItemText(IDC_ORIGPATH);
+            m_origPath = buf.get();
+            m_origPath.erase(m_origPath.find_last_not_of(L" \n\r\t\\") + 1);
 
-            buf = GetDlgItemText(IDC_CRYPTPATH);
-            m_cryptpath = buf.get();
-            m_cryptpath.erase(m_cryptpath.find_last_not_of(L" \n\r\t\\")+1);
+            buf         = GetDlgItemText(IDC_CRYPTPATH);
+            m_cryptPath = buf.get();
+            m_cryptPath.erase(m_cryptPath.find_last_not_of(L" \n\r\t\\") + 1);
 
-            buf = GetDlgItemText(IDC_NOCOMPRESS);
-            m_cryptonly = buf.get();
-            m_cryptonly.erase(m_cryptonly.find_last_not_of(L" \n\r\t\\")+1);
+            buf         = GetDlgItemText(IDC_NOCOMPRESS);
+            m_cryptOnly = buf.get();
+            m_cryptOnly.erase(m_cryptOnly.find_last_not_of(L" \n\r\t\\") + 1);
 
-            buf = GetDlgItemText(IDC_NOCRYPT);
-            m_copyonly = buf.get();
-            m_copyonly.erase(m_copyonly.find_last_not_of(L" \n\r\t\\") + 1);
+            buf        = GetDlgItemText(IDC_NOCRYPT);
+            m_copyOnly = buf.get();
+            m_copyOnly.erase(m_copyOnly.find_last_not_of(L" \n\r\t\\") + 1);
 
-            buf = GetDlgItemText(IDC_NOSYNC);
-            m_nosync = buf.get();
-            m_nosync.erase(m_nosync.find_last_not_of(L" \n\r\t\\")+1);
+            buf      = GetDlgItemText(IDC_NOSYNC);
+            m_noSync = buf.get();
+            m_noSync.erase(m_noSync.find_last_not_of(L" \n\r\t\\") + 1);
 
-            buf = GetDlgItemText(IDC_COMPRESSSIZE);
-            m_compresssize = _wtoi(buf.get());
+            buf            = GetDlgItemText(IDC_COMPRESSSIZE);
+            m_compressSize = _wtoi(buf.get());
 
-            buf = GetDlgItemText(IDC_PASSWORD);
-            m_password = buf.get();
-            buf = GetDlgItemText(IDC_PASSWORD2);
+            buf                 = GetDlgItemText(IDC_PASSWORD);
+            m_password          = buf.get();
+            buf                 = GetDlgItemText(IDC_PASSWORD2);
             std::wstring retype = buf.get();
             if (m_password != retype)
             {
                 ::MessageBox(*this, L"password do not match!\nPlease reenter the password.", L"Password mismatch", MB_ICONERROR);
                 return 0;
             }
-            if ( (m_password.find_first_of(L'\"') != std::string::npos) ||
-                 (m_password.find_first_of(L'\'') != std::string::npos) ||
-                 (m_password.find_first_of(L'\\') != std::string::npos) ||
-                 (m_password.find_first_of(L'/') != std::string::npos) )
+            if ((m_password.find_first_of(L'\"') != std::string::npos) ||
+                (m_password.find_first_of(L'\'') != std::string::npos) ||
+                (m_password.find_first_of(L'\\') != std::string::npos) ||
+                (m_password.find_first_of(L'/') != std::string::npos))
             {
                 ::MessageBox(*this, L"password must not contain the following chars:\n\" \' / \\", L"Illegal Password char", MB_ICONERROR);
                 return 0;
             }
 
-            std::wstring origpath = m_origpath;
-            std::wstring cryptpath = m_cryptpath;
-            CreateDirectory(m_origpath.c_str(), NULL);
-            CreateDirectory(m_cryptpath.c_str(), NULL);
-            std::transform(origpath.begin(), origpath.end(), origpath.begin(), ::towlower);
-            std::transform(cryptpath.begin(), cryptpath.end(), cryptpath.begin(), ::towlower);
+            std::wstring origPath  = m_origPath;
+            std::wstring cryptPath = m_cryptPath;
+            CreateDirectory(m_origPath.c_str(), nullptr);
+            CreateDirectory(m_cryptPath.c_str(), nullptr);
+            std::transform(origPath.begin(), origPath.end(), origPath.begin(), ::towlower);
+            std::transform(cryptPath.begin(), cryptPath.end(), cryptPath.begin(), ::towlower);
 
-            if (origpath == cryptpath)
+            if (origPath == cryptPath)
             {
                 ::MessageBox(*this, L"source and destination are identical!\nPlease choose different folders.", L"Paths invalid", MB_ICONERROR);
                 return 0;
             }
 
-            if ( ((origpath.size() > cryptpath.size()) && (origpath.substr(0, cryptpath.size()) == cryptpath) && (origpath[cryptpath.size()] == '\\')) ||
-                 ((cryptpath.size() > origpath.size()) && (cryptpath.substr(0, origpath.size()) == origpath) && (cryptpath[origpath.size()] == '\\')))
+            if (((origPath.size() > cryptPath.size()) && (origPath.substr(0, cryptPath.size()) == cryptPath) && (origPath[cryptPath.size()] == '\\')) ||
+                ((cryptPath.size() > origPath.size()) && (cryptPath.substr(0, origPath.size()) == origPath) && (cryptPath[origPath.size()] == '\\')))
             {
                 ::MessageBox(*this, L"source and destination point to the same tree\nmake sure that one folder is not part of the other.", L"Paths invalid", MB_ICONERROR);
                 return 0;
             }
 
-            m_encnames = !!SendDlgItemMessage(*this, IDC_ENCNAMES, BM_GETCHECK, 0, NULL);
-            m_syncdir = BothWays;
+            m_encNames = !!SendDlgItemMessage(*this, IDC_ENCNAMES, BM_GETCHECK, 0, NULL);
+            m_syncDir  = BothWays;
             if (IsDlgButtonChecked(*this, IDC_SYNCDSTTOSRCRADIO))
-                m_syncdir = DstToSrc;
+                m_syncDir = DstToSrc;
             if (IsDlgButtonChecked(*this, IDC_SYNCSRCTODSTRADIO))
-                m_syncdir = SrcToDst;
-            m_7zExt = !!SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_GETCHECK, 0, NULL);
-            m_UseGPGe = !!SendDlgItemMessage(*this, IDC_USEGPG, BM_GETCHECK, 0, NULL);
-            m_FAT = !!SendDlgItemMessage(*this, IDC_FAT, BM_GETCHECK, 0, NULL);
-            if (m_UseGPGe && m_password.empty())
+                m_syncDir = SrcToDst;
+            m_7ZExt   = !!SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_GETCHECK, 0, NULL);
+            m_useGpg = !!SendDlgItemMessage(*this, IDC_USEGPG, BM_GETCHECK, 0, NULL);
+            m_fat     = !!SendDlgItemMessage(*this, IDC_FAT, BM_GETCHECK, 0, NULL);
+            if (m_useGpg && m_password.empty())
             {
                 ::MessageBox(*this, L"empty passwords are not allowed when using GPG for encryption!", L"empty password", MB_ICONERROR);
                 return 0;
             }
         }
-        // fall through
-    case IDCANCEL:
-        EndDialog(*this, id);
-        break;
-    case IDC_BROWSEORIG:
+            // fall through
+        case IDCANCEL:
+            EndDialog(*this, id);
+            break;
+        case IDC_BROWSEORIG:
         {
             CBrowseFolder browse;
 
-            auto path = GetDlgItemText(IDC_ORIGPATH);
-            std::unique_ptr<WCHAR[]> pathbuf(new WCHAR[MAX_PATH_NEW]);
-            wcscpy_s(pathbuf.get(), MAX_PATH_NEW, path.get());
+            auto path    = GetDlgItemText(IDC_ORIGPATH);
+            auto pathBuf = std::make_unique<WCHAR[]>(MAX_PATH_NEW);
+            wcscpy_s(pathBuf.get(), MAX_PATH_NEW, path.get());
             browse.SetInfo(_T("Select path to search"));
-            if (browse.Show(*this, pathbuf.get(), MAX_PATH_NEW, m_origpath.c_str()) == CBrowseFolder::OK)
+            if (browse.Show(*this, pathBuf.get(), MAX_PATH_NEW, m_origPath.c_str()) == CBrowseFolder::OK)
             {
-                SetDlgItemText(*this, IDC_ORIGPATH, pathbuf.get());
-                m_origpath = pathbuf.get();
+                SetDlgItemText(*this, IDC_ORIGPATH, pathBuf.get());
+                m_origPath = pathBuf.get();
             }
         }
         break;
-    case IDC_BROWSECRYPT:
+        case IDC_BROWSECRYPT:
         {
             CBrowseFolder browse;
 
-            auto path = GetDlgItemText(IDC_CRYPTPATH);
-            std::unique_ptr<WCHAR[]> pathbuf(new WCHAR[MAX_PATH_NEW]);
-            wcscpy_s(pathbuf.get(), MAX_PATH_NEW, path.get());
+            auto path    = GetDlgItemText(IDC_CRYPTPATH);
+            auto pathBuf = std::make_unique<WCHAR[]>(MAX_PATH_NEW);
+            wcscpy_s(pathBuf.get(), MAX_PATH_NEW, path.get());
             browse.SetInfo(_T("Select path to search"));
-            if (browse.Show(*this, pathbuf.get(), MAX_PATH_NEW, m_cryptpath.c_str()) == CBrowseFolder::OK)
+            if (browse.Show(*this, pathBuf.get(), MAX_PATH_NEW, m_cryptPath.c_str()) == CBrowseFolder::OK)
             {
-                SetDlgItemText(*this, IDC_CRYPTPATH, pathbuf.get());
-                m_cryptpath = pathbuf.get();
+                SetDlgItemText(*this, IDC_CRYPTPATH, pathBuf.get());
+                m_cryptPath = pathBuf.get();
             }
         }
         break;
-    case IDC_USEGPG:
-        m_UseGPGe = !m_UseGPGe;
-        DialogEnableWindow(IDC_USE7ZEXT, !m_UseGPGe);
-        break;
+        case IDC_USEGPG:
+            m_useGpg = !m_useGpg;
+            DialogEnableWindow(IDC_USE7ZEXT, !m_useGpg);
+            break;
     }
     return 1;
 }

@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -169,8 +169,8 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             watcher.ClearPaths();
             for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
             {
-                std::wstring origpath = it->origpath;
-                std::wstring cryptpath = it->cryptpath;
+                std::wstring origpath = it->origPath;
+                std::wstring cryptpath = it->cryptPath;
                 if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
                     watcher.AddPath(origpath);
                 if ((it->syncDir == BothWays)||(it->syncDir == DstToSrc))
@@ -291,8 +291,8 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     watcher.ClearPaths();
                     for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                     {
-                        std::wstring origpath = it->origpath;
-                        std::wstring cryptpath = it->cryptpath;
+                        std::wstring origpath = it->origPath;
+                        std::wstring cryptpath = it->cryptPath;
                         if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
                             watcher.AddPath(origpath);
                         if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
@@ -336,8 +336,8 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                 watcher.ClearPaths();
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                 {
-                    std::wstring origpath = it->origpath;
-                    std::wstring cryptpath = it->cryptpath;
+                    std::wstring origpath = it->origPath;
+                    std::wstring cryptpath = it->cryptPath;
                     if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
                         watcher.AddPath(origpath);
                     if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
@@ -399,8 +399,8 @@ LRESULT CTrayWindow::DoCommand(int id)
                 watcher.ClearPaths();
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                 {
-                    std::wstring origpath = it->origpath;
-                    std::wstring cryptpath = it->cryptpath;
+                    std::wstring origpath = it->origPath;
+                    std::wstring cryptpath = it->cryptPath;
                     if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
                         watcher.AddPath(origpath);
                     if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
