@@ -32,7 +32,7 @@ constexpr auto TIMER_DETECTCHANGES         = 100;
 constexpr auto TIMER_DETECTCHANGESINTERVAL = 10000;
 constexpr auto TIMER_FULLSCAN              = 101;
 
-UINT TIMER_FULLSCANINTERVAL = CRegStdDWORD(L"Software\\CryptSync\\FullScanInterval", 60000 * 30);
+DWORD g_timer_fullScanInterval = CRegStdDWORD(L"Software\\CryptSync\\FullScanInterval", 60000 * 30);
 
 static UINT                                 WM_TASKBARCREATED                         = RegisterWindowMessage(_T("TaskbarCreated"));
 CTrayWindow::PFNCHANGEWINDOWMESSAGEFILTEREX CTrayWindow::m_pChangeWindowMessageFilter = nullptr;
@@ -173,7 +173,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     m_watcher.AddPath(cryptPath);
             }
             SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, nullptr);
-            SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, nullptr);
+            if (g_timer_fullScanInterval > 0)
+                SetTimer(*this, TIMER_FULLSCAN, g_timer_fullScanInterval, nullptr);
+            else
+                KillTimer(*this, TIMER_FULLSCAN);
             unsigned int threadId = 0;
             _beginthreadex(nullptr, 0, UpdateCheckThreadEntry, this, 0, &threadId);
             if (!m_bTrayMode)
@@ -338,7 +341,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                         if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
                             m_watcher.AddPath(cryptPath);
                     }
-                    SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, nullptr);
+                    if (g_timer_fullScanInterval > 0)
+                        SetTimer(*this, TIMER_FULLSCAN, g_timer_fullScanInterval, nullptr);
+                    else
+                        KillTimer(*this, TIMER_FULLSCAN);
                 }
                 break;
             }
@@ -388,7 +394,7 @@ LRESULT CTrayWindow::DoCommand(int id)
             m_bOptionsDialogShown = false;
             if ((ret == IDOK) || (ret == IDCANCEL))
             {
-                TIMER_FULLSCANINTERVAL = CRegStdDWORD(L"Software\\CryptSync\\FullScanInterval", 60000 * 30);
+                g_timer_fullScanInterval = CRegStdDWORD(L"Software\\CryptSync\\FullScanInterval", 60000 * 30);
                 m_folderSyncer.SyncFolders(g_pairs);
                 m_watcher.ClearPaths();
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
@@ -401,7 +407,10 @@ LRESULT CTrayWindow::DoCommand(int id)
                         m_watcher.AddPath(cryptPath);
                 }
                 SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, nullptr);
-                SetTimer(*this, TIMER_FULLSCAN, TIMER_FULLSCANINTERVAL, nullptr);
+                if (g_timer_fullScanInterval > 0)
+                    SetTimer(*this, TIMER_FULLSCAN, g_timer_fullScanInterval, nullptr);
+                else
+                    KillTimer(*this, TIMER_FULLSCAN);
             }
             else
             {
