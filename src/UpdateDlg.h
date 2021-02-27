@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,16 +30,17 @@ class CUpdateDlg : public CDialog
 {
 public:
     CUpdateDlg(HWND hParent);
-    ~CUpdateDlg(void);
+    ~CUpdateDlg();
 
-    static bool             CheckNewer();
+    static bool CheckNewer();
+
 protected:
-    LRESULT CALLBACK        DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    LRESULT                 DoCommand(int id);
-    static std::wstring     GetTempFilePath();
+    LRESULT CALLBACK    DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+    LRESULT             DoCommand(int id);
+    static std::wstring GetTempFilePath();
 
 private:
-    HWND                    m_hParent;
-    CHyperLink              m_link;
-    AeroControlBase         m_aerocontrols;
+    HWND            m_hParent;
+    CHyperLink      m_link;
+    AeroControlBase m_aeroControls;
 };

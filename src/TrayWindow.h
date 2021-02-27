@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014 - Stefan Kueng
+// Copyright (C) 2012-2014, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,68 +21,63 @@
 
 #include "BaseWindow.h"
 #include "resource.h"
-#include "Registry.h"
 #include "PathWatcher.h"
 #include "FolderSync.h"
 #include "ResString.h"
 
 #include <shellapi.h>
 #include <shlwapi.h>
-#include <commctrl.h>
-
-
 
 class CTrayWindow : public CWindow
 {
 public:
-    CTrayWindow(HINSTANCE hInst, const WNDCLASSEX* wcx = NULL)
+    CTrayWindow(HINSTANCE hInst, const WNDCLASSEX* wcx = nullptr)
         : CWindow(hInst, wcx)
-        , hwndNextViewer(NULL)
-        , foregroundWND(NULL)
+        , m_hwndNextViewer(nullptr)
+        , m_foregroundWnd(nullptr)
         , m_bNewerVersionAvailable(false)
         , m_bTrayMode(true)
         , m_bOptionsDialogShown(false)
-        , m_itemsprocessed(0)
-        , m_totalitemstoprocess(0)
+        , m_itemsProcessed(0)
+        , m_totalItemsToProcess(0)
     {
-        SecureZeroMemory(&niData, sizeof(niData));
-        SetWindowTitle((LPCTSTR)ResString(hResource, IDS_APP_TITLE));
+        SecureZeroMemory(&m_niData, sizeof(m_niData));
+        SetWindowTitle(static_cast<LPCTSTR>(ResString(hResource, IDS_APP_TITLE)));
     };
 
-    ~CTrayWindow(void)
-    {
-    };
+    ~CTrayWindow(void){};
 
-    bool                RegisterAndCreateWindow();
+    bool RegisterAndCreateWindow();
 
-    void                ShowDialogImmediately(bool show) { m_bTrayMode = !show; }
+    void ShowDialogImmediately(bool show) { m_bTrayMode = !show; }
+
 protected:
     /// the message handler for this window
-    LRESULT CALLBACK    WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    LRESULT             HandleCustomMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    LRESULT CALLBACK WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+    LRESULT          HandleCustomMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     /// Handles all the WM_COMMAND window messages (e.g. menu commands)
-    LRESULT             DoCommand(int id);
+    LRESULT DoCommand(int id);
 
-    void                ShowTrayIcon();
-    DWORD               GetDllVersion(LPCTSTR lpszDllName);
+    void         ShowTrayIcon();
+    static DWORD GetDllVersion(LPCTSTR lpszDllName);
 
     static unsigned int __stdcall UpdateCheckThreadEntry(void* pContext);
-    void                UpdateCheckThread();
+    void UpdateCheckThread();
 
 protected:
-    NOTIFYICONDATA      niData;
-    HWND                hwndNextViewer;
-    HWND                foregroundWND;
-    CPathWatcher        watcher;
-    CFolderSync         foldersyncer;
-    bool                m_bNewerVersionAvailable;
-    bool                m_bTrayMode;
-    bool                m_bOptionsDialogShown;
+    NOTIFYICONDATA         m_niData;
+    HWND                   m_hwndNextViewer;
+    HWND                   m_foregroundWnd;
+    CPathWatcher           m_watcher;
+    CFolderSync            m_folderSyncer;
+    bool                   m_bNewerVersionAvailable;
+    bool                   m_bTrayMode;
+    bool                   m_bOptionsDialogShown;
     std::set<std::wstring> m_lastChangedPaths;
-    int                 m_itemsprocessed;
-    int                 m_totalitemstoprocess;
+    int                    m_itemsProcessed;
+    int                    m_totalItemsToProcess;
 
-    typedef BOOL(__stdcall *PFNCHANGEWINDOWMESSAGEFILTEREX)(HWND hWnd, UINT message, DWORD dwFlag, PCHANGEFILTERSTRUCT pChangeFilterStruct);
+    typedef BOOL(__stdcall* PFNCHANGEWINDOWMESSAGEFILTEREX)(HWND hWnd, UINT message, DWORD dwFlag, PCHANGEFILTERSTRUCT pChangeFilterStruct);
     static PFNCHANGEWINDOWMESSAGEFILTEREX m_pChangeWindowMessageFilter;
 };

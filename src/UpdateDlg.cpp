@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013, 2015 - Stefan Kueng
+// Copyright (C) 2012-2013, 2015, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@ CUpdateDlg::CUpdateDlg(HWND hParent)
 {
 }
 
-CUpdateDlg::~CUpdateDlg(void)
+CUpdateDlg::~CUpdateDlg()
 {
 }
 
@@ -41,23 +41,23 @@ LRESULT CUpdateDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
     UNREFERENCED_PARAMETER(lParam);
     switch (uMsg)
     {
-    case WM_INITDIALOG:
+        case WM_INITDIALOG:
         {
             InitDialog(hwndDlg, IDI_CryptSync);
             // initialize the controls
             m_link.ConvertStaticToHyperlink(hwndDlg, IDC_WEBURL, _T("https://tools.stefankueng.com/CryptSync.html"));
 
-            ExtendFrameIntoClientArea((UINT)-1, (UINT)-1, (UINT)-1, (UINT)-1);
-            m_aerocontrols.SubclassControl(GetDlgItem(*this, IDC_INFOLABEL));
-            m_aerocontrols.SubclassControl(GetDlgItem(*this, IDC_INFOLABEL2));
-            m_aerocontrols.SubclassControl(GetDlgItem(*this, IDOK));
-            m_aerocontrols.SubclassControl(GetDlgItem(*this, IDC_WEBURL));
+            ExtendFrameIntoClientArea(static_cast<UINT>(-1), static_cast<UINT>(-1), static_cast<UINT>(-1), static_cast<UINT>(-1));
+            m_aeroControls.SubclassControl(GetDlgItem(*this, IDC_INFOLABEL));
+            m_aeroControls.SubclassControl(GetDlgItem(*this, IDC_INFOLABEL2));
+            m_aeroControls.SubclassControl(GetDlgItem(*this, IDOK));
+            m_aeroControls.SubclassControl(GetDlgItem(*this, IDC_WEBURL));
         }
-        return TRUE;
-    case WM_COMMAND:
-        return DoCommand(LOWORD(wParam));
-    default:
-        return FALSE;
+            return TRUE;
+        case WM_COMMAND:
+            return DoCommand(LOWORD(wParam));
+        default:
+            return FALSE;
     }
 }
 
@@ -65,29 +65,29 @@ LRESULT CUpdateDlg::DoCommand(int id)
 {
     switch (id)
     {
-    case IDOK:
-        // fall through
-    case IDCANCEL:
-        EndDialog(*this, id);
-        break;
+        case IDOK:
+            // fall through
+        case IDCANCEL:
+            EndDialog(*this, id);
+            break;
     }
     return 1;
 }
 
 std::wstring CUpdateDlg::GetTempFilePath()
 {
-    DWORD len = ::GetTempPath(0, NULL);
-    std::unique_ptr<TCHAR[]> temppath(new TCHAR[len+1]);
-    std::unique_ptr<TCHAR[]> tempF(new TCHAR[len+50]);
-    ::GetTempPath (len+1, temppath.get());
-    std::wstring tempfile;
-    ::GetTempFileName (temppath.get(), TEXT("cm_"), 0, tempF.get());
-    tempfile = std::wstring(tempF.get());
+    DWORD len      = ::GetTempPath(0, nullptr);
+    auto  tempPath = std::make_unique<TCHAR[]>(len + 1);
+    auto  tempF    = std::make_unique<TCHAR[]>(len + 50);
+    ::GetTempPath(len + 1, tempPath.get());
+    std::wstring tempFile;
+    ::GetTempFileName(tempPath.get(), TEXT("cm_"), 0, tempF.get());
+    tempFile = std::wstring(tempF.get());
     //now create the tempfile, so that subsequent calls to GetTempFile() return
     //different filenames.
-    HANDLE hFile = CreateFile(tempfile.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_TEMPORARY, NULL);
+    HANDLE hFile = CreateFile(tempFile.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_TEMPORARY, nullptr);
     CloseHandle(hFile);
-    return tempfile;
+    return tempFile;
 }
 
 bool CUpdateDlg::CheckNewer()
@@ -96,11 +96,11 @@ bool CUpdateDlg::CheckNewer()
     // check for newer versions
     if (CRegStdDWORD(_T("Software\\CryptSync\\CheckNewer"), TRUE) != FALSE)
     {
-        time_t now;
+        time_t    now;
         struct tm ptm;
 
         time(&now);
-        if ((now != 0) && (localtime_s(&ptm, &now)==0))
+        if ((now != 0) && (localtime_s(&ptm, &now) == 0))
         {
             int week = 0;
             // we don't calculate the real 'week of the year' here
@@ -108,36 +108,36 @@ bool CUpdateDlg::CheckNewer()
             // that's not needed.
             week = ptm.tm_yday / 7;
 
-            CRegStdDWORD oldweek = CRegStdDWORD(_T("Software\\CryptSync\\CheckNewerWeek"), (DWORD)-1);
-            if (((DWORD)oldweek) == -1)
-                oldweek = week;     // first start of CommitMonitor, no update check needed
+            CRegStdDWORD oldweek = CRegStdDWORD(_T("Software\\CryptSync\\CheckNewerWeek"), static_cast<DWORD>(-1));
+            if (static_cast<DWORD>(oldweek) == -1)
+                oldweek = week; // first start of CommitMonitor, no update check needed
             else
             {
-                if ((DWORD)week != oldweek)
+                if (static_cast<DWORD>(week) != oldweek)
                 {
                     oldweek = week;
                     //
-                    std::wstring tempfile = GetTempFilePath();
+                    std::wstring tempFile = GetTempFilePath();
 
-                    CRegStdString checkurluser = CRegStdString(_T("Software\\CryptSync\\UpdateCheckURL"), _T(""));
-                    CRegStdString checkurlmachine = CRegStdString(_T("Software\\CryptSync\\UpdateCheckURL"), _T(""), FALSE, HKEY_LOCAL_MACHINE);
-                    std::wstring sCheckURL = (std::wstring)checkurluser;
+                    CRegStdString checkUrlUser    = CRegStdString(_T("Software\\CryptSync\\UpdateCheckURL"), _T(""));
+                    CRegStdString checkUrlMachine = CRegStdString(_T("Software\\CryptSync\\UpdateCheckURL"), _T(""), FALSE, HKEY_LOCAL_MACHINE);
+                    std::wstring  sCheckURL       = static_cast<std::wstring>(checkUrlUser);
                     if (sCheckURL.empty())
                     {
-                        sCheckURL = (std::wstring)checkurlmachine;
+                        sCheckURL = static_cast<std::wstring>(checkUrlMachine);
                         if (sCheckURL.empty())
                             sCheckURL = _T("https://github.com/stefankueng/CryptSync/raw/master/version.txt");
                     }
-                    HRESULT res = URLDownloadToFile(NULL, sCheckURL.c_str(), tempfile.c_str(), 0, NULL);
+                    HRESULT res = URLDownloadToFile(nullptr, sCheckURL.c_str(), tempFile.c_str(), 0, nullptr);
                     if (res == S_OK)
                     {
-                        std::ifstream File;
-                        File.open(tempfile.c_str());
-                        if (File.good())
+                        std::ifstream file;
+                        file.open(tempFile.c_str());
+                        if (file.good())
                         {
-                            char line[1024];
-                            char * pLine = line;
-                            File.getline(line, sizeof(line));
+                            char  line[1024];
+                            char* pLine = line;
+                            file.getline(line, sizeof(line));
                             int major = 0;
                             int minor = 0;
                             int micro = 0;
@@ -164,16 +164,16 @@ bool CUpdateDlg::CheckNewer()
                             }
                             if (major > CS_VERMAJOR)
                                 bNewerAvailable = true;
-                            else if ((minor > CS_VERMINOR)&&(major == CS_VERMAJOR))
+                            else if ((minor > CS_VERMINOR) && (major == CS_VERMAJOR))
                                 bNewerAvailable = true;
-                            else if ((micro > CS_VERMICRO)&&(minor == CS_VERMINOR)&&(major == CS_VERMAJOR))
+                            else if ((micro > CS_VERMICRO) && (minor == CS_VERMINOR) && (major == CS_VERMAJOR))
                                 bNewerAvailable = true;
-                            else if ((build > CS_VERBUILD)&&(micro == CS_VERMICRO)&&(minor == CS_VERMINOR)&&(major == CS_VERMAJOR))
+                            else if ((build > CS_VERBUILD) && (micro == CS_VERMICRO) && (minor == CS_VERMINOR) && (major == CS_VERMAJOR))
                                 bNewerAvailable = true;
                         }
-                        File.close();
+                        file.close();
                     }
-                    DeleteFile(tempfile.c_str());
+                    DeleteFile(tempFile.c_str());
                 }
             }
         }
