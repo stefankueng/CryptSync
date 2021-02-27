@@ -100,22 +100,22 @@ void CPairs::InitPairList()
         WCHAR key[MAX_PATH];
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOrig%d", p);
         CRegStdString origPathReg(key);
-        pd.origPath = origPathReg;
-        if (pd.origPath.empty())
+        pd.m_origPath = origPathReg;
+        if (pd.m_origPath.empty())
             break;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCrypt%d", p);
         CRegStdString cryptPathReg(key);
-        pd.cryptPath = cryptPathReg;
-        if (pd.cryptPath.empty())
+        pd.m_cryptPath = cryptPathReg;
+        if (pd.m_cryptPath.empty())
             break;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
         CRegStdString passwordReg(key);
-        pd.password = passwordReg;
-        if (pd.password.empty())
+        pd.m_password = passwordReg;
+        if (pd.m_password.empty())
             break;
-        pd.password = Decrypt(pd.password);
+        pd.m_password = Decrypt(pd.m_password);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCryptOnly%d", p);
         CRegStdString cryptOnlyReg(key);
@@ -131,17 +131,17 @@ void CPairs::InitPairList()
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
         CRegStdDWORD encNamesReg(key, TRUE);
-        pd.encNames = !!static_cast<DWORD>(encNamesReg);
+        pd.m_encNames = !!static_cast<DWORD>(encNamesReg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
         CRegStdDWORD oneWayReg(key, static_cast<DWORD>(-1));
         if (static_cast<DWORD>(oneWayReg) != static_cast<DWORD>(-1))
-            pd.syncDir = (!!static_cast<DWORD>(oneWayReg) ? SrcToDst : BothWays);
+            pd.m_syncDir = (!!static_cast<DWORD>(oneWayReg) ? SrcToDst : BothWays);
         else
         {
             swprintf_s(key, L"Software\\CryptSync\\SyncPairDir%d", p);
             CRegStdDWORD syncDirReg(key, BothWays);
-            pd.syncDir = static_cast<SyncDir>(static_cast<DWORD>(syncDirReg));
+            pd.m_syncDir = static_cast<SyncDir>(static_cast<DWORD>(syncDirReg));
         }
         oneWayReg.removeValue();
 
@@ -161,6 +161,10 @@ void CPairs::InitPairList()
         CRegStdDWORD compressSizeReg(key, 100);
         pd.m_compressSize = static_cast<DWORD>(compressSizeReg);
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEnabled%d", p);
+        CRegStdDWORD enabledReg(key, TRUE);
+        pd.m_enabled = !!static_cast<DWORD>(enabledReg);
+
         if (std::find(cbegin(), cend(), pd) == cend())
             push_back(pd);
         ++p;
@@ -178,15 +182,15 @@ void CPairs::SavePairs()
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOrig%d", p);
         // ReSharper disable CppEntityAssignedButNoRead
         CRegStdString origPathReg(key, L"", true);
-        origPathReg = it->origPath;
+        origPathReg = it->m_origPath;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCrypt%d", p);
         CRegStdString cryptPathReg(key, L"", true);
-        cryptPathReg = it->cryptPath;
+        cryptPathReg = it->m_cryptPath;
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairPass%d", p);
         CRegStdString passwordReg(key, L"", true);
-        passwordReg = Encrypt(it->password);
+        passwordReg = Encrypt(it->m_password);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCryptOnly%d", p);
         CRegStdString cryptOnlyReg(key, L"", true);
@@ -202,11 +206,11 @@ void CPairs::SavePairs()
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
         CRegStdDWORD encNamesReg(key, TRUE, true);
-        encNamesReg = static_cast<DWORD>(it->encNames);
+        encNamesReg = static_cast<DWORD>(it->m_encNames);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairDir%d", p);
         CRegStdDWORD syncDirReg(key, BothWays, true);
-        syncDirReg = static_cast<DWORD>(it->syncDir);
+        syncDirReg = static_cast<DWORD>(it->m_syncDir);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPair7zExt%d", p);
         CRegStdDWORD zExtReg(key, FALSE, true);
@@ -222,7 +226,11 @@ void CPairs::SavePairs()
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
         CRegStdDWORD compressSizeReg(key, 100, true);
-        fatReg = static_cast<DWORD>(it->m_compressSize);
+        compressSizeReg = static_cast<DWORD>(it->m_compressSize);
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEnabled%d", p);
+        CRegStdDWORD enabledReg(key, TRUE, true);
+        enabledReg = static_cast<DWORD>(it->m_enabled);
         // ReSharper restore CppEntityAssignedButNoRead
 
         ++p;
@@ -283,27 +291,28 @@ void CPairs::SavePairs()
     }
 }
 
-bool CPairs::AddPair(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat)
+bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat)
 {
     PairData pd;
-    pd.origPath  = orig;
-    pd.cryptPath = crypt;
-    pd.password  = password;
+    pd.m_enabled   = enabled;
+    pd.m_origPath  = orig;
+    pd.m_cryptPath = crypt;
+    pd.m_password  = password;
     pd.cryptOnly(cryptOnly);
     pd.copyOnly(copyOnly);
     pd.noSync(noSync);
-    pd.encNames     = encryptNames;
-    pd.syncDir      = syncDir;
+    pd.m_encNames     = encryptNames;
+    pd.m_syncDir      = syncDir;
     pd.m_use7Z        = use7ZExt;
     pd.m_useGpg       = useGpg;
     pd.m_fat          = fat;
     pd.m_compressSize = compressSize;
 
     // make sure the paths are not root names but if root then root paths (i.e., ends with a backslash)
-    if (*pd.origPath.rbegin() == ':')
-        pd.origPath += '\\';
-    if (*pd.cryptPath.rbegin() == ':')
-        pd.cryptPath += '\\';
+    if (*pd.m_origPath.rbegin() == ':')
+        pd.m_origPath += '\\';
+    if (*pd.m_cryptPath.rbegin() == ':')
+        pd.m_cryptPath += '\\';
 
     if (std::find(cbegin(), cend(), pd) == cend())
     {

@@ -165,11 +165,11 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             m_watcher.ClearPaths();
             for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
             {
-                std::wstring origPath  = it->origPath;
-                std::wstring cryptPath = it->cryptPath;
-                if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
+                std::wstring origPath  = it->m_origPath;
+                std::wstring cryptPath = it->m_cryptPath;
+                if ((it->m_syncDir == BothWays) || (it->m_syncDir == SrcToDst))
                     m_watcher.AddPath(origPath);
-                if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
+                if ((it->m_syncDir == BothWays) || (it->m_syncDir == DstToSrc))
                     m_watcher.AddPath(cryptPath);
             }
             SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, nullptr);
@@ -278,9 +278,9 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     size_t watchPathCount = 0;
                     for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                     {
-                        if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
+                        if ((it->m_syncDir == BothWays) || (it->m_syncDir == DstToSrc))
                             ++watchPathCount;
-                        if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
+                        if ((it->m_syncDir == BothWays) || (it->m_syncDir == SrcToDst))
                             ++watchPathCount;
                     }
 
@@ -289,11 +289,11 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                         m_watcher.ClearPaths();
                         for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                         {
-                            std::wstring origPath  = it->origPath;
-                            std::wstring cryptPath = it->cryptPath;
-                            if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
+                            std::wstring origPath  = it->m_origPath;
+                            std::wstring cryptPath = it->m_cryptPath;
+                            if ((it->m_syncDir == BothWays) || (it->m_syncDir == SrcToDst))
                                 m_watcher.AddPath(origPath);
-                            if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
+                            if ((it->m_syncDir == BothWays) || (it->m_syncDir == DstToSrc))
                                 m_watcher.AddPath(cryptPath);
                         }
                     }
@@ -334,11 +334,11 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     m_watcher.ClearPaths();
                     for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                     {
-                        std::wstring origPath  = it->origPath;
-                        std::wstring cryptPath = it->cryptPath;
-                        if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
+                        std::wstring origPath  = it->m_origPath;
+                        std::wstring cryptPath = it->m_cryptPath;
+                        if ((it->m_syncDir == BothWays) || (it->m_syncDir == SrcToDst))
                             m_watcher.AddPath(origPath);
-                        if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
+                        if ((it->m_syncDir == BothWays) || (it->m_syncDir == DstToSrc))
                             m_watcher.AddPath(cryptPath);
                     }
                     if (g_timer_fullScanInterval > 0)
@@ -399,11 +399,11 @@ LRESULT CTrayWindow::DoCommand(int id)
                 m_watcher.ClearPaths();
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                 {
-                    std::wstring origPath  = it->origPath;
-                    std::wstring cryptPath = it->cryptPath;
-                    if ((it->syncDir == BothWays) || (it->syncDir == SrcToDst))
+                    std::wstring origPath  = it->m_origPath;
+                    std::wstring cryptPath = it->m_cryptPath;
+                    if ((it->m_syncDir == BothWays) || (it->m_syncDir == SrcToDst))
                         m_watcher.AddPath(origPath);
-                    if ((it->syncDir == BothWays) || (it->syncDir == DstToSrc))
+                    if ((it->m_syncDir == BothWays) || (it->m_syncDir == DstToSrc))
                         m_watcher.AddPath(cryptPath);
                 }
                 SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, nullptr);

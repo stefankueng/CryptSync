@@ -23,6 +23,7 @@
 #include "AeroControls.h"
 #include "FolderSync.h"
 #include "hyperlink.h"
+#include <atomic>
 
 /**
  * options dialog.
@@ -53,4 +54,5 @@ private:
     bool                           m_bNewerVersionAvailable;
     bool                           m_exitAfterSync;
     std::map<std::wstring, SyncOp> m_failures;
+    std::atomic<bool>              m_listInit;
 };

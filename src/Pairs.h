@@ -33,8 +33,9 @@ class PairData
 {
 public:
     PairData()
-        : encNames(false)
-        , syncDir(BothWays)
+        : m_enabled(true)
+        , m_encNames(false)
+        , m_syncDir(BothWays)
         , m_use7Z(false)
         , m_useGpg(false)
         , m_fat(false)
@@ -42,11 +43,12 @@ public:
     {
     }
 
-    std::wstring origPath;
-    std::wstring cryptPath;
-    std::wstring password;
-    bool         encNames;
-    SyncDir      syncDir;
+    bool         m_enabled;
+    std::wstring m_origPath;
+    std::wstring m_cryptPath;
+    std::wstring m_password;
+    bool         m_encNames;
+    SyncDir      m_syncDir;
     bool         m_use7Z;
     bool         m_useGpg;
     bool         m_fat;
@@ -75,14 +77,14 @@ public:
 
     friend bool operator<(const PairData& mk1, const PairData& mk2)
     {
-        if (mk1.origPath != mk2.origPath)
-            return mk1.origPath < mk2.origPath;
+        if (mk1.m_origPath != mk2.m_origPath)
+            return mk1.m_origPath < mk2.m_origPath;
 
-        return mk1.cryptPath < mk2.cryptPath;
+        return mk1.m_cryptPath < mk2.m_cryptPath;
     }
     friend bool operator==(const PairData& mk1, const PairData& mk2)
     {
-        return ((mk1.origPath == mk2.origPath) && (mk1.cryptPath == mk2.cryptPath));
+        return ((mk1.m_origPath == mk2.m_origPath) && (mk1.m_cryptPath == mk2.m_cryptPath));
     }
 
 private:
@@ -109,7 +111,8 @@ public:
     ~CPairs();
 
     void SavePairs();
-    bool AddPair(const std::wstring& orig,
+    bool AddPair(bool                enabled,
+                 const std::wstring& orig,
                  const std::wstring& crypt,
                  const std::wstring& password,
                  const std::wstring& cryptOnly,

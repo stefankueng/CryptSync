@@ -179,7 +179,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             syncDir = SrcToDst;
         if (mirrorback && !mirror)
             syncDir = DstToSrc;
-        pair.AddPair(src, dst, pw, ncp, cpy, nsy, compresssize, encnames, syncDir, use7Z, useGpg, fat);
+        pair.AddPair(true, src, dst, pw, ncp, cpy, nsy, compresssize, encnames, syncDir, use7Z, useGpg, fat);
         CFolderSync foldersync;
         if (decryptonly)
             foldersync.DecryptOnly(true);

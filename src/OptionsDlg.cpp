@@ -29,6 +29,7 @@
 #include "StringUtils.h"
 #include "CircularLog.h"
 #include "ResString.h"
+#include "OnOutOfScope.h"
 
 #include <string>
 #include <algorithm>
@@ -38,6 +39,7 @@ COptionsDlg::COptionsDlg(HWND hParent)
     : m_hParent(hParent)
     , m_bNewerVersionAvailable(false)
     , m_exitAfterSync(false)
+    , m_listInit(false)
 {
 }
 
@@ -173,7 +175,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             {
                 if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                 {
-                    if (g_pairs.AddPair(dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat))
+                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat))
                         InitPairList();
                     g_pairs.SavePairs();
                 }
@@ -194,14 +196,14 @@ LRESULT COptionsDlg::DoCommand(int id)
                     continue;
                 auto        t = g_pairs[iItem];
                 CPairAddDlg dlg(*this);
-                dlg.m_origPath     = t.origPath;
-                dlg.m_cryptPath    = t.cryptPath;
-                dlg.m_password     = t.password;
+                dlg.m_origPath     = t.m_origPath;
+                dlg.m_cryptPath    = t.m_cryptPath;
+                dlg.m_password     = t.m_password;
                 dlg.m_cryptOnly    = t.cryptOnly();
                 dlg.m_copyOnly     = t.copyOnly();
                 dlg.m_noSync       = t.noSync();
-                dlg.m_encNames     = t.encNames;
-                dlg.m_syncDir      = t.syncDir;
+                dlg.m_encNames     = t.m_encNames;
+                dlg.m_syncDir      = t.m_syncDir;
                 dlg.m_7ZExt        = t.m_use7Z;
                 dlg.m_useGpg       = t.m_useGpg;
                 dlg.m_fat          = t.m_fat;
@@ -211,7 +213,7 @@ LRESULT COptionsDlg::DoCommand(int id)
                     if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                     {
                         g_pairs.erase(g_pairs.begin() + iItem);
-                        if (g_pairs.AddPair(dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat))
+                        if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat))
                             InitPairList();
                         g_pairs.SavePairs();
                     }
@@ -305,8 +307,11 @@ LRESULT COptionsDlg::DoCommand(int id)
 
 void COptionsDlg::InitPairList()
 {
+    m_listInit = true;
+    OnOutOfScope(m_listInit = false);
+
     HWND  hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
-    DWORD exStyle      = LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT;
+    DWORD exStyle      = LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES;
     ListView_DeleteAllItems(hListControl);
 
     int c = Header_GetItemCount(ListView_GetHeader(hListControl)) - 1;
@@ -327,8 +332,8 @@ void COptionsDlg::InitPairList()
 
     for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
     {
-        std::wstring origPath  = it->origPath;
-        std::wstring cryptPath = it->cryptPath;
+        std::wstring origPath  = it->m_origPath;
+        std::wstring cryptPath = it->m_cryptPath;
         LVITEM       lv        = {0};
         lv.mask                = LVIF_TEXT;
         auto varBuf            = std::make_unique<WCHAR[]>(origPath.size() + 1);
@@ -354,6 +359,7 @@ void COptionsDlg::InitPairList()
             else
                 wcscpy_s(buf, L"none");
             ListView_SetItem(hListControl, &lv);
+            ListView_SetCheckState(hListControl, ret, it->m_enabled);
         }
     }
 
@@ -371,14 +377,14 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             auto t = g_pairs[lpNMItemActivate->iItem];
 
             CPairAddDlg dlg(*this);
-            dlg.m_origPath     = t.origPath;
-            dlg.m_cryptPath    = t.cryptPath;
-            dlg.m_password     = t.password;
+            dlg.m_origPath     = t.m_origPath;
+            dlg.m_cryptPath    = t.m_cryptPath;
+            dlg.m_password     = t.m_password;
             dlg.m_cryptOnly    = t.cryptOnly();
             dlg.m_copyOnly     = t.copyOnly();
             dlg.m_noSync       = t.noSync();
-            dlg.m_encNames     = t.encNames;
-            dlg.m_syncDir      = t.syncDir;
+            dlg.m_encNames     = t.m_encNames;
+            dlg.m_syncDir      = t.m_syncDir;
             dlg.m_7ZExt        = t.m_use7Z;
             dlg.m_useGpg       = t.m_useGpg;
             dlg.m_fat          = t.m_fat;
@@ -388,7 +394,7 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
                 if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                 {
                     g_pairs.erase(g_pairs.begin() + lpNMItemActivate->iItem);
-                    if (g_pairs.AddPair(dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat))
+                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat))
                         InitPairList();
                     g_pairs.SavePairs();
                 }
@@ -400,6 +406,12 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
         HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
         DialogEnableWindow(IDC_DELETEPAIR, (ListView_GetSelectedCount(hListControl)) > 0);
         DialogEnableWindow(IDC_EDITPAIR, (ListView_GetSelectedCount(hListControl)) == 1);
+        if (!m_listInit && (lpNMItemActivate->uNewState & LVIS_STATEIMAGEMASK) != 0 && (lpNMItemActivate->iItem >= 0) && (lpNMItemActivate->iItem < static_cast<int>(g_pairs.size())))
+        {
+            auto& t     = g_pairs[lpNMItemActivate->iItem];
+            t.m_enabled = ListView_GetCheckState(hListControl, lpNMItemActivate->iItem);
+            g_pairs.SavePairs();
+        }
     }
 }
 
