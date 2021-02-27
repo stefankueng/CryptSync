@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,15 +30,16 @@ class CTextDlg : public CDialog
 {
 public:
     CTextDlg(HWND hParent);
-    ~CTextDlg(void);
+    ~CTextDlg();
 
-    std::wstring            m_text;
+    std::wstring m_text;
+
 protected:
-    LRESULT CALLBACK        DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    LRESULT                 DoCommand(int id);
+    LRESULT CALLBACK DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+    LRESULT          DoCommand(int id);
 
 private:
-    HWND                    m_hParent;
-    AeroControlBase         m_aerocontrols;
-    CDlgResizer             m_resizer;
+    HWND            m_hParent;
+    AeroControlBase m_aerocontrols;
+    CDlgResizer     m_resizer;
 };

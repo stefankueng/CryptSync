@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012, 2014-2016 - Stefan Kueng
+// Copyright (C) 2012, 2014-2016, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,9 +25,8 @@
 #include <set>
 #include <map>
 
-#define READ_DIR_CHANGE_BUFFER_SIZE 4096
-#define MAX_CHANGED_PATHS  4000
-
+constexpr auto READ_DIR_CHANGE_BUFFER_SIZE = 4096;
+constexpr auto MAX_CHANGED_PATHS           = 4000;
 
 /**
  * \ingroup Utils
@@ -43,8 +42,8 @@
 class CPathWatcher
 {
 public:
-    CPathWatcher(void);
-    ~CPathWatcher(void);
+    CPathWatcher();
+    ~CPathWatcher();
 
     /**
      * Adds a new path to be watched. The path \b must point to a directory.
@@ -61,7 +60,12 @@ public:
     /**
      * Removes all watched paths
      */
-    void ClearPaths() { CAutoWriteLock locker(m_guard); watchedPaths.clear(); m_hCompPort.CloseHandle(); }
+    void ClearPaths()
+    {
+        CAutoWriteLock locker(m_guard);
+        watchedPaths.clear();
+        m_hCompPort.CloseHandle();
+    }
 
     /**
      * Returns the number of recursively watched paths.
@@ -78,7 +82,6 @@ public:
      */
     void Stop();
 
-
 private:
     static unsigned int __stdcall ThreadEntry(void* pContext);
     void WorkerThread();
@@ -86,12 +89,12 @@ private:
     void ClearInfoMap();
 
 private:
-    CReaderWriterLock       m_guard;
-    CAutoGeneralHandle      m_hThread;
-    CAutoGeneralHandle      m_hCompPort;
-    volatile LONG           m_bRunning;
+    CReaderWriterLock  m_guard;
+    CAutoGeneralHandle m_hThread;
+    CAutoGeneralHandle m_hCompPort;
+    volatile LONG      m_bRunning;
 
-    std::set<std::wstring>  watchedPaths;   ///< list of watched paths.
+    std::set<std::wstring> watchedPaths; ///< list of watched paths.
 
     /**
      * Helper class: provides information about watched directories.
@@ -99,25 +102,26 @@ private:
     class CDirWatchInfo
     {
     private:
-        CDirWatchInfo() = delete;
+        CDirWatchInfo()                       = delete;
         CDirWatchInfo(const CDirWatchInfo& i) = delete;
-        CDirWatchInfo & operator=(const CDirWatchInfo & rhs) = delete;
+        CDirWatchInfo& operator=(const CDirWatchInfo& rhs) = delete;
+
     public:
-        CDirWatchInfo(CAutoFile && hDir, const std::wstring& DirectoryName);
+        CDirWatchInfo(CAutoFile&& hDir, const std::wstring& directoryName);
         ~CDirWatchInfo();
 
     public:
-        bool            CloseDirectoryHandle();
+        bool CloseDirectoryHandle();
 
-        CAutoFile       m_hDir;         ///< handle to the directory that we're watching
-        std::wstring    m_DirName;      ///< the directory that we're watching
-        CHAR            m_Buffer[READ_DIR_CHANGE_BUFFER_SIZE]; ///< buffer for ReadDirectoryChangesW
-        OVERLAPPED      m_Overlapped;
-        std::wstring    m_DirPath;      ///< the directory name we're watching with a backslash at the end
+        CAutoFile    m_hDir;                                ///< handle to the directory that we're watching
+        std::wstring m_dirName;                             ///< the directory that we're watching
+        CHAR         m_buffer[READ_DIR_CHANGE_BUFFER_SIZE]; ///< buffer for ReadDirectoryChangesW
+        OVERLAPPED   m_overlapped;
+        std::wstring m_dirPath; ///< the directory name we're watching with a backslash at the end
     };
 
-    std::map<HANDLE, CDirWatchInfo *> watchInfoMap;
+    std::map<HANDLE, CDirWatchInfo*> m_watchInfoMap;
 
-    HDEVNOTIFY              m_hdev;
-    std::set<std::wstring>  m_changedPaths;
+    HDEVNOTIFY             m_hDev;
+    std::set<std::wstring> m_changedPaths;
 };

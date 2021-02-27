@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,7 +27,7 @@ CTextDlg::CTextDlg(HWND hParent)
 {
 }
 
-CTextDlg::~CTextDlg(void)
+CTextDlg::~CTextDlg()
 {
 }
 
@@ -36,7 +36,7 @@ LRESULT CTextDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     UNREFERENCED_PARAMETER(lParam);
     switch (uMsg)
     {
-    case WM_INITDIALOG:
+        case WM_INITDIALOG:
         {
             InitDialog(hwndDlg, IDI_CryptSync);
 
@@ -49,23 +49,23 @@ LRESULT CTextDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (m_dwm.IsDwmCompositionEnabled())
                 m_resizer.UseSizeGrip(false);
         }
-        return TRUE;
-    case WM_COMMAND:
-        return DoCommand(LOWORD(wParam));
-    case WM_SIZE:
+            return TRUE;
+        case WM_COMMAND:
+            return DoCommand(LOWORD(wParam));
+        case WM_SIZE:
         {
             m_resizer.DoResize(LOWORD(lParam), HIWORD(lParam));
         }
         break;
-    case WM_GETMINMAXINFO:
+        case WM_GETMINMAXINFO:
         {
-            MINMAXINFO * mmi = (MINMAXINFO*)lParam;
+            MINMAXINFO* mmi       = reinterpret_cast<MINMAXINFO*>(lParam);
             mmi->ptMinTrackSize.x = m_resizer.GetDlgRect()->right;
             mmi->ptMinTrackSize.y = m_resizer.GetDlgRect()->bottom;
         }
         break;
-    default:
-        return FALSE;
+        default:
+            return FALSE;
     }
     return FALSE;
 }
@@ -74,10 +74,10 @@ LRESULT CTextDlg::DoCommand(int id)
 {
     switch (id)
     {
-    case IDOK:
-    case IDCANCEL:
-        EndDialog(*this, id);
-        break;
+        case IDOK:
+        case IDCANCEL:
+            EndDialog(*this, id);
+            break;
     }
     return 1;
 }

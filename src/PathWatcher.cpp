@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016 - Stefan Kueng
+// Copyright (C) 2012-2016, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,39 +24,37 @@
 #include <Dbt.h>
 #include <process.h>
 
-
-CPathWatcher::CPathWatcher(void)
-    : m_hCompPort(NULL)
+CPathWatcher::CPathWatcher()
+    : m_hCompPort(nullptr)
     , m_bRunning(TRUE)
 {
     // enable the required privileges for this process
 
-    LPCTSTR arPrivelegeNames[] = { SE_BACKUP_NAME,
-                                   SE_RESTORE_NAME,
-                                   SE_CHANGE_NOTIFY_NAME
-                                 };
+    LPCTSTR arPrivelegeNames[] = {SE_BACKUP_NAME,
+                                  SE_RESTORE_NAME,
+                                  SE_CHANGE_NOTIFY_NAME};
 
-    for (int i=0; i< _countof(arPrivelegeNames); ++i)
+    for (int i = 0; i < _countof(arPrivelegeNames); ++i)
     {
         CAutoGeneralHandle hToken;
         if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, hToken.GetPointer()))
         {
-            TOKEN_PRIVILEGES tp = { 1 };
+            TOKEN_PRIVILEGES tp = {1};
 
-            if (LookupPrivilegeValue(NULL, arPrivelegeNames[i],  &tp.Privileges[0].Luid))
+            if (LookupPrivilegeValue(nullptr, arPrivelegeNames[i], &tp.Privileges[0].Luid))
             {
                 tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
-                AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), NULL, NULL);
+                AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), nullptr, nullptr);
             }
         }
     }
 
     unsigned int threadId = 0;
-    m_hThread = (HANDLE)_beginthreadex(NULL,0,ThreadEntry,this,0,&threadId);
+    m_hThread             = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, ThreadEntry, this, 0, &threadId));
 }
 
-CPathWatcher::~CPathWatcher(void)
+CPathWatcher::~CPathWatcher()
 {
     Stop();
     CAutoWriteLock locker(m_guard);
@@ -68,7 +66,7 @@ void CPathWatcher::Stop()
     InterlockedExchange(&m_bRunning, FALSE);
     if (m_hCompPort)
     {
-        PostQueuedCompletionStatus(m_hCompPort, 0, NULL, NULL);
+        PostQueuedCompletionStatus(m_hCompPort, 0, NULL, nullptr);
         m_hCompPort.CloseHandle();
     }
 
@@ -101,27 +99,26 @@ bool CPathWatcher::AddPath(const std::wstring& path)
     return true;
 }
 
-
 unsigned int CPathWatcher::ThreadEntry(void* pContext)
 {
-    ((CPathWatcher*)pContext)->WorkerThread();
+    static_cast<CPathWatcher*>(pContext)->WorkerThread();
     return 0;
 }
 
 void CPathWatcher::WorkerThread()
 {
-    DWORD numBytes;
-    CDirWatchInfo * pdi = NULL;
-    LPOVERLAPPED lpOverlapped;
-    const int bufferSize = MAX_PATH * 4;
-    TCHAR buf[bufferSize] = {0};
+    DWORD          numBytes;
+    CDirWatchInfo* pdi = nullptr;
+    LPOVERLAPPED   lpOverlapped;
+    const int      bufferSize      = MAX_PATH * 4;
+    TCHAR          buf[bufferSize] = {0};
     while (m_bRunning)
     {
         if (!watchedPaths.empty())
         {
             if (!m_hCompPort || !GetQueuedCompletionStatus(m_hCompPort,
                                                            &numBytes,
-                                                           (PULONG_PTR) &pdi,
+                                                           reinterpret_cast<PULONG_PTR>(&pdi),
                                                            &lpOverlapped,
                                                            INFINITE))
             {
@@ -134,7 +131,7 @@ void CPathWatcher::WorkerThread()
                     ClearInfoMap();
                 }
                 DWORD lasterr = GetLastError();
-                if ((m_hCompPort)&&(lasterr!=ERROR_SUCCESS)&&(lasterr!=ERROR_INVALID_HANDLE))
+                if ((m_hCompPort) && (lasterr != ERROR_SUCCESS) && (lasterr != ERROR_INVALID_HANDLE))
                 {
                     m_hCompPort.CloseHandle();
                 }
@@ -144,46 +141,46 @@ void CPathWatcher::WorkerThread()
                     CAutoFile hDir = CreateFile(p->c_str(),
                                                 FILE_LIST_DIRECTORY,
                                                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                                                NULL, //security attributes
+                                                nullptr, //security attributes
                                                 OPEN_EXISTING,
                                                 FILE_FLAG_BACKUP_SEMANTICS | //required privileges: SE_BACKUP_NAME and SE_RESTORE_NAME.
-                                                FILE_FLAG_OVERLAPPED,
-                                                NULL);
+                                                    FILE_FLAG_OVERLAPPED,
+                                                nullptr);
                     if (!hDir)
                     {
                         // this could happen if a watched folder has been removed/renamed
                         m_hCompPort.CloseHandle();
-                        CAutoWriteLock lockerw(m_guard);
+                        CAutoWriteLock lockerW(m_guard);
                         watchedPaths.erase(p);
                         break;
                     }
 
-                    std::unique_ptr<CDirWatchInfo> pDirInfo (new CDirWatchInfo(std::move(hDir), p->c_str()));
-                    m_hCompPort = CreateIoCompletionPort(pDirInfo->m_hDir, m_hCompPort, (ULONG_PTR)pDirInfo.get(), 0);
+                    auto pDirInfo = std::make_unique<CDirWatchInfo>(std::move(hDir), p->c_str());
+                    m_hCompPort   = CreateIoCompletionPort(pDirInfo->m_hDir, m_hCompPort, reinterpret_cast<ULONG_PTR>(pDirInfo.get()), 0);
                     if (m_hCompPort == NULL)
                     {
-                        CAutoWriteLock lockerw(m_guard);
+                        CAutoWriteLock lockerW(m_guard);
                         ClearInfoMap();
                         watchedPaths.erase(p);
                         break;
                     }
                     if (!ReadDirectoryChangesW(pDirInfo->m_hDir,
-                                                pDirInfo->m_Buffer,
-                                                READ_DIR_CHANGE_BUFFER_SIZE,
-                                                TRUE,
-                                                FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE,
-                                                &numBytes,// not used
-                                                &pDirInfo->m_Overlapped,
-                                                NULL))  //no completion routine!
+                                               pDirInfo->m_buffer,
+                                               READ_DIR_CHANGE_BUFFER_SIZE,
+                                               TRUE,
+                                               FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE,
+                                               &numBytes, // not used
+                                               &pDirInfo->m_overlapped,
+                                               nullptr)) //no completion routine!
                     {
-                        CAutoWriteLock lockerw(m_guard);
+                        CAutoWriteLock lockerW(m_guard);
                         ClearInfoMap();
                         watchedPaths.erase(p);
                         break;
                     }
                     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": watching path %s\n"), p->c_str());
-                    CAutoWriteLock lockerw(m_guard);
-                    watchInfoMap[pDirInfo->m_hDir] = pDirInfo.get();
+                    CAutoWriteLock lockerW(m_guard);
+                    m_watchInfoMap[pDirInfo->m_hDir] = pDirInfo.get();
                     pDirInfo.release();
                 }
             }
@@ -200,42 +197,42 @@ void CPathWatcher::WorkerThread()
                     {
                         goto continuewatching;
                     }
-                    PFILE_NOTIFY_INFORMATION pnotify = (PFILE_NOTIFY_INFORMATION)pdi->m_Buffer;
-                    if ((ULONG_PTR)pnotify - (ULONG_PTR)pdi->m_Buffer > READ_DIR_CHANGE_BUFFER_SIZE)
+                    PFILE_NOTIFY_INFORMATION pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(pdi->m_buffer);
+                    if (reinterpret_cast<ULONG_PTR>(pnotify) - reinterpret_cast<ULONG_PTR>(pdi->m_buffer) > READ_DIR_CHANGE_BUFFER_SIZE)
                         goto continuewatching;
                     DWORD nOffset = pnotify->NextEntryOffset;
                     do
                     {
                         nOffset = pnotify->NextEntryOffset;
-                        SecureZeroMemory(buf, bufferSize*sizeof(TCHAR));
-                        wcsncpy_s(buf, bufferSize, pdi->m_DirPath.c_str(), bufferSize);
-                        errno_t err = wcsncat_s(buf+pdi->m_DirPath.size(), bufferSize-pdi->m_DirPath.size(), pnotify->FileName, min(pnotify->FileNameLength/sizeof(WCHAR), bufferSize-pdi->m_DirPath.size()));
+                        SecureZeroMemory(buf, bufferSize * sizeof(TCHAR));
+                        wcsncpy_s(buf, bufferSize, pdi->m_dirPath.c_str(), bufferSize);
+                        errno_t err = wcsncat_s(buf + pdi->m_dirPath.size(), bufferSize - pdi->m_dirPath.size(), pnotify->FileName, min(pnotify->FileNameLength / sizeof(WCHAR), bufferSize - pdi->m_dirPath.size()));
                         if (err == STRUNCATE)
                         {
-                            pnotify = (PFILE_NOTIFY_INFORMATION)((LPBYTE)pnotify + nOffset);
+                            pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
                             continue;
                         }
-                        buf[min(bufferSize-1, pdi->m_DirPath.size()+(pnotify->FileNameLength/sizeof(WCHAR)))] = 0;
-                        pnotify = (PFILE_NOTIFY_INFORMATION)((LPBYTE)pnotify + nOffset);
+                        buf[min(bufferSize - 1, pdi->m_dirPath.size() + (pnotify->FileNameLength / sizeof(WCHAR)))] = 0;
+                        pnotify                                                                                     = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
                         CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": change notification for %s\n"), buf);
                         {
                             CAutoWriteLock locker(m_guard);
                             m_changedPaths.insert(std::wstring(buf));
                         }
-                        if ((ULONG_PTR)pnotify - (ULONG_PTR)pdi->m_Buffer > READ_DIR_CHANGE_BUFFER_SIZE)
+                        if (reinterpret_cast<ULONG_PTR>(pnotify) - reinterpret_cast<ULONG_PTR>(pdi->m_buffer) > READ_DIR_CHANGE_BUFFER_SIZE)
                             break;
                     } while (nOffset);
-continuewatching:
-                    SecureZeroMemory(pdi->m_Buffer, sizeof(pdi->m_Buffer));
-                    SecureZeroMemory(&pdi->m_Overlapped, sizeof(pdi->m_Overlapped));
+                continuewatching:
+                    SecureZeroMemory(pdi->m_buffer, sizeof(pdi->m_buffer));
+                    SecureZeroMemory(&pdi->m_overlapped, sizeof(pdi->m_overlapped));
                     if (!ReadDirectoryChangesW(pdi->m_hDir,
-                                                pdi->m_Buffer,
-                                                READ_DIR_CHANGE_BUFFER_SIZE,
-                                                TRUE,
-                                                FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE,
-                                                &numBytes,// not used
-                                                &pdi->m_Overlapped,
-                                                NULL))  //no completion routine!
+                                               pdi->m_buffer,
+                                               READ_DIR_CHANGE_BUFFER_SIZE,
+                                               TRUE,
+                                               FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE,
+                                               &numBytes, // not used
+                                               &pdi->m_overlapped,
+                                               nullptr)) //no completion routine!
                     {
                         // Since the call to ReadDirectoryChangesW failed, just
                         // wait a while. We don't want to have this thread
@@ -245,45 +242,45 @@ continuewatching:
                     }
                 }
             }
-        }// if (watchedPaths.GetCount())
+        } // if (watchedPaths.GetCount())
         else
             Sleep(200);
-    }// while (m_bRunning)
+    } // while (m_bRunning)
 }
 
 void CPathWatcher::ClearInfoMap()
 {
-    if (!watchInfoMap.empty())
+    if (!m_watchInfoMap.empty())
     {
         CAutoWriteLock locker(m_guard);
-        for (std::map<HANDLE, CDirWatchInfo *>::iterator I = watchInfoMap.begin(); I != watchInfoMap.end(); ++I)
+        for (std::map<HANDLE, CDirWatchInfo*>::iterator I = m_watchInfoMap.begin(); I != m_watchInfoMap.end(); ++I)
         {
-            CPathWatcher::CDirWatchInfo * info = I->second;
+            CPathWatcher::CDirWatchInfo* info = I->second;
             delete info;
-            info = NULL;
+            info = nullptr;
         }
     }
-    watchInfoMap.clear();
+    m_watchInfoMap.clear();
     m_hCompPort.CloseHandle();
 }
 
 std::set<std::wstring> CPathWatcher::GetChangedPaths()
 {
-    CAutoWriteLock locker(m_guard);
+    CAutoWriteLock         locker(m_guard);
     std::set<std::wstring> ret = m_changedPaths;
     m_changedPaths.clear();
     return ret;
 }
 
-CPathWatcher::CDirWatchInfo::CDirWatchInfo(CAutoFile && hDir, const std::wstring& DirectoryName)
+CPathWatcher::CDirWatchInfo::CDirWatchInfo(CAutoFile&& hDir, const std::wstring& directoryName)
     : m_hDir(std::move(hDir))
-    , m_DirName(DirectoryName)
+    , m_dirName(directoryName)
 {
-    m_Buffer[0] = 0;
-    SecureZeroMemory(&m_Overlapped, sizeof(m_Overlapped));
-    m_DirPath = m_DirName;
-    if (m_DirPath.at(m_DirPath.size()-1) != '\\')
-        m_DirPath += _T("\\");
+    m_buffer[0] = 0;
+    SecureZeroMemory(&m_overlapped, sizeof(m_overlapped));
+    m_dirPath = m_dirName;
+    if (m_dirPath.at(m_dirPath.size() - 1) != '\\')
+        m_dirPath += _T("\\");
 }
 
 CPathWatcher::CDirWatchInfo::~CDirWatchInfo()
