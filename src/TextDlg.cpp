@@ -46,8 +46,8 @@ LRESULT CTextDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             m_resizer.Init(hwndDlg);
             m_resizer.AddControl(hwndDlg, IDC_RICHTEXT, RESIZER_TOPLEFTBOTTOMRIGHT);
             m_resizer.AddControl(hwndDlg, IDOK, RESIZER_BOTTOMRIGHT);
-            if (m_Dwm.IsDwmCompositionEnabled())
-                m_resizer.ShowSizeGrip(false);
+            if (m_dwm.IsDwmCompositionEnabled())
+                m_resizer.UseSizeGrip(false);
         }
         return TRUE;
     case WM_COMMAND:

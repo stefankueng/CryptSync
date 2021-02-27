@@ -25,6 +25,7 @@
 #include <Commdlg.h>
 #include <cctype>
 #include <algorithm>
+#include <shlwapi.h>
 
 CPairAddDlg::CPairAddDlg(HWND hParent)
     : m_encnames(false)

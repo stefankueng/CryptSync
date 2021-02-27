@@ -23,10 +23,12 @@
 #include "Ignores.h"
 #include "UpdateDlg.h"
 #include "DebugOutput.h"
+#include "ResString.h"
 #include "CircularLog.h"
 
 #include <WindowsX.h>
 #include <process.h>
+
 
 #define TIMER_DETECTCHANGES 100
 #define TIMER_DETECTCHANGESINTERVAL 10000

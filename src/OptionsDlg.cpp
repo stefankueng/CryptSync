@@ -28,10 +28,12 @@
 #include "Ignores.h"
 #include "StringUtils.h"
 #include "CircularLog.h"
+#include "ResString.h"
 
 #include <string>
 #include <algorithm>
 #include <Commdlg.h>
+
 
 COptionsDlg::COptionsDlg(HWND hParent)
     : m_hParent(hParent)

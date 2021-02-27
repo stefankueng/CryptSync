@@ -24,10 +24,12 @@
 #include "Registry.h"
 #include "PathWatcher.h"
 #include "FolderSync.h"
+#include "ResString.h"
 
 #include <shellapi.h>
 #include <shlwapi.h>
 #include <commctrl.h>
+
 
 
 class CTrayWindow : public CWindow
