@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016, 2019 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2019, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,43 +25,39 @@
 #include "CircularLog.h"
 #include "resource.h"
 
-
-#define MAX_LOADSTRING 100
+constexpr auto MAX_LOADSTRING = 100;
 
 // Global Variables:
-HINSTANCE hInst;                                // current instance
-TCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-TCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-CPairs g_pairs;
+HINSTANCE hInst;                         // current instance
+TCHAR     szTitle[MAX_LOADSTRING];       // The title bar text
+TCHAR     szWindowClass[MAX_LOADSTRING]; // the main window class name
+CPairs    g_pairs;
 
 // Forward declarations of functions included in this code module:
-ATOM                MyRegisterClass(HINSTANCE hInstance);
-BOOL                InitInstance(HINSTANCE, int);
-LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
 std::wstring GetMutexID()
 {
-    std::wstring t;
+    std::wstring       t;
     CAutoGeneralHandle token;
-    BOOL result = OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, token.GetPointer());
-    if(result)
+    const BOOL         result = OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, token.GetPointer());
+    if (result)
     {
         DWORD len = 0;
-        GetTokenInformation(token, TokenStatistics, NULL, 0, &len);
-        if (len >= sizeof (TOKEN_STATISTICS))
+        GetTokenInformation(token, TokenStatistics, nullptr, 0, &len);
+        if (len >= sizeof(TOKEN_STATISTICS))
         {
-            std::unique_ptr<BYTE[]> data (new BYTE[len]);
+            auto data = std::make_unique<BYTE[]>(len);
             GetTokenInformation(token, TokenStatistics, data.get(), len, &len);
-            LUID uid = ((PTOKEN_STATISTICS)data.get())->AuthenticationId;
-            wchar_t buf[100] = {0};
+            const LUID uid      = reinterpret_cast<PTOKEN_STATISTICS>(data.get())->AuthenticationId;
+            wchar_t    buf[100] = {0};
             swprintf_s(buf, L"{81C34844-03AC-4DAA-865B-BC51F07F7F9E}-%08x%08x", uid.HighPart, uid.LowPart);
             t = buf;
         }
     }
     return t;
 }
-
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                        HINSTANCE hPrevInstance,
@@ -72,10 +68,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(nCmdShow);
 
     SetDllDirectory(L"");
-    OleInitialize(NULL);
-    CoInitializeEx(0, COINIT_APARTMENTTHREADED);
+    OleInitialize(nullptr);
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     LoadLibrary(L"riched32.dll");
-
 
     CCmdLineParser parser(lpCmdLine);
     if (parser.HasKey(L"?") || parser.HasKey(L"help"))
@@ -105,12 +100,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"2: Access denied\n"
                              L"4: en/decryption error\n"
                              L"8: copy error";
-        MessageBox(NULL, sInfo.c_str(), L"CryptSync Command Line Options", MB_ICONINFORMATION);
+        MessageBox(nullptr, sInfo.c_str(), L"CryptSync Command Line Options", MB_ICONINFORMATION);
         return 1;
     }
 
-    std::wstring lp  =   parser.HasVal(L"logpath") ? parser.GetVal(L"logpath") : L"";
-    int maxlog       =   parser.HasVal(L"maxlog") ? parser.GetLongVal(L"maxlog") : 10000;
+    std::wstring lp     = parser.HasVal(L"logpath") ? parser.GetVal(L"logpath") : L"";
+    int          maxlog = parser.HasVal(L"maxlog") ? parser.GetLongVal(L"maxlog") : 10000;
 
     if (lp.empty())
     {
@@ -122,18 +117,18 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         {
             // CryptSync was not installed, which means it's run as a portable app:
             // use the same directory as the exe is in to store the application data
-            DWORD len = 0;
-            DWORD bufferlen = MAX_PATH;     // MAX_PATH is not the limit here!
-            std::unique_ptr<wchar_t[]> path(new wchar_t[bufferlen]);
+            DWORD len       = 0;
+            DWORD bufferLen = MAX_PATH; // MAX_PATH is not the limit here!
+            auto  path      = std::make_unique<wchar_t[]>(bufferLen);
             do
             {
-                bufferlen += MAX_PATH;      // MAX_PATH is not the limit here!
-                path = std::unique_ptr<wchar_t[]>(new wchar_t[bufferlen]);
-                len = GetModuleFileName(hInst, path.get(), bufferlen);
-            } while(len == bufferlen);
+                bufferLen += MAX_PATH; // MAX_PATH is not the limit here!
+                path = std::unique_ptr<wchar_t[]>(new wchar_t[bufferLen]);
+                len  = GetModuleFileName(hInst, path.get(), bufferLen);
+            } while (len == bufferLen);
             std::wstring sPath = path.get();
-            sPath = sPath.substr(0, sPath.find_last_of('\\'));
-            lp = CPathUtils::GetLongPathname(sPath);
+            sPath              = sPath.substr(0, sPath.find_last_of('\\'));
+            lp                 = CPathUtils::GetLongPathname(sPath);
             lp += L"\\CryptSync.log";
         }
         else
@@ -141,10 +136,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             RegCloseKey(subKey);
             // CryptSync is installed: we must not store the application data
             // in the same directory as the exe is but in %APPDATA%\CryptSync instead
-            WCHAR outpath[MAX_PATH] = {0};
-            if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, outpath)))
+            WCHAR outPath[MAX_PATH] = {0};
+            if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, outPath)))
             {
-                lp = outpath;
+                lp = outPath;
                 lp += L"\\CryptSync";
                 lp = CPathUtils::GetLongPathname(lp);
                 lp += L"\\CryptSync.log";
@@ -157,21 +152,21 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     if (parser.HasVal(L"src") && parser.HasVal(L"dst"))
     {
-        std::wstring src =   parser.GetVal(L"src");
-        std::wstring dst =   parser.GetVal(L"dst");
-        std::wstring pw  =   parser.HasVal(L"pw") ? parser.GetVal(L"pw") : L"";
-        std::wstring ncp =   parser.HasVal(L"ncp") ? parser.GetVal(L"ncp") : L"";
-        std::wstring cpy =   parser.HasVal(L"cpy") ? parser.GetVal(L"cpy") : L"";
-        std::wstring nsy =   parser.HasVal(L"nsy") ? parser.GetVal(L"nsy") : L"";
-        bool encnames    = !!parser.HasKey(L"encnames");
-        bool mirror      = !!parser.HasKey(L"mirror");
-        bool mirrorback  = !!parser.HasKey(L"mirrorback");
-        bool decryptonly = !!parser.HasKey(L"decryptonly");
-        bool use7z       = !!parser.HasKey(L"use7z");
-        bool useGPG      = !!parser.HasKey(L"useGPG");
-        bool fat         = !!parser.HasKey(L"fat");
-        int compresssize = _wtoi(parser.GetVal(L"compresssize"));
-        std::wstring ign =   parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
+        std::wstring src          = parser.GetVal(L"src");
+        std::wstring dst          = parser.GetVal(L"dst");
+        std::wstring pw           = parser.HasVal(L"pw") ? parser.GetVal(L"pw") : L"";
+        std::wstring ncp          = parser.HasVal(L"ncp") ? parser.GetVal(L"ncp") : L"";
+        std::wstring cpy          = parser.HasVal(L"cpy") ? parser.GetVal(L"cpy") : L"";
+        std::wstring nsy          = parser.HasVal(L"nsy") ? parser.GetVal(L"nsy") : L"";
+        bool         encnames     = !!parser.HasKey(L"encnames");
+        bool         mirror       = !!parser.HasKey(L"mirror");
+        bool         mirrorback   = !!parser.HasKey(L"mirrorback");
+        bool         decryptonly  = !!parser.HasKey(L"decryptonly");
+        bool         use7Z        = !!parser.HasKey(L"use7z");
+        bool         useGpg       = !!parser.HasKey(L"useGPG");
+        bool         fat          = !!parser.HasKey(L"fat");
+        int          compresssize = _wtoi(parser.GetVal(L"compresssize"));
+        std::wstring ign          = parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
 
         CIgnores::Instance().Reload();
         if (!ign.empty())
@@ -184,11 +179,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             syncDir = SrcToDst;
         if (mirrorback && !mirror)
             syncDir = DstToSrc;
-        pair.AddPair(src, dst, pw, ncp, cpy, nsy, compresssize, encnames, syncDir, use7z, useGPG, fat);
+        pair.AddPair(src, dst, pw, ncp, cpy, nsy, compresssize, encnames, syncDir, use7Z, useGpg, fat);
         CFolderSync foldersync;
         if (decryptonly)
             foldersync.DecryptOnly(true);
-        auto ret = foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
+        const auto ret = foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : nullptr);
         CCircularLog::Instance()(L"INFO:    exiting CryptSync");
         CCircularLog::Instance().Save();
         return ret;
@@ -197,9 +192,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     {
         CIgnores::Instance().Reload();
 
-        CPairs pair;
+        CPairs      pair;
         CFolderSync foldersync;
-        auto ret = foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : NULL);
+        const auto  ret = foldersync.SyncFoldersWait(pair, parser.HasKey(L"progress") ? GetDesktopWindow() : nullptr);
         CCircularLog::Instance()(L"INFO:    exiting CryptSync");
         CCircularLog::Instance().Save();
         return ret;
@@ -207,7 +202,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     MSG msg;
 
-    HANDLE hReloadProtection = ::CreateMutex(NULL, FALSE, GetMutexID().c_str());
+    HANDLE hReloadProtection = ::CreateMutex(nullptr, FALSE, GetMutexID().c_str());
     if ((!hReloadProtection) || (GetLastError() == ERROR_ALREADY_EXISTS))
     {
         // An instance of CryptSync is already running
@@ -220,7 +215,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         return 0;
     }
 
-
     CTrayWindow trayWindow(hInstance);
     trayWindow.ShowDialogImmediately(!parser.HasKey(L"tray"));
 
@@ -228,7 +222,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     {
         HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CryptSync));
         // Main message loop:
-        while (GetMessage(&msg, NULL, 0, 0))
+        while (GetMessage(&msg, nullptr, 0, 0))
         {
             if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
             {
@@ -236,7 +230,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                 DispatchMessage(&msg);
             }
         }
-        return (int) msg.wParam;
+        return static_cast<int>(msg.wParam);
     }
 
     CoUninitialize();
