@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016, 2018-2019 - Stefan Kueng
+// Copyright (C) 2012-2016, 2018-2019, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,9 +42,9 @@ public:
     {
     }
 
-    std::wstring    filerelpath;            ///< real filename, possibly encrypted
-    FILETIME        ft;
-    bool            filenameEncrypted;      ///< if the filename is encrypted
+    std::wstring fileRelPath; ///< real filename, possibly encrypted
+    FILETIME     ft;
+    bool         filenameEncrypted; ///< if the filename is encrypted
 };
 
 enum SyncOp
@@ -54,56 +54,56 @@ enum SyncOp
     Decrypt,
 };
 
-const int ErrorNone = 0;
+const int ErrorNone      = 0;
 const int ErrorCancelled = 1;
-const int ErrorAccess = 2;
-const int ErrorCrypt = 4;
-const int ErrorCopy = 8;
+const int ErrorAccess    = 2;
+const int ErrorCrypt     = 4;
+const int ErrorCopy      = 8;
 
 class CFolderSync
 {
 public:
-    CFolderSync(void);
-    ~CFolderSync(void);
+    CFolderSync();
+    ~CFolderSync();
 
-    void                            SyncFolders(const PairVector& pv, HWND hWnd = NULL);
-    int                             SyncFoldersWait(const PairVector& pv, HWND hWnd = NULL);
-    void                            SyncFile(const std::wstring& path);
-    void                            SetPairs(const PairVector& pv);
-    void                            Stop();
-    std::map<std::wstring, SyncOp>  GetFailures();
-    std::set<std::wstring>          GetNotifyIgnores();
-    size_t                          GetFailureCount();
-    void                            SetTrayWnd(HWND hTray) { m_TrayWnd = hTray; }
-    void                            DecryptOnly(bool b) { m_decryptonly = b; }
+    void                           SyncFolders(const PairVector& pv, HWND hWnd = nullptr);
+    int                            SyncFoldersWait(const PairVector& pv, HWND hWnd = nullptr);
+    void                           SyncFile(const std::wstring& path);
+    void                           SetPairs(const PairVector& pv);
+    void                           Stop();
+    std::map<std::wstring, SyncOp> GetFailures();
+    std::set<std::wstring>         GetNotifyIgnores();
+    size_t                         GetFailureCount();
+    void                           SetTrayWnd(HWND hTray) { m_trayWnd = hTray; }
+    void                           DecryptOnly(bool b) { m_decryptOnly = b; }
 
 private:
-    static unsigned int __stdcall   SyncFolderThreadEntry(void* pContext);
-    void                            SyncFile(const std::wstring& path, const PairData& pt);
-    int                             SyncFolderThread();
-    int                             SyncFolder(const PairData& pt);
-    std::map<std::wstring, FileData, ci_lessW> GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7z, bool useGPG, DWORD & error) const;
-    bool                            EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG, bool noCompress, int compresssize);
-    bool                            DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGPG);
-    static std::wstring             GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG);
-    static std::wstring             GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7z, bool useGPG);
-    static std::wstring             GetFileTimeStringForLog(const FILETIME & ft);
-    bool                            RunGPG(LPWSTR cmdline, const std::wstring& cwd) const;
+    static unsigned int __stdcall SyncFolderThreadEntry(void* pContext);
+    void                                       SyncFile(const std::wstring& path, const PairData& pt);
+    int                                        SyncFolderThread();
+    int                                        SyncFolder(const PairData& pt);
+    std::map<std::wstring, FileData, ci_lessW> GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7Z, bool useGpg, DWORD& error) const;
+    bool                                       EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGpg, bool noCompress, int compresssize);
+    bool                                       DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGpg);
+    static std::wstring                        GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7Z, bool useGpg);
+    static std::wstring                        GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7Z, bool useGpg);
+    static std::wstring                        GetFileTimeStringForLog(const FILETIME& ft);
+    bool                                       RunGPG(LPWSTR cmdline, const std::wstring& cwd) const;
 
-    CReaderWriterLock               m_guard;
-    CReaderWriterLock               m_failureguard;
-    CReaderWriterLock               m_notignguard;
-    PairVector                      m_pairs;
-    std::wstring                    m_GnuPG;
-    HWND                            m_parentWnd;
-    HWND                            m_TrayWnd;
-    CProgressDlg *                  m_pProgDlg;
-    DWORD                           m_progress;
-    DWORD                           m_progressTotal;
-    volatile LONG                   m_bRunning;
-    CAutoGeneralHandle              m_hThread;
-    PairData                        m_currentPath;
-    std::map<std::wstring, SyncOp>  m_failures;
-    std::set<std::wstring>          m_notifyignores;
-    bool                            m_decryptonly;
+    CReaderWriterLock              m_guard;
+    CReaderWriterLock              m_failureGuard;
+    CReaderWriterLock              m_notingGuard;
+    PairVector                     m_pairs;
+    std::wstring                   m_gnuPg;
+    HWND                           m_parentWnd;
+    HWND                           m_trayWnd;
+    CProgressDlg*                  m_pProgDlg;
+    DWORD                          m_progress;
+    DWORD                          m_progressTotal;
+    volatile LONG                  m_bRunning;
+    CAutoGeneralHandle             m_hThread;
+    PairData                       m_currentPath;
+    std::map<std::wstring, SyncOp> m_failures;
+    std::set<std::wstring>         m_notifyIgnores;
+    bool                           m_decryptOnly;
 };
