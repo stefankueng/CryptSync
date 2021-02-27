@@ -203,7 +203,7 @@ LRESULT COptionsDlg::DoCommand(int id)
                 dlg.m_encNames     = t.encNames;
                 dlg.m_syncDir      = t.syncDir;
                 dlg.m_7ZExt        = t.m_use7Z;
-                dlg.m_useGpg      = t.m_useGpg;
+                dlg.m_useGpg       = t.m_useGpg;
                 dlg.m_fat          = t.m_fat;
                 dlg.m_compressSize = t.m_compressSize;
                 if (dlg.DoModal(hResource, IDD_PAIRADD, *this) == IDOK)
@@ -331,7 +331,7 @@ void COptionsDlg::InitPairList()
         std::wstring cryptPath = it->cryptPath;
         LVITEM       lv        = {0};
         lv.mask                = LVIF_TEXT;
-        std::unique_ptr<WCHAR[]> varBuf(new WCHAR[origPath.size() + 1]);
+        auto varBuf            = std::make_unique<WCHAR[]>(origPath.size() + 1);
         _tcscpy_s(varBuf.get(), origPath.size() + 1, origPath.c_str());
         lv.pszText = varBuf.get();
         lv.iItem   = ListView_GetItemCount(hListControl);
@@ -340,7 +340,7 @@ void COptionsDlg::InitPairList()
         {
             lv.iItem    = ret;
             lv.iSubItem = 1;
-            varBuf      = std::unique_ptr<WCHAR[]>(new TCHAR[cryptPath.size() + 1]);
+            varBuf      = std::make_unique<WCHAR[]>(cryptPath.size() + 1);
             lv.pszText  = varBuf.get();
             _tcscpy_s(lv.pszText, cryptPath.size() + 1, cryptPath.c_str());
             ListView_SetItem(hListControl, &lv);
@@ -380,7 +380,7 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             dlg.m_encNames     = t.encNames;
             dlg.m_syncDir      = t.syncDir;
             dlg.m_7ZExt        = t.m_use7Z;
-            dlg.m_useGpg      = t.m_useGpg;
+            dlg.m_useGpg       = t.m_useGpg;
             dlg.m_fat          = t.m_fat;
             dlg.m_compressSize = t.m_compressSize;
             if (dlg.DoModal(hResource, IDD_PAIRADD, *this) == IDOK)
