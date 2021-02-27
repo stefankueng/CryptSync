@@ -1,0 +1,4 @@
+[hook "precommit"]
+	cmdline = WScript %root%\\\\tools\\\\checkyear.js
+	wait = true
+	show = false
