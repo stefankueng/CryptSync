@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012 - Stefan Kueng
+// Copyright (C) 2012, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,7 +21,6 @@
 
 #include "BaseDialog.h"
 #include "hyperlink.h"
-#include <string>
 
 /**
  * bookmarks dialog.
@@ -30,12 +29,13 @@ class CAboutDlg : public CDialog
 {
 public:
     CAboutDlg(HWND hParent);
-    ~CAboutDlg(void);
+    ~CAboutDlg();
 
 protected:
-    LRESULT CALLBACK    DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    LRESULT             DoCommand(int id, int msg);
+    LRESULT CALLBACK DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+    LRESULT          DoCommand(int id, int msg);
+
 private:
-    HWND                m_hParent;
-    CHyperLink          m_link;
+    HWND       m_hParent;
+    CHyperLink m_link;
 };

@@ -19,7 +19,6 @@
 #include "stdafx.h"
 #include "PathWatcher.h"
 #include "DebugOutput.h"
-#include "CircularLog.h"
 
 #include <Dbt.h>
 #include <process.h>

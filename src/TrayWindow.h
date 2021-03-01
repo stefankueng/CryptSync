@@ -45,7 +45,7 @@ public:
         SetWindowTitle(static_cast<LPCTSTR>(ResString(hResource, IDS_APP_TITLE)));
     };
 
-    ~CTrayWindow(void){};
+    ~CTrayWindow(){};
 
     bool RegisterAndCreateWindow();
 

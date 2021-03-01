@@ -22,7 +22,6 @@
 #include "Registry.h"
 #include "StringUtils.h"
 #include <algorithm>
-#include <assert.h>
 
 void PairData::UpdateVec(std::wstring& s, std::vector<std::wstring>& v)
 {
@@ -85,7 +84,7 @@ CPairs::CPairs()
     InitPairList();
 }
 
-CPairs::~CPairs(void)
+CPairs::~CPairs()
 {
 }
 

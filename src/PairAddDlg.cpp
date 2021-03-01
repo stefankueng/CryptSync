@@ -40,7 +40,7 @@ CPairAddDlg::CPairAddDlg(HWND hParent)
 {
 }
 
-CPairAddDlg::~CPairAddDlg(void)
+CPairAddDlg::~CPairAddDlg()
 {
     delete m_pDropTargetOrig;
     delete m_pDropTargetCrypt;
@@ -205,7 +205,7 @@ LRESULT CPairAddDlg::DoCommand(int id)
             auto pathBuf = std::make_unique<WCHAR[]>(MAX_PATH_NEW);
             wcscpy_s(pathBuf.get(), MAX_PATH_NEW, path.get());
             browse.SetInfo(_T("Select path to search"));
-            if (browse.Show(*this, pathBuf.get(), MAX_PATH_NEW, m_origPath.c_str()) == CBrowseFolder::OK)
+            if (browse.Show(*this, pathBuf.get(), MAX_PATH_NEW, m_origPath.c_str()) == CBrowseFolder::RetVal::Ok)
             {
                 SetDlgItemText(*this, IDC_ORIGPATH, pathBuf.get());
                 m_origPath = pathBuf.get();
@@ -220,7 +220,7 @@ LRESULT CPairAddDlg::DoCommand(int id)
             auto pathBuf = std::make_unique<WCHAR[]>(MAX_PATH_NEW);
             wcscpy_s(pathBuf.get(), MAX_PATH_NEW, path.get());
             browse.SetInfo(_T("Select path to search"));
-            if (browse.Show(*this, pathBuf.get(), MAX_PATH_NEW, m_cryptPath.c_str()) == CBrowseFolder::OK)
+            if (browse.Show(*this, pathBuf.get(), MAX_PATH_NEW, m_cryptPath.c_str()) == CBrowseFolder::RetVal::Ok)
             {
                 SetDlgItemText(*this, IDC_CRYPTPATH, pathBuf.get());
                 m_cryptPath = pathBuf.get();

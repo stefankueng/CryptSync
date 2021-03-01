@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2013, 2018 - Stefan Kueng
+// Copyright (C) 2012-2013, 2018, 2021 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,7 +29,7 @@ CAboutDlg::CAboutDlg(HWND hParent)
 {
 }
 
-CAboutDlg::~CAboutDlg(void)
+CAboutDlg::~CAboutDlg()
 {
 }
 
