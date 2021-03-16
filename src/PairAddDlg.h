@@ -44,6 +44,7 @@ public:
     bool         m_7ZExt;
     bool         m_useGpg;
     bool         m_fat;
+    bool         m_syncDeleted;
 
 protected:
     LRESULT CALLBACK DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;

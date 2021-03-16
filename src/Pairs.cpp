@@ -22,6 +22,7 @@
 #include "Registry.h"
 #include "StringUtils.h"
 #include <algorithm>
+#include <assert.h>
 
 void PairData::UpdateVec(std::wstring& s, std::vector<std::wstring>& v)
 {
@@ -290,7 +291,7 @@ void CPairs::SavePairs()
     }
 }
 
-bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat)
+bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat, bool syncDeleted)
 {
     PairData pd;
     pd.m_enabled   = enabled;
@@ -306,6 +307,7 @@ bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring&
     pd.m_useGpg       = useGpg;
     pd.m_fat          = fat;
     pd.m_compressSize = compressSize;
+    pd.m_syncDeleted  = syncDeleted;
 
     // make sure the paths are not root names but if root then root paths (i.e., ends with a backslash)
     if (*pd.m_origPath.rbegin() == ':')

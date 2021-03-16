@@ -40,6 +40,7 @@ public:
         , m_useGpg(false)
         , m_fat(false)
         , m_compressSize(100)
+        , m_syncDeleted(false)
     {
     }
 
@@ -53,6 +54,7 @@ public:
     bool         m_useGpg;
     bool         m_fat;
     int          m_compressSize;
+    bool         m_syncDeleted;
     std::wstring noSync() const { return m_noSync; }
     void         noSync(const std::wstring& c)
     {
@@ -123,7 +125,8 @@ public:
                  SyncDir             syncDir,
                  bool                use7ZExt,
                  bool                useGpg,
-                 bool                fat);
+                 bool                fat,
+                 bool                syncDeleted);
 
 protected:
     void InitPairList();

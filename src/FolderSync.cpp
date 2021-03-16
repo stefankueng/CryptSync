@@ -54,7 +54,7 @@ CFolderSync::CFolderSync()
 #ifdef _WIN64
         m_gnuPg = L"%ProgramFiles(x86)%\\GNU\\GnuPG\\Pub\\gpg.exe";
 #else
-        m_GnuPG = L"%ProgramW6432%\\GNU\\GnuPG\\Pub\\gpg.exe";
+        m_gnuPg = L"%ProgramW6432%\\GNU\\GnuPG\\Pub\\gpg.exe";
 #endif
         m_gnuPg = CStringUtils::ExpandEnvironmentStrings(m_gnuPg);
         if (!PathFileExists(m_gnuPg.c_str()))
@@ -67,7 +67,7 @@ CFolderSync::CFolderSync()
 #ifdef _WIN64
                 m_gnuPg = L"%ProgramW6432%\\GNU\\GnuPG\\gpg.exe";
 #else
-                m_GnuPG = L"%ProgramW6432%\\GNU\\GnuPG\\gpg.exe";
+                m_gnuPg = L"%ProgramW6432%\\GNU\\GnuPG\\gpg.exe";
 #endif
                 m_gnuPg = CStringUtils::ExpandEnvironmentStrings(m_gnuPg);
                 if (!PathFileExists(m_gnuPg.c_str()))
@@ -291,84 +291,105 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
     if ((fDataOrig.ftLastWriteTime.dwLowDateTime == 0) && (fDataOrig.ftLastWriteTime.dwHighDateTime == 0) &&
         (_wcsicmp(orig.c_str(), path.c_str()) == 0) && bOrigMissing)
     {
-        // original file got deleted
-        // delete the encrypted file
+        if (pt.m_syncDeleted)
         {
-            CAutoWriteLock nLocker(m_notingGuard);
-            m_notifyIgnores.insert(crypt);
-        }
-        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), orig.c_str(), crypt.c_str());
-        CCircularLog::Instance()(_T("INFO:    file %s does not exist, delete file %s"), orig.c_str(), crypt.c_str());
+            // original file got deleted
+            // delete the encrypted file
+            {
+                CAutoWriteLock nLocker(m_notingGuard);
+                m_notifyIgnores.insert(crypt);
+            }
+            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), orig.c_str(), crypt.c_str());
+            CCircularLog::Instance()(_T("INFO:    file %s does not exist, delete file %s"), orig.c_str(), crypt.c_str());
 
-        SHFILEOPSTRUCT fop = {nullptr};
-        fop.wFunc          = FO_DELETE;
-        fop.fFlags         = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
-        auto delBuf        = std::make_unique<wchar_t[]>(crypt.size() + 2);
-        wcscpy_s(delBuf.get(), crypt.size() + 2, crypt.c_str());
-        delBuf[crypt.size()]     = 0;
-        delBuf[crypt.size() + 1] = 0;
-        fop.pFrom                = delBuf.get();
-        if (SHFileOperation(&fop))
-        {
-            // in case the notification was for a folder that got removed,
-            // the GetDecryptedFilename() call above added the .cryptsync extension which
-            // folders don't have. Remove that extension and try deleting again.
-            crypt = crypt.substr(0, crypt.find_last_of('.'));
+            SHFILEOPSTRUCT fop = {nullptr};
+            fop.wFunc          = FO_DELETE;
+            fop.fFlags         = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
+            auto delBuf        = std::make_unique<wchar_t[]>(crypt.size() + 2);
             wcscpy_s(delBuf.get(), crypt.size() + 2, crypt.c_str());
             delBuf[crypt.size()]     = 0;
             delBuf[crypt.size() + 1] = 0;
             fop.pFrom                = delBuf.get();
             if (SHFileOperation(&fop))
             {
-                // could not delete file to the trashbin, so delete it directly
-                DeleteFile(crypt.c_str());
-                DeleteFile(delBuf.get());
+                // in case the notification was for a folder that got removed,
+                // the GetDecryptedFilename() call above added the .cryptsync extension which
+                // folders don't have. Remove that extension and try deleting again.
+                crypt = crypt.substr(0, crypt.find_last_of('.'));
+                wcscpy_s(delBuf.get(), crypt.size() + 2, crypt.c_str());
+                delBuf[crypt.size()]     = 0;
+                delBuf[crypt.size() + 1] = 0;
+                fop.pFrom                = delBuf.get();
+                if (SHFileOperation(&fop))
+                {
+                    // could not delete file to the trashbin, so delete it directly
+                    DeleteFile(crypt.c_str());
+                    DeleteFile(delBuf.get());
+                }
             }
+            return;
         }
-        return;
+
+        else
+        {
+            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist and sync deleted not set, skipping delete file %s\n"), orig.c_str(), crypt.c_str());
+            CCircularLog::Instance()(_T("INFO:    file %s does not exist and sync deleted not set, skipping delete file %s"), orig.c_str(), crypt.c_str());
+        }
     }
+
     else if ((fDdataCrypt.ftLastWriteTime.dwLowDateTime == 0) && (fDdataCrypt.ftLastWriteTime.dwHighDateTime == 0) &&
              (_wcsicmp(crypt.c_str(), path.c_str()) == 0) && bCryptMissing)
     {
-        // encrypted file got deleted
-        // delete the original file as well
-        {
-            CAutoWriteLock nLocker(m_notingGuard);
-            m_notifyIgnores.insert(orig);
-        }
-        // check if there's an unencrypted file instead of an encrypted one in the encrypted folder
-        if (!bCopyOnly)
-        {
-            std::wstring cryptnot = crypt.substr(0, crypt.find_last_of('.'));
-            if (!GetFileAttributesEx(cryptnot.c_str(), GetFileExInfoStandard, &fDdataCrypt))
-            {
-                DWORD lastError = GetLastError();
-                if (lastError == ERROR_ACCESS_DENIED)
-                    return;
-                bCryptMissing = (lastError == ERROR_FILE_NOT_FOUND);
-            }
-            else
-                bCryptMissing = false;
-        }
-        if (bCryptMissing)
-        {
-            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), crypt.c_str(), orig.c_str());
-            CCircularLog::Instance()(_T("INFO:    file %s does not exist, delete file %s"), crypt.c_str(), orig.c_str());
 
-            SHFILEOPSTRUCT fop = {nullptr};
-            fop.wFunc          = FO_DELETE;
-            fop.fFlags         = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
-            auto delBuf        = std::make_unique<wchar_t[]>(orig.size() + 2);
-            wcscpy_s(delBuf.get(), orig.size() + 2, orig.c_str());
-            delBuf[orig.size()]     = 0;
-            delBuf[orig.size() + 1] = 0;
-            fop.pFrom               = delBuf.get();
-            if (SHFileOperation(&fop))
+        if (pt.m_syncDeleted)
+        {
+            // encrypted file got deleted
+            // delete the original file as well
             {
-                // could not delete file to the trashbin, so delete it directly
-                DeleteFile(orig.c_str());
+                CAutoWriteLock nLocker(m_notingGuard);
+                m_notifyIgnores.insert(orig);
             }
-            return;
+            // check if there's an unencrypted file instead of an encrypted one in the encrypted folder
+            if (!bCopyOnly)
+            {
+                std::wstring cryptnot = crypt.substr(0, crypt.find_last_of('.'));
+                if (!GetFileAttributesEx(cryptnot.c_str(), GetFileExInfoStandard, &fDdataCrypt))
+                {
+                    DWORD lastError = GetLastError();
+                    if (lastError == ERROR_ACCESS_DENIED)
+                        return;
+                    bCryptMissing = (lastError == ERROR_FILE_NOT_FOUND);
+                }
+                else
+                    bCryptMissing = false;
+            }
+
+            if (bCryptMissing)
+            {
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), crypt.c_str(), orig.c_str());
+                CCircularLog::Instance()(_T("INFO:    file %s does not exist, delete file %s"), crypt.c_str(), orig.c_str());
+
+                SHFILEOPSTRUCT fop = {nullptr};
+                fop.wFunc          = FO_DELETE;
+                fop.fFlags         = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
+                auto delBuf        = std::make_unique<wchar_t[]>(orig.size() + 2);
+                wcscpy_s(delBuf.get(), orig.size() + 2, orig.c_str());
+                delBuf[orig.size()]     = 0;
+                delBuf[orig.size() + 1] = 0;
+                fop.pFrom               = delBuf.get();
+                if (SHFileOperation(&fop))
+                {
+                    // could not delete file to the trashbin, so delete it directly
+                    DeleteFile(orig.c_str());
+                }
+                return;
+            }
+
+            else
+            {
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist and sync deleted not set, skipping delete file %s\n"), crypt.c_str(), orig.c_str());
+                CCircularLog::Instance()(_T("INFO:    file %s does not exist and sync deleted not set, skipping delete file %s"), crypt.c_str(), orig.c_str());
+            }
         }
     }
 
@@ -478,11 +499,12 @@ int CFolderSync::SyncFolder(const PairData& pt)
         return ErrorNone;
 
     CCircularLog::Instance()(L"INFO:    syncing folder orig \"%s\" with crypt \"%s\"", pt.m_origPath.c_str(), pt.m_cryptPath.c_str());
-    CCircularLog::Instance()(L"INFO:    settings: encrypt names: %s, use 7z: %s, use GPG: %s, use FAT workaround: %s",
+    CCircularLog::Instance()(L"INFO:    settings: encrypt names: %s, use 7z: %s, use GPG: %s, use FAT workaround: %s, sync deleted: %s",
                              pt.m_encNames ? L"yes" : L"no",
                              pt.m_use7Z ? L"yes" : L"no",
                              pt.m_useGpg ? L"yes" : L"no",
-                             pt.m_fat ? L"yes" : L"no");
+                             pt.m_fat ? L"yes" : L"no",
+                             pt.m_syncDeleted ? L"yes" : L"no");
     if (m_pProgDlg)
     {
         m_pProgDlg->SetLine(0, L"scanning...");
@@ -599,26 +621,35 @@ int CFolderSync::SyncFolder(const PairData& pt)
             }
             else if (pt.m_syncDir == DstToSrc)
             {
-                // remove the original file
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in crypted folder, delete file\n"), it->first.c_str());
-                CCircularLog::Instance()(_T("INFO:    counterpart of file %s does not exist in crypted folder, delete file"), it->first.c_str());
-                SHFILEOPSTRUCT fop  = {nullptr};
-                fop.wFunc           = FO_DELETE;
-                fop.fFlags          = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
-                std::wstring orig   = CPathUtils::Append(pt.m_origPath, it->second.fileRelPath);
-                auto         delBuf = std::make_unique<wchar_t[]>(orig.size() + 2);
-                wcscpy_s(delBuf.get(), orig.size() + 2, orig.c_str());
-                delBuf[orig.size()]     = 0;
-                delBuf[orig.size() + 1] = 0;
-                fop.pFrom               = delBuf.get();
+                if (pt.m_syncDeleted)
                 {
-                    CAutoWriteLock nLocker(m_notingGuard);
-                    m_notifyIgnores.insert(orig);
+                    // remove the original file
+                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in crypted folder, delete file\n"), it->first.c_str());
+                    CCircularLog::Instance()(_T("INFO:    counterpart of file %s does not exist in crypted folder, delete file"), it->first.c_str());
+                    SHFILEOPSTRUCT fop  = {nullptr};
+                    fop.wFunc           = FO_DELETE;
+                    fop.fFlags          = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
+                    std::wstring orig   = CPathUtils::Append(pt.m_origPath, it->second.fileRelPath);
+                    auto         delBuf = std::make_unique<wchar_t[]>(orig.size() + 2);
+                    wcscpy_s(delBuf.get(), orig.size() + 2, orig.c_str());
+                    delBuf[orig.size()]     = 0;
+                    delBuf[orig.size() + 1] = 0;
+                    fop.pFrom               = delBuf.get();
+                    {
+                        CAutoWriteLock nLocker(m_notingGuard);
+                        m_notifyIgnores.insert(orig);
+                    }
+                    if (SHFileOperation(&fop))
+                    {
+                        // could not delete file to the trashbin, so delete it directly
+                        DeleteFile(it->first.c_str());
+                    }
                 }
-                if (SHFileOperation(&fop))
+
+                else
                 {
-                    // could not delete file to the trashbin, so delete it directly
-                    DeleteFile(it->first.c_str());
+                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in crypted folder and sync deleted not set, skipping delete file\n"), it->first.c_str());
+                    CCircularLog::Instance()(_T("INFO:    counterpart of file %s does not exist in crypted folder and sync deleted not set, skipping delete file"), it->first.c_str());
                 }
             }
         }
@@ -777,26 +808,35 @@ int CFolderSync::SyncFolder(const PairData& pt)
             // file does not exist in the original folder:
             if ((pt.m_syncDir == SrcToDst) && !origFileList.empty())
             {
-                // remove the encrypted file
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in src folder, delete file\n"), it->first.c_str());
-                CCircularLog::Instance()(_T("INFO:    counterpart of file %s does not exist in src folder, delete file"), it->first.c_str());
-                SHFILEOPSTRUCT fop  = {nullptr};
-                fop.wFunc           = FO_DELETE;
-                fop.fFlags          = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
-                std::wstring crypt  = CPathUtils::Append(pt.m_cryptPath, it->second.fileRelPath);
-                auto         delBuf = std::make_unique<wchar_t[]>(crypt.size() + 2);
-                wcscpy_s(delBuf.get(), crypt.size() + 2, crypt.c_str());
-                delBuf[crypt.size()]     = 0;
-                delBuf[crypt.size() + 1] = 0;
-                fop.pFrom                = delBuf.get();
+                if (pt.m_syncDeleted)
                 {
-                    CAutoWriteLock nlocker(m_notingGuard);
-                    m_notifyIgnores.insert(crypt);
+                    // remove the encrypted file
+                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in src folder, delete file\n"), it->first.c_str());
+                    CCircularLog::Instance()(_T("INFO:    counterpart of file %s does not exist in src folder, delete file"), it->first.c_str());
+                    SHFILEOPSTRUCT fop  = {nullptr};
+                    fop.wFunc           = FO_DELETE;
+                    fop.fFlags          = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
+                    std::wstring crypt  = CPathUtils::Append(pt.m_cryptPath, it->second.fileRelPath);
+                    auto         delBuf = std::make_unique<wchar_t[]>(crypt.size() + 2);
+                    wcscpy_s(delBuf.get(), crypt.size() + 2, crypt.c_str());
+                    delBuf[crypt.size()]     = 0;
+                    delBuf[crypt.size() + 1] = 0;
+                    fop.pFrom                = delBuf.get();
+                    {
+                        CAutoWriteLock nlocker(m_notingGuard);
+                        m_notifyIgnores.insert(crypt);
+                    }
+                    if (SHFileOperation(&fop))
+                    {
+                        // could not delete file to the trashbin, so delete it directly
+                        DeleteFile(it->first.c_str());
+                    }
                 }
-                if (SHFileOperation(&fop))
+
+                else
                 {
-                    // could not delete file to the trashbin, so delete it directly
-                    DeleteFile(it->first.c_str());
+                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in src folder and sync deleted not set, skipping delete file\n"), it->first.c_str());
+                    CCircularLog::Instance()(_T("INFO:    counterpart of file %s does not exist in src folder and sync deleted not set, skipping delete file"), it->first.c_str());
                 }
             }
             else if (bCopyOnly && (origFileList.empty() || (pt.m_syncDir == BothWays) || (pt.m_syncDir == DstToSrc)))
@@ -818,7 +858,13 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         retVal |= ErrorCopy;
                 }
             }
-            else if (origFileList.empty() || (pt.m_syncDir == BothWays) || (pt.m_syncDir == DstToSrc))
+
+            else if ((pt.m_syncDir == BothWays) || (pt.m_syncDir == DstToSrc)
+                 /** Only restore files in original folder 
+                 * if syncing is both ways or encrypted to original direction.
+                 * Otherwise assume the intention is file should not be restored
+                 **/
+                || (origFileList.empty() && (pt.m_syncDir == BothWays || pt.m_syncDir == DstToSrc)))
             {
                 // decrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), pt.m_origPath.c_str());
