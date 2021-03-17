@@ -4,7 +4,7 @@
 # https://docs.microsoft.com/vsts/pipelines/apps/windows/dot-net
 
 pool:
-  vmImage: 'windows-2019'
+  vmImage: 'windows-latest'
 
 variables:
   solution: '**/*.sln'
@@ -12,7 +12,7 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- task: NuGetToolInstaller@0
+- task: NuGetToolInstaller@1
 
 - task: NuGetCommand@2
   inputs:
