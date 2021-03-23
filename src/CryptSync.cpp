@@ -88,7 +88,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"/use7z      : use .7z instead of .cryptsync extension\n"
                              L"/useGPG     : use GnuPG encryption\n"
                              L"/fat        : use FAT write time accuracy (2s)\n"
-                             L"/syncdeleted: sync file deletions\n"
+                             L"/nosyncdeleted: don't sync file deletions\n"
                              L"/ignore     : ignore patterns\n"
                              L"\n"
                              L"/syncall    : syncs all set up pairs and then exists\n"
@@ -166,7 +166,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         bool         use7Z        = !!parser.HasKey(L"use7z");
         bool         useGpg       = !!parser.HasKey(L"useGPG");
         bool         fat          = !!parser.HasKey(L"fat");
-        bool         syncDeleted  = !!parser.HasKey(L"syncdeleted");
+        bool         syncDeletions  = !parser.HasKey(L"nosyncdeleted");
         int          compresssize = _wtoi(parser.GetVal(L"compresssize"));
         std::wstring ign          = parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
 
@@ -181,7 +181,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             syncDir = SrcToDst;
         if (mirrorback && !mirror)
             syncDir = DstToSrc;
-        pair.AddPair(true, src, dst, pw, ncp, cpy, nsy, compresssize, encnames, syncDir, use7Z, useGpg, fat, syncDeleted);
+        pair.AddPair(true, src, dst, pw, ncp, cpy, nsy, compresssize, encnames, syncDir, use7Z, useGpg, fat, syncDeletions);
         CFolderSync foldersync;
         if (decryptonly)
             foldersync.DecryptOnly(true);

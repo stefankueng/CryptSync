@@ -37,7 +37,7 @@ CPairAddDlg::CPairAddDlg(HWND hParent)
     , m_hParent(hParent)
     , m_pDropTargetOrig(nullptr)
     , m_pDropTargetCrypt(nullptr)
-    , m_syncDeleted(false)
+    , m_syncDeleted(true)
 {
 }
 
