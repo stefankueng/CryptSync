@@ -40,7 +40,7 @@ public:
         , m_useGpg(false)
         , m_fat(false)
         , m_compressSize(100)
-        , m_syncDeleted(false)
+        , m_syncDeleted(true)
     {
     }
 

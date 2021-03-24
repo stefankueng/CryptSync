@@ -157,6 +157,10 @@ void CPairs::InitPairList()
         CRegStdDWORD fatReg(key, FALSE);
         pd.m_fat = !!static_cast<DWORD>(fatReg);
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncDeleted%d", p);
+        CRegStdDWORD syncDelReg(key, FALSE);
+        pd.m_syncDeleted = !!static_cast<DWORD>(syncDelReg);
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
         CRegStdDWORD compressSizeReg(key, 100);
         pd.m_compressSize = static_cast<DWORD>(compressSizeReg);
@@ -224,6 +228,10 @@ void CPairs::SavePairs()
         CRegStdDWORD fatReg(key, FALSE, true);
         fatReg = static_cast<DWORD>(it->m_fat);
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncDeleted%d", p);
+        CRegStdDWORD syncDelReg(key, FALSE, true);
+        syncDelReg = static_cast<DWORD>(it->m_syncDeleted);
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
         CRegStdDWORD compressSizeReg(key, 100, true);
         compressSizeReg = static_cast<DWORD>(it->m_compressSize);
@@ -278,6 +286,10 @@ void CPairs::SavePairs()
         swprintf_s(key, L"Software\\CryptSync\\UseGPG%d", p);
         CRegStdDWORD zGpgReg(key);
         zGpgReg.removeValue();
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncDeleted%d", p);
+        CRegStdDWORD syncDelReg(key);
+        syncDelReg.removeValue();
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
         CRegStdDWORD fatReg(key);
