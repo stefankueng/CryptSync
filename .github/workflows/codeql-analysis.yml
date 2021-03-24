@@ -71,7 +71,7 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
       
     - name: Build Solution
-      run: MSBuild.exe BowPad.sln /p:Configuration=Debug /p:Platform=x64
+      run: MSBuild.exe CryptSync.sln /p:Configuration=Debug /p:Platform=x64
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
