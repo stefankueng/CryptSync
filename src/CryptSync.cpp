@@ -89,6 +89,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"/useGPG     : use GnuPG encryption\n"
                              L"/fat        : use FAT write time accuracy (2s)\n"
                              L"/ignore     : ignore patterns\n"
+                             L"/compress   : max size in MB a file is compressed. Larger\n"
+                             L"              files are only encrypted\n"
                              L"\n"
                              L"/syncall    : syncs all set up pairs and then exists\n"
                              L"/progress   : shows a progress dialog while syncing\n"
