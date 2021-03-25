@@ -158,7 +158,7 @@ void CPairs::InitPairList()
         pd.m_fat = !!static_cast<DWORD>(fatReg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncDeleted%d", p);
-        CRegStdDWORD syncDelReg(key, FALSE);
+        CRegStdDWORD syncDelReg(key, TRUE);
         pd.m_syncDeleted = !!static_cast<DWORD>(syncDelReg);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
@@ -229,7 +229,7 @@ void CPairs::SavePairs()
         fatReg = static_cast<DWORD>(it->m_fat);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncDeleted%d", p);
-        CRegStdDWORD syncDelReg(key, FALSE, true);
+        CRegStdDWORD syncDelReg(key, TRUE, true);
         syncDelReg = static_cast<DWORD>(it->m_syncDeleted);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
