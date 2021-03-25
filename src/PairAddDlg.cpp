@@ -37,6 +37,7 @@ CPairAddDlg::CPairAddDlg(HWND hParent)
     , m_hParent(hParent)
     , m_pDropTargetOrig(nullptr)
     , m_pDropTargetCrypt(nullptr)
+    , m_syncDeleted(true)
 {
 }
 
@@ -66,6 +67,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(hwndDlg, IDC_COMPRESSSIZE, std::to_wstring(m_compressSize).c_str());
             SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encNames ? BST_CHECKED : BST_UNCHECKED, NULL);
             CheckRadioButton(*this, IDC_SYNCBOTHRADIO, IDC_SYNCDSTTOSRCRADIO, m_syncDir == BothWays ? IDC_SYNCBOTHRADIO : (m_syncDir == SrcToDst ? IDC_SYNCSRCTODSTRADIO : IDC_SYNCDSTTOSRCRADIO));
+            SendDlgItemMessage(*this, IDC_SYNCDELETED, BM_SETCHECK, m_syncDeleted ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_SETCHECK, m_7ZExt ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_USEGPG, BM_SETCHECK, m_useGpg ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_FAT, BM_SETCHECK, m_fat ? BST_CHECKED : BST_UNCHECKED, NULL);
@@ -76,6 +78,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             AddToolTip(IDC_NOCOMPRESS, L"File masks, separated by '|' example: *.jpg|*.zip");
             AddToolTip(IDC_NOCRYPT, L"File masks, separated by '|' example: *.jpg|*.zip");
             AddToolTip(IDC_NOSYNC, L"File masks, separated by '|' example: *.jpg|*.zip");
+            AddToolTip(IDC_SYNCDELETED, L"Delete files in original/encrypted if missing from encrypted/original (not applicable to Both Ways sync direction) ");
 
             // the path edit control should work as a drop target for files and folders
             HWND hOrigPath    = GetDlgItem(hwndDlg, IDC_ORIGPATH);
@@ -185,6 +188,7 @@ LRESULT CPairAddDlg::DoCommand(int id)
             if (IsDlgButtonChecked(*this, IDC_SYNCSRCTODSTRADIO))
                 m_syncDir = SrcToDst;
             m_7ZExt   = !!SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_GETCHECK, 0, NULL);
+            m_syncDeleted   = !!SendDlgItemMessage(*this, IDC_SYNCDELETED, BM_GETCHECK, 0, NULL);
             m_useGpg = !!SendDlgItemMessage(*this, IDC_USEGPG, BM_GETCHECK, 0, NULL);
             m_fat     = !!SendDlgItemMessage(*this, IDC_FAT, BM_GETCHECK, 0, NULL);
             if (m_useGpg && m_password.empty())

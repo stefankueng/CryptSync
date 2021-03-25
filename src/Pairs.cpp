@@ -157,6 +157,10 @@ void CPairs::InitPairList()
         CRegStdDWORD fatReg(key, FALSE);
         pd.m_fat = !!static_cast<DWORD>(fatReg);
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncDeleted%d", p);
+        CRegStdDWORD syncDelReg(key, FALSE);
+        pd.m_syncDeleted = !!static_cast<DWORD>(syncDelReg);
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
         CRegStdDWORD compressSizeReg(key, 100);
         pd.m_compressSize = static_cast<DWORD>(compressSizeReg);
@@ -224,6 +228,10 @@ void CPairs::SavePairs()
         CRegStdDWORD fatReg(key, FALSE, true);
         fatReg = static_cast<DWORD>(it->m_fat);
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncDeleted%d", p);
+        CRegStdDWORD syncDelReg(key, FALSE, true);
+        syncDelReg = static_cast<DWORD>(it->m_syncDeleted);
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairCompressSize%d", p);
         CRegStdDWORD compressSizeReg(key, 100, true);
         compressSizeReg = static_cast<DWORD>(it->m_compressSize);
@@ -279,6 +287,10 @@ void CPairs::SavePairs()
         CRegStdDWORD zGpgReg(key);
         zGpgReg.removeValue();
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncDeleted%d", p);
+        CRegStdDWORD syncDelReg(key);
+        syncDelReg.removeValue();
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairFAT%d", p);
         CRegStdDWORD fatReg(key);
         fatReg.removeValue();
@@ -291,7 +303,7 @@ void CPairs::SavePairs()
     }
 }
 
-bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat)
+bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat, bool syncDeleted)
 {
     PairData pd;
     pd.m_enabled   = enabled;
@@ -307,6 +319,7 @@ bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring&
     pd.m_useGpg       = useGpg;
     pd.m_fat          = fat;
     pd.m_compressSize = compressSize;
+    pd.m_syncDeleted  = syncDeleted;
 
     // make sure the paths are not root names but if root then root paths (i.e., ends with a backslash)
     if (*pd.m_origPath.rbegin() == ':')
