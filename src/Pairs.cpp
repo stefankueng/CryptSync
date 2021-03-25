@@ -22,7 +22,7 @@
 #include "Registry.h"
 #include "StringUtils.h"
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 
 void PairData::UpdateVec(std::wstring& s, std::vector<std::wstring>& v)
 {
