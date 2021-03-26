@@ -126,7 +126,7 @@ bool CUpdateDlg::CheckNewer()
                     {
                         sCheckURL = static_cast<std::wstring>(checkUrlMachine);
                         if (sCheckURL.empty())
-                            sCheckURL = _T("https://github.com/stefankueng/CryptSync/raw/master/version.txt");
+                            sCheckURL = _T("https://github.com/stefankueng/CryptSync/raw/main/version.txt");
                     }
                     HRESULT res = URLDownloadToFile(nullptr, sCheckURL.c_str(), tempFile.c_str(), 0, nullptr);
                     if (res == S_OK)
