@@ -169,9 +169,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         bool         useGpg       = !!parser.HasKey(L"useGPG");
         bool         fat          = !!parser.HasKey(L"fat");
         bool         syncDeletions  = !parser.HasKey(L"nosyncdeleted");
-        int          compresssize = _wtoi(parser.GetVal(L"compresssize"));
+        int          compresssize  = parser.GetLongVal(L"compresssize");
         std::wstring ign          = parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
-
+        if (!parser.HasKey(L"compresssize"))
+            compresssize = 100;
         CIgnores::Instance().Reload();
         if (!ign.empty())
             CIgnores::Instance().Reload(ign);
