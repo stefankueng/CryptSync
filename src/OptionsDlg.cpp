@@ -463,6 +463,14 @@ void COptionsDlg::SaveSettings()
     if ((intVal > 0) && (intVal < 1000))
         regInterval = intVal * 60000;
 
+    HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
+    int listIndex = 0;
+    for (auto& pair : g_pairs)
+    {
+        pair.m_enabled = ListView_GetCheckState(hListControl, listIndex);
+        ++listIndex;
+    }
+
     g_pairs.SavePairs();
 
     CIgnores::Instance().Reload();
