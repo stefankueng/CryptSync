@@ -13,3 +13,7 @@
 /test_orig
 /src/Setup/VersionNumberInclude.wxi
 /_ReSharper.Caches
+/Tests/Tests.vcxproj.user
+/Tests/x64
+/packages
+/x64

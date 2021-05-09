@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="test.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="..\src\FolderSync.cpp">
+      <Filter>CryptSync</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Pairs.cpp">
+      <Filter>CryptSync</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\ProgressDlg.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\ReaderWriterLock.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\DirFileEnum.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\DebugOutput.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\Registry.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\StringUtils.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\UnicodeUtils.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\CircularLog.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\base4k\base4k.c">
+      <Filter>CryptSync</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\TempFile.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Ignores.cpp">
+      <Filter>CryptSync</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sktoolslib\PathUtils.cpp">
+      <Filter>sktoolslib</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="..\src\FolderSync.h">
+      <Filter>CryptSync</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Pairs.h">
+      <Filter>CryptSync</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\ProgressDlg.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\ReaderWriterLock.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\DebugOutput.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\DirFileEnum.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\Registry.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\StringUtils.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\UnicodeUtils.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\CircularLog.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\base4k\base4k.h">
+      <Filter>CryptSync</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\TempFile.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Ignores.h">
+      <Filter>CryptSync</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sktoolslib\PathUtils.h">
+      <Filter>sktoolslib</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CryptSync">
+      <UniqueIdentifier>{c1957afc-8e7e-4c2d-968d-ffb2b2ac3e03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sktoolslib">
+      <UniqueIdentifier>{048c8d52-b681-4071-b06d-11f486a8e325}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
