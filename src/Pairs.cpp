@@ -133,6 +133,10 @@ void CPairs::InitPairList()
         CRegStdDWORD encNamesReg(key, TRUE);
         pd.m_encNames = !!static_cast<DWORD>(encNamesReg);
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnamesNew%d", p);
+        CRegStdDWORD encNamesNewReg(key, FALSE);
+        pd.m_encNamesNew = !!static_cast<DWORD>(encNamesNewReg);
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
         CRegStdDWORD oneWayReg(key, static_cast<DWORD>(-1));
         if (static_cast<DWORD>(oneWayReg) != static_cast<DWORD>(-1))
@@ -211,6 +215,10 @@ void CPairs::SavePairs()
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnames%d", p);
         CRegStdDWORD encNamesReg(key, TRUE, true);
         encNamesReg = static_cast<DWORD>(it->m_encNames);
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnamesNew%d", p);
+        CRegStdDWORD encNamesNewReg(key, FALSE, true);
+        encNamesNewReg = static_cast<DWORD>(it->m_encNamesNew);
 
         swprintf_s(key, L"Software\\CryptSync\\SyncPairDir%d", p);
         CRegStdDWORD syncDirReg(key, BothWays, true);
@@ -303,7 +311,7 @@ void CPairs::SavePairs()
     }
 }
 
-bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat, bool syncDeleted)
+bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, bool encryptNamesNew, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat, bool syncDeleted)
 {
     PairData pd;
     pd.m_enabled   = enabled;
@@ -314,6 +322,7 @@ bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring&
     pd.copyOnly(copyOnly);
     pd.noSync(noSync);
     pd.m_encNames     = encryptNames;
+    pd.m_encNamesNew  = encryptNamesNew;
     pd.m_syncDir      = syncDir;
     pd.m_use7Z        = use7ZExt;
     pd.m_useGpg       = useGpg;

@@ -30,7 +30,7 @@ class CPairAddDlg : public CDialog
 {
 public:
     CPairAddDlg(HWND hParent);
-    ~CPairAddDlg();
+    ~CPairAddDlg() override;
 
     std::wstring m_origPath;
     std::wstring m_cryptPath;
@@ -40,6 +40,7 @@ public:
     std::wstring m_noSync;
     int          m_compressSize;
     bool         m_encNames;
+    bool         m_encNamesNew;
     SyncDir      m_syncDir;
     bool         m_7ZExt;
     bool         m_useGpg;

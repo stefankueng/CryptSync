@@ -155,22 +155,23 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     if (parser.HasVal(L"src") && parser.HasVal(L"dst"))
     {
-        std::wstring src          = parser.GetVal(L"src");
-        std::wstring dst          = parser.GetVal(L"dst");
-        std::wstring pw           = parser.HasVal(L"pw") ? parser.GetVal(L"pw") : L"";
-        std::wstring ncp          = parser.HasVal(L"ncp") ? parser.GetVal(L"ncp") : L"";
-        std::wstring cpy          = parser.HasVal(L"cpy") ? parser.GetVal(L"cpy") : L"";
-        std::wstring nsy          = parser.HasVal(L"nsy") ? parser.GetVal(L"nsy") : L"";
-        bool         encnames     = !!parser.HasKey(L"encnames");
-        bool         mirror       = !!parser.HasKey(L"mirror");
-        bool         mirrorback   = !!parser.HasKey(L"mirrorback");
-        bool         decryptonly  = !!parser.HasKey(L"decryptonly");
-        bool         use7Z        = !!parser.HasKey(L"use7z");
-        bool         useGpg       = !!parser.HasKey(L"useGPG");
-        bool         fat          = !!parser.HasKey(L"fat");
-        bool         syncDeletions  = !parser.HasKey(L"nosyncdeleted");
+        std::wstring src           = parser.GetVal(L"src");
+        std::wstring dst           = parser.GetVal(L"dst");
+        std::wstring pw            = parser.HasVal(L"pw") ? parser.GetVal(L"pw") : L"";
+        std::wstring ncp           = parser.HasVal(L"ncp") ? parser.GetVal(L"ncp") : L"";
+        std::wstring cpy           = parser.HasVal(L"cpy") ? parser.GetVal(L"cpy") : L"";
+        std::wstring nsy           = parser.HasVal(L"nsy") ? parser.GetVal(L"nsy") : L"";
+        bool         encnames      = !!parser.HasKey(L"encnames");
+        bool         encnamesNew   = !!parser.HasKey(L"encnamesNew");
+        bool         mirror        = !!parser.HasKey(L"mirror");
+        bool         mirrorback    = !!parser.HasKey(L"mirrorback");
+        bool         decryptonly   = !!parser.HasKey(L"decryptonly");
+        bool         use7Z         = !!parser.HasKey(L"use7z");
+        bool         useGpg        = !!parser.HasKey(L"useGPG");
+        bool         fat           = !!parser.HasKey(L"fat");
+        bool         syncDeletions = !parser.HasKey(L"nosyncdeleted");
         int          compresssize  = parser.GetLongVal(L"compresssize");
-        std::wstring ign          = parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
+        std::wstring ign           = parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
         if (!parser.HasKey(L"compresssize"))
             compresssize = 100;
         CIgnores::Instance().Reload();
@@ -184,7 +185,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             syncDir = SrcToDst;
         if (mirrorback && !mirror)
             syncDir = DstToSrc;
-        pair.AddPair(true, src, dst, pw, ncp, cpy, nsy, compresssize, encnames, syncDir, use7Z, useGpg, fat, syncDeletions);
+        pair.AddPair(true, src, dst, pw, ncp, cpy, nsy, compresssize, encnames || encnamesNew, encnamesNew, syncDir, use7Z, useGpg, fat, syncDeletions);
         CFolderSync foldersync;
         if (decryptonly)
             foldersync.DecryptOnly(true);

@@ -175,7 +175,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             {
                 if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                 {
-                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted))
+                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted))
                         InitPairList();
                     g_pairs.SavePairs();
                 }
@@ -203,6 +203,7 @@ LRESULT COptionsDlg::DoCommand(int id)
                 dlg.m_copyOnly     = t.copyOnly();
                 dlg.m_noSync       = t.noSync();
                 dlg.m_encNames     = t.m_encNames;
+                dlg.m_encNamesNew  = t.m_encNamesNew;
                 dlg.m_syncDir      = t.m_syncDir;
                 dlg.m_7ZExt        = t.m_use7Z;
                 dlg.m_useGpg       = t.m_useGpg;
@@ -214,7 +215,7 @@ LRESULT COptionsDlg::DoCommand(int id)
                     if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                     {
                         g_pairs.erase(g_pairs.begin() + iItem);
-                        if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted))
+                        if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted))
                             InitPairList();
                         g_pairs.SavePairs();
                     }
@@ -385,6 +386,7 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             dlg.m_copyOnly     = t.copyOnly();
             dlg.m_noSync       = t.noSync();
             dlg.m_encNames     = t.m_encNames;
+            dlg.m_encNamesNew  = t.m_encNamesNew;
             dlg.m_syncDir      = t.m_syncDir;
             dlg.m_7ZExt        = t.m_use7Z;
             dlg.m_useGpg       = t.m_useGpg;
@@ -396,7 +398,7 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
                 if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                 {
                     g_pairs.erase(g_pairs.begin() + lpNMItemActivate->iItem);
-                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted))
+                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted))
                         InitPairList();
                     g_pairs.SavePairs();
                 }
@@ -464,7 +466,7 @@ void COptionsDlg::SaveSettings()
         regInterval = intVal * 60000;
 
     HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
-    int listIndex = 0;
+    int  listIndex    = 0;
     for (auto& pair : g_pairs)
     {
         pair.m_enabled = ListView_GetCheckState(hListControl, listIndex);

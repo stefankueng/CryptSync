@@ -212,6 +212,7 @@
     <None Include="version.in" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\base4k\base4k.h" />
     <ClInclude Include="..\sktoolslib\AeroControls.h" />
     <ClInclude Include="..\sktoolslib\AeroGlass.h" />
     <ClInclude Include="..\sktoolslib\BaseDialog.h" />
@@ -248,6 +249,20 @@
     <ClInclude Include="UpdateDlg.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\base4k\base4k.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">TurnOffAllWarnings</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">TurnOffAllWarnings</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsCpp</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\sktoolslib\AeroControls.cpp" />
     <ClCompile Include="..\sktoolslib\AeroGlass.cpp" />
     <ClCompile Include="..\sktoolslib\BaseDialog.cpp" />

@@ -27,11 +27,14 @@
 #include "SmartHandle.h"
 #include "DebugOutput.h"
 #include "CircularLog.h"
+#include "OnOutOfScope.h"
 
 #include <process.h>
 #include <shlobj.h>
 #include <cctype>
 #include <algorithm>
+
+#include "../base4k/base4k.h"
 #include "../lzma/Wrapper-CPP/C7Zip.h"
 
 CFolderSync::CFolderSync()
@@ -238,7 +241,7 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
     bool       bCopyOnly  = pt.IsCopyOnly(path);
     if ((orig.size() < path.size()) && (_wcsicmp(path.substr(0, orig.size()).c_str(), orig.c_str()) == 0) && ((path[orig.size()] == '\\') || (path[orig.size()] == '/')))
     {
-        crypt = CPathUtils::Append(crypt, GetEncryptedFilename(path.substr(orig.size()), pt.m_password, pt.m_encNames, pt.m_use7Z, pt.m_useGpg));
+        crypt = CPathUtils::Append(crypt, GetEncryptedFilename(path.substr(orig.size()), pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg));
         if (bCopyOnly)
         {
             if (!PathFileExists(crypt.c_str()))
@@ -250,7 +253,7 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
     }
     else
     {
-        orig = CPathUtils::Append(orig, GetDecryptedFilename(path.substr(crypt.size()), pt.m_password, pt.m_encNames, pt.m_use7Z, pt.m_useGpg));
+        orig = CPathUtils::Append(orig, GetDecryptedFilename(path.substr(crypt.size()), pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg));
         if (bCopyOnly)
         {
             if (!PathFileExists(orig.c_str()))
@@ -340,7 +343,6 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
     else if ((fDdataCrypt.ftLastWriteTime.dwLowDateTime == 0) && (fDdataCrypt.ftLastWriteTime.dwHighDateTime == 0) &&
              (_wcsicmp(crypt.c_str(), path.c_str()) == 0) && bCryptMissing)
     {
-
         if (pt.m_syncDeleted)
         {
             // encrypted file got deleted
@@ -530,7 +532,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
         }
     }
     DWORD dwErr        = 0;
-    auto  origFileList = GetFileList(true, pt.m_origPath, pt.m_password, pt.m_encNames, pt.m_use7Z, pt.m_useGpg, dwErr);
+    auto  origFileList = GetFileList(true, pt.m_origPath, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg, dwErr);
 
     if (dwErr)
     {
@@ -546,7 +548,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
         origFileList.clear();
     }
 
-    auto cryptFileList = GetFileList(false, pt.m_cryptPath, pt.m_password, pt.m_encNames, pt.m_use7Z, pt.m_useGpg, dwErr);
+    auto cryptFileList = GetFileList(false, pt.m_cryptPath, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg, dwErr);
     if (dwErr)
     {
         CCircularLog::Instance()(L"ERROR:   error enumerating path \"%s\", skipped", pt.m_cryptPath.c_str());
@@ -613,7 +615,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                 }
                 else
                 {
-                    std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_use7Z, pt.m_useGpg)));
+                    std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg)));
                     std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                     if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize))
                         retVal |= ErrorCrypt;
@@ -729,7 +731,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     }
                     else
                     {
-                        std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_use7Z, pt.m_useGpg)));
+                        std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg)));
                         std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                         if (!DecryptFile(origPath, cryptPath, pt.m_password, cryptIt->second, pt.m_useGpg))
                             retVal |= ErrorCrypt;
@@ -762,7 +764,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     }
                     else
                     {
-                        std::wstring cryptPath = CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_use7Z, pt.m_useGpg));
+                        std::wstring cryptPath = CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg));
                         std::wstring origPath  = CPathUtils::Append(pt.m_origPath, it->first);
                         if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize))
                             retVal |= ErrorCrypt;
@@ -860,11 +862,11 @@ int CFolderSync::SyncFolder(const PairData& pt)
             }
 
             else if ((pt.m_syncDir == BothWays) || (pt.m_syncDir == DstToSrc)
-                 /** Only restore files in original folder 
+                     /** Only restore files in original folder 
                  * if syncing is both ways or encrypted to original direction.
                  * Otherwise assume the intention is file should not be restored
                  **/
-                || (origFileList.empty() && (pt.m_syncDir == BothWays || pt.m_syncDir == DstToSrc)))
+                     || (origFileList.empty() && (pt.m_syncDir == BothWays || pt.m_syncDir == DstToSrc)))
             {
                 // decrypt the file
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": decrypt file %s to %s\n"), it->first.c_str(), pt.m_origPath.c_str());
@@ -892,7 +894,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
     return retVal;
 }
 
-std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool use7Z, bool useGpg, DWORD& error) const
+std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, const std::wstring& path, const std::wstring& password, bool encnames, bool encnamesnew, bool use7Z, bool useGpg, DWORD& error) const
 {
     error                 = 0;
     std::wstring enumpath = path;
@@ -937,7 +939,7 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
 
         std::wstring decryptedRelPath = relPath;
         if (!orig)
-            decryptedRelPath = GetDecryptedFilename(relPath, password, encnames, use7Z, useGpg);
+            decryptedRelPath = GetDecryptedFilename(relPath, password, encnames, encnamesnew, use7Z, useGpg);
         fd.filenameEncrypted = (_wcsicmp(decryptedRelPath.c_str(), fd.fileRelPath.c_str()) != 0);
         if (fd.filenameEncrypted)
         {
@@ -1199,7 +1201,7 @@ bool CFolderSync::DecryptFile(const std::wstring& orig, const std::wstring& cryp
     return bRet;
 }
 
-std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7Z, bool useGpg)
+std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptName, bool newEncryption, bool use7Z, bool useGpg)
 {
     std::wstring decryptName = filename;
     size_t       dotPos      = filename.find_last_of('.');
@@ -1209,7 +1211,7 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
     else
         fName = filename;
 
-    if (!encryptname)
+    if (!encryptName)
     {
         std::wstring f = filename;
         std::transform(f.begin(), f.end(), f.begin(), ::towlower);
@@ -1270,15 +1272,32 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
                         auto buffer      = std::make_unique<BYTE[]>(dwLength);
 
                         auto strIn = std::make_unique<BYTE[]>(name.size() * sizeof(WCHAR) + 1);
-                        if (CStringUtils::FromHexString(name, strIn.get()))
+                        if (newEncryption)
                         {
-                            // copy encrypted password to temporary buffer
-                            memcpy(buffer.get(), strIn.get(), name.size());
-                            CryptDecrypt(hKey, 0, true, 0, static_cast<BYTE*>(buffer.get()), &dwLength);
-                            decryptName = CUnicodeUtils::StdGetUnicode(std::string(reinterpret_cast<char*>(buffer.get()), name.size() / 2));
+                            base4k::B4K_ENCODING_SETTINGS encodingSettings;
+                            base4k::initialize(&encodingSettings, 2);
+                            uint32_t ccData   = B4K_AUTO;
+                            uint8_t* cDecoded = nullptr;
+                            if (base4k::base4KDecode(reinterpret_cast<const uint16_t*>(it->data()), &ccData, &cDecoded) == base4k::B4K_SUCCESS)
+                            {
+                                memcpy(buffer.get(), cDecoded, ccData);
+                                CryptDecrypt(hKey, 0, true, 0, static_cast<BYTE*>(buffer.get()), &dwLength);
+                                decryptName = CUnicodeUtils::StdGetUnicode(std::string(reinterpret_cast<char*>(buffer.get()), name.size() / 2));
+                            }
+                            else
+                                decryptName = *it;
+                            free(cDecoded);
                         }
                         else
-                            decryptName = *it;
+                        {
+                            if (CStringUtils::FromHexString(name, strIn.get()))
+                            {
+                                // copy encrypted password to temporary buffer
+                                memcpy(buffer.get(), strIn.get(), name.size());
+                                CryptDecrypt(hKey, 0, true, 0, static_cast<BYTE*>(buffer.get()), &dwLength);
+                                decryptName = CUnicodeUtils::StdGetUnicode(std::string(reinterpret_cast<char*>(buffer.get()), name.size() / 2));
+                            }
+                        }
                         if (decryptName.empty() || (decryptName[0] != '*'))
                         {
                             if ((dotPos != std::string::npos) && ((it + 1) == names.cend()))
@@ -1316,10 +1335,10 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
     return decryptName;
 }
 
-std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptname, bool use7Z, bool useGpg)
+std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptName, bool newEncryption, bool use7Z, bool useGpg)
 {
     std::wstring encryptFilename = filename;
-    if (!encryptname)
+    if (!encryptName)
     {
         std::wstring f = filename;
         std::transform(f.begin(), f.end(), f.begin(), ::towlower);
@@ -1372,13 +1391,29 @@ std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, con
                         starName += CUnicodeUtils::StdGetUTF8(*it);
 
                         dwLength    = static_cast<DWORD>(starName.size());
-                        auto buffer = std::make_unique<BYTE[]>(dwLength + 1024);
+                        auto buffer = std::make_unique<BYTE[]>(dwLength + 1024LL);
                         memcpy(buffer.get(), starName.c_str(), dwLength);
                         // Encrypt data
                         if (CryptEncrypt(hKey, 0, true, 0, buffer.get(), &dwLength, dwLength + 1024))
                         {
-                            encryptFilename = CStringUtils::ToHexWString(buffer.get(), dwLength);
-                            encryptNames.push_back(encryptFilename);
+                            if (newEncryption)
+                            {
+                                base4k::B4K_ENCODING_SETTINGS encodingSettings;
+                                base4k::initialize(&encodingSettings, 2);
+                                uint32_t  ccData   = dwLength;
+                                uint16_t* cEncoded = nullptr;
+                                if (base4k::base4kEncode(&encodingSettings, reinterpret_cast<const uint8_t*>(buffer.get()), &ccData, &cEncoded) == base4k::B4K_SUCCESS)
+                                {
+                                    OnOutOfScope(free(cEncoded));
+                                    encryptFilename = reinterpret_cast<wchar_t*>(cEncoded);
+                                    encryptNames.push_back(encryptFilename);
+                                }
+                            }
+                            else
+                            {
+                                encryptFilename = CStringUtils::ToHexWString(buffer.get(), dwLength);
+                                encryptNames.push_back(encryptFilename);
+                            }
                         }
                         else
                         {

@@ -35,6 +35,7 @@ public:
     PairData()
         : m_enabled(true)
         , m_encNames(false)
+        , m_encNamesNew(false)
         , m_syncDir(BothWays)
         , m_use7Z(false)
         , m_useGpg(false)
@@ -49,6 +50,7 @@ public:
     std::wstring m_cryptPath;
     std::wstring m_password;
     bool         m_encNames;
+    bool         m_encNamesNew;
     SyncDir      m_syncDir;
     bool         m_use7Z;
     bool         m_useGpg;
@@ -122,6 +124,7 @@ public:
                  const std::wstring& noSync,
                  int                 compressSize,
                  bool                encryptNames,
+                 bool                encryptNamesNew,
                  SyncDir             syncDir,
                  bool                use7ZExt,
                  bool                useGpg,

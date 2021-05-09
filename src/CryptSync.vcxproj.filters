@@ -91,6 +91,9 @@
     <ClCompile Include="..\sktoolslib\CircularLog.cpp">
       <Filter>sktoolslib</Filter>
     </ClCompile>
+    <ClCompile Include="..\base4k\base4k.c">
+      <Filter>base4k</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AboutDlg.h">
@@ -195,6 +198,9 @@
     <ClInclude Include="..\sktoolslib\CircularLog.h">
       <Filter>sktoolslib</Filter>
     </ClInclude>
+    <ClInclude Include="..\base4k\base4k.h">
+      <Filter>base4k</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\default.build">
@@ -240,6 +246,9 @@
     </Filter>
     <Filter Include="sktoolslib">
       <UniqueIdentifier>{b5532ff0-76ad-4a37-ac00-e3b22eb74cc2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base4k">
+      <UniqueIdentifier>{3087506c-2ba6-4633-b7b0-62dc91ad625e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

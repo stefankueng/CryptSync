@@ -1,10 +1,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26430.14
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31205.134
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CryptSync", "src\CryptSync.vcxproj", "{ADA7AFAD-86D9-4690-AEEF-065B86B244A1}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "7zip", "lzma\7Zip.vcxproj", "{1EB8B4AF-2F14-4379-8875-B75C1EC7C9F2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{8E4A5CD5-3B72-4FA1-915D-03C1E97F9752}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,6 +32,14 @@ Global
 		{1EB8B4AF-2F14-4379-8875-B75C1EC7C9F2}.Release|Win32.Build.0 = Release|Win32
 		{1EB8B4AF-2F14-4379-8875-B75C1EC7C9F2}.Release|x64.ActiveCfg = Release|x64
 		{1EB8B4AF-2F14-4379-8875-B75C1EC7C9F2}.Release|x64.Build.0 = Release|x64
+		{8E4A5CD5-3B72-4FA1-915D-03C1E97F9752}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8E4A5CD5-3B72-4FA1-915D-03C1E97F9752}.Debug|Win32.Build.0 = Debug|Win32
+		{8E4A5CD5-3B72-4FA1-915D-03C1E97F9752}.Debug|x64.ActiveCfg = Debug|x64
+		{8E4A5CD5-3B72-4FA1-915D-03C1E97F9752}.Debug|x64.Build.0 = Debug|x64
+		{8E4A5CD5-3B72-4FA1-915D-03C1E97F9752}.Release|Win32.ActiveCfg = Release|Win32
+		{8E4A5CD5-3B72-4FA1-915D-03C1E97F9752}.Release|Win32.Build.0 = Release|Win32
+		{8E4A5CD5-3B72-4FA1-915D-03C1E97F9752}.Release|x64.ActiveCfg = Release|x64
+		{8E4A5CD5-3B72-4FA1-915D-03C1E97F9752}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

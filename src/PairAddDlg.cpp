@@ -30,14 +30,15 @@
 CPairAddDlg::CPairAddDlg(HWND hParent)
     : m_compressSize(100)
     , m_encNames(false)
+    , m_encNamesNew(false)
     , m_syncDir(BothWays)
     , m_7ZExt(true)
     , m_useGpg(false)
     , m_fat(true)
+    , m_syncDeleted(true)
     , m_hParent(hParent)
     , m_pDropTargetOrig(nullptr)
     , m_pDropTargetCrypt(nullptr)
-    , m_syncDeleted(true)
 {
 }
 
@@ -66,6 +67,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(hwndDlg, IDC_NOSYNC, m_noSync.c_str());
             SetDlgItemText(hwndDlg, IDC_COMPRESSSIZE, std::to_wstring(m_compressSize).c_str());
             SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encNames ? BST_CHECKED : BST_UNCHECKED, NULL);
+            SendDlgItemMessage(*this, IDC_NEWNAMEENCRYPTION, BM_SETCHECK, m_encNamesNew ? BST_CHECKED : BST_UNCHECKED, NULL);
             CheckRadioButton(*this, IDC_SYNCBOTHRADIO, IDC_SYNCDSTTOSRCRADIO, m_syncDir == BothWays ? IDC_SYNCBOTHRADIO : (m_syncDir == SrcToDst ? IDC_SYNCSRCTODSTRADIO : IDC_SYNCDSTTOSRCRADIO));
             SendDlgItemMessage(*this, IDC_SYNCDELETED, BM_SETCHECK, m_syncDeleted ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_SETCHECK, m_7ZExt ? BST_CHECKED : BST_UNCHECKED, NULL);
@@ -79,6 +81,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             AddToolTip(IDC_NOCRYPT, L"File masks, separated by '|' example: *.jpg|*.zip");
             AddToolTip(IDC_NOSYNC, L"File masks, separated by '|' example: *.jpg|*.zip");
             AddToolTip(IDC_SYNCDELETED, L"Delete files in original/encrypted if missing from encrypted/original (not applicable to Both Ways sync direction) ");
+            AddToolTip(IDC_NEWNAMEENCRYPTION, L"New encryption method for names:\r\nUses less characters, but is harder to 'read' and not all filesystems support these characters.");
 
             // the path edit control should work as a drop target for files and folders
             HWND hOrigPath    = GetDlgItem(hwndDlg, IDC_ORIGPATH);
@@ -182,6 +185,7 @@ LRESULT CPairAddDlg::DoCommand(int id)
             }
 
             m_encNames = !!SendDlgItemMessage(*this, IDC_ENCNAMES, BM_GETCHECK, 0, NULL);
+            m_encNamesNew = !!SendDlgItemMessage(*this, IDC_NEWNAMEENCRYPTION, BM_GETCHECK, 0, NULL);
             m_syncDir  = BothWays;
             if (IsDlgButtonChecked(*this, IDC_SYNCDSTTOSRCRADIO))
                 m_syncDir = DstToSrc;
@@ -234,6 +238,9 @@ LRESULT CPairAddDlg::DoCommand(int id)
         case IDC_USEGPG:
             m_useGpg = !m_useGpg;
             DialogEnableWindow(IDC_USE7ZEXT, !m_useGpg);
+            break;
+        case IDC_ENCNAMES:
+            DialogEnableWindow(IDC_NEWNAMEENCRYPTION, SendDlgItemMessage(*this, IDC_ENCNAMES, BM_GETCHECK, 0, NULL));
             break;
     }
     return 1;
