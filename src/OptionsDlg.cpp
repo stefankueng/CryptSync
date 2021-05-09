@@ -460,7 +460,7 @@ void COptionsDlg::SaveSettings()
     CRegStdDWORD regInterval(L"Software\\CryptSync\\FullScanInterval", 60000 * 30);
     auto         intervalText = GetDlgItemText(IDC_INTERVAL);
     DWORD        intVal       = _wtoi(intervalText.get());
-    if ((intVal > 0) && (intVal < 1000))
+    if (intVal > 0)
         regInterval = intVal * 60000;
 
     HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
