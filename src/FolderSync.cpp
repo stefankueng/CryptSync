@@ -1280,9 +1280,9 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
                             uint8_t* cDecoded = nullptr;
                             if (base4k::base4KDecode(reinterpret_cast<const uint16_t*>(it->data()), &ccData, &cDecoded) == base4k::B4K_SUCCESS)
                             {
-                                memcpy(buffer.get(), cDecoded, ccData);
+                                memcpy(buffer.get(), cDecoded, ccData+1);
                                 CryptDecrypt(hKey, 0, true, 0, static_cast<BYTE*>(buffer.get()), &dwLength);
-                                decryptName = CUnicodeUtils::StdGetUnicode(std::string(reinterpret_cast<char*>(buffer.get()), name.size() / 2));
+                                decryptName = CUnicodeUtils::StdGetUnicode(std::string(reinterpret_cast<char*>(buffer.get()), ccData));
                             }
                             else
                                 decryptName = *it;
