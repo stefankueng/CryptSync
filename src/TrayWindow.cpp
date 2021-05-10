@@ -397,6 +397,8 @@ LRESULT CTrayWindow::DoCommand(int id)
                 g_timer_fullScanInterval = CRegStdDWORD(L"Software\\CryptSync\\FullScanInterval", 60000 * 30);
                 if (g_timer_fullScanInterval > 0)
                     m_folderSyncer.SyncFolders(g_pairs);
+                else
+                    m_folderSyncer.SetPairs(g_pairs);
                 m_watcher.ClearPaths();
                 for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
                 {
