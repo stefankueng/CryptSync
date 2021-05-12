@@ -22,8 +22,20 @@ TEST(NameEncryption, decrypt_new_encryption)
     EXPECT_EQ(decryptedFilename, L"filename.txt");
 }
 
+TEST(NameEncryption, decrypt_new_encryption2)
+{
+    auto decryptedFilename = CFolderSync::GetDecryptedFilename(L"板浜慴殐樕槐湻槺䀮.7z", L"password", true, true, true, false);
+    EXPECT_EQ(decryptedFilename, L"filename.txt");
+}
+
 TEST(NameEncryption, encrypt_new_encryption)
 {
-    auto encryptedFilename = CFolderSync::GetEncryptedFilename(L"filename.txt", L"password", true, true, true, false);
-    EXPECT_EQ(encryptedFilename, L"板浜慴殐樕槐湻槺䀮.7z");
+    auto encryptedFilename = CFolderSync::GetEncryptedFilename(L"filenam.txt", L"password", true, true, true, false);
+    EXPECT_EQ(encryptedFilename, L"板浜慴殐樕榛毛时.7z");
+}
+
+TEST(NameEncryption, encrypt_new_encryption2)
+{
+    auto encryptedFilename = CFolderSync::GetEncryptedFilename(L"filenam.txt", L"password", true, true, true, false);
+    EXPECT_EQ(encryptedFilename, L"板浜慴殐樕榛毛时.7z");
 }
