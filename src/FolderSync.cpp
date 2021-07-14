@@ -264,8 +264,6 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
                 else
                     bCopyOnly = false;
             }
-            else
-                bCopyOnly = false;
         }
         crypt = path;
     }
