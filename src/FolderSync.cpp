@@ -941,7 +941,29 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
         fd.filenameEncrypted = (_wcsicmp(decryptedRelPath.c_str(), fd.fileRelPath.c_str()) != 0);
         if (fd.filenameEncrypted)
         {
-            relPath = decryptedRelPath;
+            if (use7Z && !orig)
+            {
+                // if we use .7z as the file extension and the user tries to sync her/his own .7z files,
+                // we have to detect that here
+                auto lastDotPos = filePath.rfind('.');
+                if (lastDotPos != std::wstring::npos)
+                {
+                    if (_wcsicmp(filePath.substr(lastDotPos + 1).c_str(), L"7z") == 0)
+                    {
+                        auto preLastDotPos = filePath.rfind('.', lastDotPos - 1);
+                        if (preLastDotPos != std::wstring::npos)
+                            relPath = decryptedRelPath;
+                        else if (encnames && decryptedRelPath != relPath)
+                            relPath = decryptedRelPath;
+                    }
+                    else
+                        relPath = decryptedRelPath;
+                }
+                else
+                    relPath = decryptedRelPath;
+            }
+            else
+                relPath = decryptedRelPath;
         }
 
         fileList[relPath] = fd;
@@ -1278,7 +1300,7 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
                             uint8_t* cDecoded = nullptr;
                             if (base4k::base4KDecode(reinterpret_cast<const uint16_t*>(it->data()), &ccData, &cDecoded) == base4k::B4K_SUCCESS)
                             {
-                                memcpy(buffer.get(), cDecoded, ccData+1);
+                                memcpy(buffer.get(), cDecoded, ccData + 1);
                                 CryptDecrypt(hKey, 0, true, 0, static_cast<BYTE*>(buffer.get()), &dwLength);
                                 decryptName = CUnicodeUtils::StdGetUnicode(std::string(reinterpret_cast<char*>(buffer.get()), ccData));
                             }
