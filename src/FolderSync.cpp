@@ -138,11 +138,11 @@ int CFolderSync::SyncFolderThread()
         CAutoReadLock locker(m_guard);
         pv = m_pairs;
     }
+    m_progress      = 0;
+    m_progressTotal = 1;
     if (m_parentWnd)
     {
         CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-        m_progress      = 0;
-        m_progressTotal = 1;
         m_pProgDlg      = new CProgressDlg();
         m_pProgDlg->SetTitle(L"Syncing folders");
         m_pProgDlg->SetLine(0, L"scanning...");
