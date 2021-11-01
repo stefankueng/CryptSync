@@ -143,7 +143,7 @@ int CFolderSync::SyncFolderThread()
     if (m_parentWnd)
     {
         CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-        m_pProgDlg      = new CProgressDlg();
+        m_pProgDlg = new CProgressDlg();
         m_pProgDlg->SetTitle(L"Syncing folders");
         m_pProgDlg->SetLine(0, L"scanning...");
         m_pProgDlg->SetProgress(m_progress, m_progressTotal);
@@ -267,8 +267,8 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
         }
         crypt = path;
     }
-    crypt = CPathUtils::AdjustForMaxPath(crypt);
-    orig  = CPathUtils::AdjustForMaxPath(orig);
+    crypt                                   = CPathUtils::AdjustForMaxPath(crypt);
+    orig                                    = CPathUtils::AdjustForMaxPath(orig);
 
     WIN32_FILE_ATTRIBUTE_DATA fDataOrig     = {0};
     WIN32_FILE_ATTRIBUTE_DATA fDdataCrypt   = {0};
@@ -412,7 +412,7 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
         fDataOrig.ftLastWriteTime.dwLowDateTime  = static_cast<DWORD>(qwResult & 0xFFFFFFFF);
         fDataOrig.ftLastWriteTime.dwHighDateTime = static_cast<DWORD>(qwResult >> 32);
 
-        ULONGLONG qwResult2 = (static_cast<ULONGLONG>(fDdataCrypt.ftLastWriteTime.dwHighDateTime) << 32) + fDdataCrypt.ftLastWriteTime.dwLowDateTime;
+        ULONGLONG qwResult2                      = (static_cast<ULONGLONG>(fDdataCrypt.ftLastWriteTime.dwHighDateTime) << 32) + fDdataCrypt.ftLastWriteTime.dwLowDateTime;
         if (qwResult2 % 20000000UL)
         {
             qwResult2 += 20000000UL;
@@ -674,8 +674,8 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     qwResult /= 20000000UL;
                     qwResult *= 20000000UL;
                 }
-                ft1.dwLowDateTime  = static_cast<DWORD>(qwResult & 0xFFFFFFFF);
-                ft1.dwHighDateTime = static_cast<DWORD>(qwResult >> 32);
+                ft1.dwLowDateTime   = static_cast<DWORD>(qwResult & 0xFFFFFFFF);
+                ft1.dwHighDateTime  = static_cast<DWORD>(qwResult >> 32);
 
                 ULONGLONG qwResult2 = (static_cast<ULONGLONG>(ft2.dwHighDateTime) << 32) + ft2.dwLowDateTime;
                 if (qwResult2 % 20000000UL)
@@ -687,7 +687,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                 ft2.dwLowDateTime  = static_cast<DWORD>(qwResult2 & 0xFFFFFFFF);
                 ft2.dwHighDateTime = static_cast<DWORD>(qwResult2 >> 32);
 
-                cmp = CompareFileTime(&ft1, &ft2);
+                cmp                = CompareFileTime(&ft1, &ft2);
                 // if the difference is smaller than 4 seconds (twice the FAT limit),
                 // then assume the times are equal.
                 if (qwResult > qwResult2)
@@ -898,7 +898,7 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
     std::wstring enumpath = path;
     if ((enumpath.size() == 2) && (enumpath[1] == ':'))
         enumpath += L"\\";
-    CDirFileEnum enumerator(enumpath);
+    CDirFileEnum                               enumerator(enumpath);
 
     std::map<std::wstring, FileData, ci_lessW> fileList;
     std::wstring                               filePath;
@@ -933,7 +933,7 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
             else
                 relPath = filePath.substr(path.size() + 1);
         }
-        fd.fileRelPath = relPath;
+        fd.fileRelPath                = relPath;
 
         std::wstring decryptedRelPath = relPath;
         if (!orig)
@@ -984,7 +984,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
     std::wstring targetFolder = crypt.substr(0, slashpos);
     std::wstring cryptName    = crypt.substr(slashpos + 1);
 
-    int compression = noCompress ? 0 : 9;
+    int          compression  = noCompress ? 0 : 9;
     if (!noCompress)
     {
         // try to open the source file in read mode:
@@ -1029,6 +1029,15 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
                 // set the file timestamp
                 int  retry = 5;
                 bool bRet  = true;
+                do
+                {
+                    bRet = !!SetFileAttributes((targetFolder + L"\\" + cryptName).c_str(), FILE_ATTRIBUTE_NOT_CONTENT_INDEXED);
+                    if (!bRet)
+                        Sleep(200);
+                } while (!bRet && (retry-- > 0));
+
+                retry = 5;
+                bRet  = true;
                 do
                 {
                     if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
@@ -1291,7 +1300,7 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
                         dwLength         = static_cast<DWORD>(name.size() + 1024); // 1024 bytes should be enough for padding
                         auto buffer      = std::make_unique<BYTE[]>(dwLength);
 
-                        auto strIn = std::make_unique<BYTE[]>(name.size() * sizeof(WCHAR) + 1);
+                        auto strIn       = std::make_unique<BYTE[]>(name.size() * sizeof(WCHAR) + 1);
                         if (newEncryption)
                         {
                             base4k::B4K_ENCODING_SETTINGS encodingSettings;
@@ -1383,9 +1392,9 @@ std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, con
         }
     }
 
-    bool bResult = true;
+    bool       bResult = true;
 
-    HCRYPTPROV hProv = NULL;
+    HCRYPTPROV hProv   = NULL;
     // Get handle to user default provider.
     if (CryptAcquireContext(&hProv, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
     {
