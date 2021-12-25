@@ -330,7 +330,6 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
             }
             return;
         }
-
         else
         {
             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist and sync deleted not set, skipping delete file %s\n"), orig.c_str(), crypt.c_str());
@@ -955,6 +954,8 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
                             relPath = decryptedRelPath;
                         else if (encnames && decryptedRelPath != relPath)
                             relPath = decryptedRelPath;
+                        else if (!orig)
+                            relPath = decryptedRelPath; // orig file with no extension
                     }
                     else
                         relPath = decryptedRelPath;
