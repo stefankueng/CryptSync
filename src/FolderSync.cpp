@@ -659,10 +659,10 @@ int CFolderSync::SyncFolder(const PairData& pt)
             if (pt.m_fat)
             {
                 // round up to two seconds accuracy
-                FILETIME ft1;
+                FILETIME ft1{};
                 ft1.dwLowDateTime  = it->second.ft.dwLowDateTime;
                 ft1.dwHighDateTime = it->second.ft.dwHighDateTime;
-                FILETIME ft2;
+                FILETIME ft2{};
                 ft2.dwLowDateTime  = cryptIt->second.ft.dwLowDateTime;
                 ft2.dwHighDateTime = cryptIt->second.ft.dwHighDateTime;
 
@@ -999,7 +999,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
         GetFileSizeEx(hFile, &fileSize);
         hFile.CloseHandle();
 
-        if (fileSize.QuadPart > (compresssize * 1024 * 1024))
+        if (fileSize.QuadPart > (compresssize * 1024LL * 1024LL))
             compression = 0; // turn off compression for files bigger than compresssize MB
     }
 
@@ -1309,7 +1309,7 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
                             uint8_t* cDecoded = nullptr;
                             if (base4k::base4KDecode(reinterpret_cast<const uint16_t*>(it->data()), &ccData, &cDecoded) == base4k::B4K_SUCCESS)
                             {
-                                memcpy(buffer.get(), cDecoded, ccData + 1);
+                                memcpy(buffer.get(), cDecoded, ccData + 1LL);
                                 CryptDecrypt(hKey, 0, true, 0, static_cast<BYTE*>(buffer.get()), &dwLength);
                                 decryptName = CUnicodeUtils::StdGetUnicode(std::string(reinterpret_cast<char*>(buffer.get()), ccData));
                             }
