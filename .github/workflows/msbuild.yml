@@ -43,4 +43,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
           name: CryptSync64
-          path: bin/Release/x64/grepWin.exe
+          path: bin/Release/x64/CryptSync64.exe
