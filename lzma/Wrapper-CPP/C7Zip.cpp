@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2018 - Stefan Kueng
+// Copyright (C) 2018, 2022 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,36 +49,36 @@ CompressionFormat C7Zip::GetCompressionFormatFromPath()
         return CompressionFormat::Unknown;
     auto ext = m_archivePath.substr(dotPos + 1);
 
-    if (wcsicmp(ext.c_str(), L"zip") == 0)
+    if (_wcsicmp(ext.c_str(), L"zip") == 0)
         return CompressionFormat::Zip;
 
-    if (wcsicmp(ext.c_str(), L"7z") == 0)
+    if (_wcsicmp(ext.c_str(), L"7z") == 0)
         return CompressionFormat::SevenZip;
-    if (wcsicmp(ext.c_str(), L"7zip") == 0)
+    if (_wcsicmp(ext.c_str(), L"7zip") == 0)
         return CompressionFormat::SevenZip;
 
-    if (wcsicmp(ext.c_str(), L"tar") == 0)
+    if (_wcsicmp(ext.c_str(), L"tar") == 0)
         return CompressionFormat::Tar;
 
-    if (wcsicmp(ext.c_str(), L"bz2") == 0)
+    if (_wcsicmp(ext.c_str(), L"bz2") == 0)
         return CompressionFormat::BZip2;
 
-    if (wcsicmp(ext.c_str(), L"rar") == 0)
+    if (_wcsicmp(ext.c_str(), L"rar") == 0)
         return CompressionFormat::Rar;
 
-    if (wcsicmp(ext.c_str(), L"iso") == 0)
+    if (_wcsicmp(ext.c_str(), L"iso") == 0)
         return CompressionFormat::Iso;
 
-    if (wcsicmp(ext.c_str(), L"cab") == 0)
+    if (_wcsicmp(ext.c_str(), L"cab") == 0)
         return CompressionFormat::Cab;
 
-    if (wcsicmp(ext.c_str(), L"lzma") == 0)
+    if (_wcsicmp(ext.c_str(), L"lzma") == 0)
         return CompressionFormat::Lzma;
 
-    if (wcsicmp(ext.c_str(), L"lzma86") == 0)
+    if (_wcsicmp(ext.c_str(), L"lzma86") == 0)
         return CompressionFormat::Lzma86;
 
-    if (wcsicmp(ext.c_str(), L"chm") == 0)
+    if (_wcsicmp(ext.c_str(), L"chm") == 0)
         return CompressionFormat::Chm;
 
     return CompressionFormat::Unknown;
