@@ -44,6 +44,7 @@ void CExtractCallbackImp::Init()
   _lang_Extracting = LangString(IDS_PROGRESS_EXTRACTING);
   _lang_Testing = LangString(IDS_PROGRESS_TESTING);
   _lang_Skipping = LangString(IDS_PROGRESS_SKIPPING);
+  _lang_Reading = "Reading";
 
   NumArchiveErrors = 0;
   ThereAreMessageErrors = false;
@@ -233,6 +234,7 @@ STDMETHODIMP CExtractCallbackImp::PrepareOperation(const wchar_t *name, Int32 is
     case NArchive::NExtract::NAskMode::kExtract: msg = &_lang_Extracting; break;
     case NArchive::NExtract::NAskMode::kTest:    msg = &_lang_Testing; break;
     case NArchive::NExtract::NAskMode::kSkip:    msg = &_lang_Skipping; break;
+    case NArchive::NExtract::NAskMode::kReadExternal: msg = &_lang_Reading; break;
     // default: s = "Unknown operation";
   }
 
@@ -262,6 +264,7 @@ STDMETHODIMP CExtractCallbackImp::ShowMessage(const wchar_t *s)
 
 #endif
 
+void SetExtractErrorMessage(Int32 opRes, Int32 encrypted, const wchar_t *fileName, UString &s);
 void SetExtractErrorMessage(Int32 opRes, Int32 encrypted, const wchar_t *fileName, UString &s)
 {
   s.Empty();
@@ -449,6 +452,7 @@ static void AddNewLineString(UString &s, const UString &m)
   s.Add_LF();
 }
 
+UString GetOpenArcErrorMessage(UInt32 errorFlags);
 UString GetOpenArcErrorMessage(UInt32 errorFlags)
 {
   UString s;
@@ -523,6 +527,7 @@ static UString GetBracedType(const wchar_t *type)
   return s;
 }
 
+void OpenResult_GUI(UString &s, const CCodecs *codecs, const CArchiveLink &arcLink, const wchar_t *name, HRESULT result);
 void OpenResult_GUI(UString &s, const CCodecs *codecs, const CArchiveLink &arcLink, const wchar_t *name, HRESULT result)
 {
   FOR_VECTOR (level, arcLink.Arcs)
@@ -632,7 +637,9 @@ HRESULT CExtractCallbackImp::ExtractResult(HRESULT result)
   if (result == S_OK)
     return result;
   NumArchiveErrors++;
-  if (result == E_ABORT || result == ERROR_DISK_FULL)
+  if (result == E_ABORT
+      || result == HRESULT_FROM_WIN32(ERROR_DISK_FULL)
+      )
     return result;
 
   Add_ArchiveName_Error();
@@ -702,7 +709,7 @@ STDMETHODIMP CExtractCallbackImp::AskWrite(
     {
       if (!destFileInfo.IsDir())
       {
-        RINOK(MessageError("can not replace file with folder with same name", destPathSys));
+        RINOK(MessageError("Cannot replace file with folder with same name", destPathSys));
         return E_ABORT;
       }
       *writeAnswer = BoolToInt(false);
@@ -711,7 +718,7 @@ STDMETHODIMP CExtractCallbackImp::AskWrite(
   
     if (destFileInfo.IsDir())
     {
-      RINOK(MessageError("can not replace folder with file with same name", destPathSys));
+      RINOK(MessageError("Cannot replace folder with file with same name", destPathSys));
       *writeAnswer = BoolToInt(false);
       return S_OK;
     }
@@ -725,7 +732,7 @@ STDMETHODIMP CExtractCallbackImp::AskWrite(
         Int32 overwriteResult;
         UString destPathSpec = destPath;
         int slashPos = destPathSpec.ReverseFind_PathSepar();
-        destPathSpec.DeleteFrom(slashPos + 1);
+        destPathSpec.DeleteFrom((unsigned)(slashPos + 1));
         destPathSpec += fs2us(destFileInfo.Name);
 
         RINOK(AskOverwrite(
@@ -746,25 +753,28 @@ STDMETHODIMP CExtractCallbackImp::AskWrite(
           default:
             return E_FAIL;
         }
+        break;
       }
+      default:
+        break;
     }
     
     if (OverwriteMode == NExtract::NOverwriteMode::kRename)
     {
       if (!AutoRenamePath(destPathSys))
       {
-        RINOK(MessageError("can not create name for file", destPathSys));
+        RINOK(MessageError("Cannot create name for file", destPathSys));
         return E_ABORT;
       }
       destPathResultTemp = fs2us(destPathSys);
     }
     else
     {
-      if (NFind::DoesFileExist(destPathSys))
+      if (NFind::DoesFileExist_Raw(destPathSys))
       if (!NDir::DeleteFileAlways(destPathSys))
       if (GetLastError() != ERROR_FILE_NOT_FOUND)
       {
-        RINOK(MessageError("can not delete output file", destPathSys));
+        RINOK(MessageError("Cannot delete output file", destPathSys));
         return E_ABORT;
       }
     }
@@ -903,8 +913,10 @@ STDMETHODIMP CExtractCallbackImp::PrepareOperation7(Int32 askExtractMode)
 {
   COM_TRY_BEGIN
   _needUpdateStat = (
-      askExtractMode == NArchive::NExtract::NAskMode::kExtract ||
-      askExtractMode == NArchive::NExtract::NAskMode::kTest);
+         askExtractMode == NArchive::NExtract::NAskMode::kExtract
+      || askExtractMode == NArchive::NExtract::NAskMode::kTest
+      || askExtractMode == NArchive::NExtract::NAskMode::kReadExternal
+      );
 
   /*
   _extractMode = false;
@@ -922,7 +934,7 @@ STDMETHODIMP CExtractCallbackImp::PrepareOperation7(Int32 askExtractMode)
   COM_TRY_END
 }
 
-STDMETHODIMP CExtractCallbackImp::SetOperationResult7(Int32 opRes, Int32 encrypted)
+STDMETHODIMP CExtractCallbackImp::SetOperationResult8(Int32 opRes, Int32 encrypted, UInt64 size)
 {
   COM_TRY_BEGIN
   if (VirtFileSystem && _newVirtFileWasAdded)
@@ -942,7 +954,7 @@ STDMETHODIMP CExtractCallbackImp::SetOperationResult7(Int32 opRes, Int32 encrypt
   }
   else if (_hashCalc && _needUpdateStat)
   {
-    _hashCalc->SetSize(_curSize);
+    _hashCalc->SetSize(size); // (_curSize) before 21.04
     _hashCalc->Final(_isFolder, _isAltStream, _filePath);
   }
   return SetOperationResult(opRes, encrypted);
@@ -950,9 +962,8 @@ STDMETHODIMP CExtractCallbackImp::SetOperationResult7(Int32 opRes, Int32 encrypt
 }
 
 
-static const size_t k_SizeT_MAX = (size_t)((size_t)0 - 1);
 
-static const UInt32 kBlockSize = ((UInt32)1 << 31);
+// static const UInt32 kBlockSize = ((UInt32)1 << 31);
 
 STDMETHODIMP CVirtFileSystem::Write(const void *data, UInt32 size, UInt32 *processedSize)
 {
@@ -977,8 +988,9 @@ STDMETHODIMP CVirtFileSystem::Write(const void *data, UInt32 size, UInt32 *proce
       if (b < a)
         b = a;
       useMem = false;
-      if (b <= k_SizeT_MAX && b <= MaxTotalAllocSize)
-        useMem = file.Data.ReAlloc_KeepData((size_t)b, (size_t)file.Size);
+      const size_t b_sizet = (size_t)b;
+      if (b == b_sizet && b <= MaxTotalAllocSize)
+        useMem = file.Data.ReAlloc_KeepData(b_sizet, (size_t)file.Size);
     }
     if (useMem)
     {

@@ -4,6 +4,7 @@
 #define __ARCHIVE_TAR_ITEM_H
 
 #include "../../../Common/MyLinux.h"
+#include "../../../Common/UTFConvert.h"
 
 #include "../Common/ItemNameUtils.h"
 
@@ -41,6 +42,15 @@ struct CItem
   bool DeviceMinorDefined;
 
   CRecordVector<CSparseBlock> SparseBlocks;
+
+  void SetDefaultWriteFields()
+  {
+    DeviceMajorDefined = false;
+    DeviceMinorDefined = false;
+    UID = 0;
+    GID = 0;
+    memcpy(Magic, NFileHeader::NMagic::kUsTar_GNU, 8);
+  }
 
   bool IsSymLink() const { return LinkFlag == NFileHeader::NLinkFlag::kSymLink && (Size == 0); }
   bool IsHardLink() const { return LinkFlag == NFileHeader::NLinkFlag::kHardLink; }
@@ -102,13 +112,57 @@ struct CItem
   bool IsUstarMagic() const
   {
     for (int i = 0; i < 5; i++)
-      if (Magic[i] != NFileHeader::NMagic::kUsTar_00[i])
+      if (Magic[i] != NFileHeader::NMagic::kUsTar_GNU[i])
         return false;
     return true;
   }
 
   UInt64 GetPackSizeAligned() const { return (PackSize + 0x1FF) & (~((UInt64)0x1FF)); }
+
+  bool IsThereWarning() const
+  {
+    // that Header Warning is possible if (Size != 0) for dir item
+    return (PackSize < Size) && (LinkFlag == NFileHeader::NLinkFlag::kDirectory);
+  }
 };
+
+
+
+struct CEncodingCharacts
+{
+  bool IsAscii;
+  // bool Oem_Checked;
+  // bool Oem_Ok;
+  // bool Utf_Checked;
+  CUtf8Check UtfCheck;
+  
+  void Clear()
+  {
+    IsAscii = true;
+    // Oem_Checked = false;
+    // Oem_Ok = false;
+    // Utf_Checked = false;
+    UtfCheck.Clear();
+  }
+
+  void Update(const CEncodingCharacts &ec)
+  {
+    if (!ec.IsAscii)
+      IsAscii = false;
+
+    // if (ec.Utf_Checked)
+    {
+      UtfCheck.Update(ec.UtfCheck);
+      // Utf_Checked = true;
+    }
+  }
+
+  CEncodingCharacts() { Clear(); }
+  void Check(const AString &s);
+  AString GetCharactsString() const;
+};
+
+
 
 struct CItemEx: public CItem
 {
@@ -116,6 +170,8 @@ struct CItemEx: public CItem
   unsigned HeaderSize;
   bool NameCouldBeReduced;
   bool LinkNameCouldBeReduced;
+
+  CEncodingCharacts EncodingCharacts;
 
   UInt64 GetDataPosition() const { return HeaderPos + HeaderSize; }
   UInt64 GetFullSize() const { return HeaderSize + PackSize; }

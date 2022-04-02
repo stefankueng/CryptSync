@@ -217,6 +217,10 @@ HRESULT CFolderOutStream::FlushCorrupted(Int32 callbackOperationResult)
 STDMETHODIMP CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     Int32 testModeSpec, IArchiveExtractCallback *extractCallbackSpec)
 {
+  // for GCC
+  // CFolderOutStream *folderOutStream = new CFolderOutStream;
+  // CMyComPtr<ISequentialOutStream> outStream(folderOutStream);
+
   COM_TRY_BEGIN
   
   CMyComPtr<IArchiveExtractCallback> extractCallback = extractCallbackSpec;
@@ -350,7 +354,7 @@ STDMETHODIMP CHandler::Extract(const UInt32 *indices, UInt32 numItems,
       #ifndef _NO_CRYPTO
         bool isEncrypted = false;
         bool passwordIsDefined = false;
-        UString password;
+        UString_Wipe password;
       #endif
 
 
@@ -370,7 +374,7 @@ STDMETHODIMP CHandler::Extract(const UInt32 *indices, UInt32 numItems,
           
           _7Z_DECODER_CRYPRO_VARS
           #if !defined(_7ZIP_ST)
-            , true, _numThreads, _memUsage
+            , true, _numThreads, _memUsage_Decompress
           #endif
           );
 
@@ -411,7 +415,8 @@ STDMETHODIMP CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     {
       RINOK(folderOutStream->FlushCorrupted(NExtract::NOperationResult::kDataError));
       // continue;
-      return E_FAIL;
+      // return E_FAIL;
+      throw;
     }
   }
 

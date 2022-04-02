@@ -112,6 +112,7 @@ static const CPartType kPartTypes[] =
   { 0x516E7CB8, "zfs", "FreeBSD ZFS" },
 
   { 0x48465300, "hfsx", "HFS+" },
+  { 0x7C3457EF, "apfs", "APFS" },
 };
 
 static int FindPartType(const Byte *guid)
@@ -333,16 +334,25 @@ STDMETHODIMP CHandler::GetProperty(UInt32 index, PROPID propID, PROPVARIANT *val
   {
     case kpidPath:
     {
+      // Windows BDP partitions can have identical names.
+      // So we add the partition number at front
       UString s;
-      for (unsigned i = 0; i < kNameLen; i++)
+      s.Add_UInt32(index);
       {
-        wchar_t c = (wchar_t)Get16(item.Name + i * 2);
-        if (c == 0)
-          break;
-        s += c;
+        UString s2;
+        for (unsigned i = 0; i < kNameLen; i++)
+        {
+          wchar_t c = (wchar_t)Get16(item.Name + i * 2);
+          if (c == 0)
+            break;
+          s2 += c;
+        }
+        if (!s2.IsEmpty())
+        {
+          s += '.';
+          s += s2;
+        }
       }
-      if (s.IsEmpty())
-        s.Add_UInt32(index);
       {
         s += '.';
         const char *ext = NULL;

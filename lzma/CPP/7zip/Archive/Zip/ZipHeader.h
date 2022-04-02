@@ -56,7 +56,10 @@ namespace NFileHeader
       
       kTerse = 18,
       kLz77 = 19,
+      kZstdPk = 20,
       
+      kZstdWz = 93,
+      kMP3 = 94,
       kXz = 95,
       kJpeg = 96,
       kWavPack = 97,
@@ -86,11 +89,15 @@ namespace NFileHeader
       kZip64 = 0x01,
       kNTFS = 0x0A,
       kStrongEncrypt = 0x17,
+      kIzNtSecurityDescriptor = 0x4453,
       kUnixTime = 0x5455,
       kUnixExtra = 0x5855,
       kIzUnicodeComment = 0x6375,
       kIzUnicodeName = 0x7075,
-      kWzAES = 0x9901
+      kUnix2Extra = 0x7855,
+      kUnix3Extra = 0x7875,
+      kWzAES = 0x9901,
+      kApkAlign = 0xD935
     };
   }
 

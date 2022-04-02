@@ -3,6 +3,7 @@ COMMON_OBJS = \
   $O\CrcReg.obj \
   $O\DynLimBuf.obj \
   $O\IntToString.obj \
+  $O\LzFindPrepare.obj \
   $O\MyMap.obj \
   $O\MyString.obj \
   $O\MyVector.obj \
@@ -55,6 +56,7 @@ AR_OBJS = \
   $O\ApmHandler.obj \
   $O\ArHandler.obj \
   $O\ArjHandler.obj \
+  $O\Base64Handler.obj \
   $O\Bz2Handler.obj \
   $O\ComHandler.obj \
   $O\CpioHandler.obj \
@@ -87,6 +89,7 @@ AR_OBJS = \
   $O\UefiHandler.obj \
   $O\VdiHandler.obj \
   $O\VhdHandler.obj \
+  $O\VhdxHandler.obj \
   $O\VmdkHandler.obj \
   $O\XarHandler.obj \
   $O\XzHandler.obj \
@@ -271,12 +274,11 @@ C_OBJS = \
   $O\MtDec.obj \
   $O\Ppmd7.obj \
   $O\Ppmd7Dec.obj \
+  $O\Ppmd7aDec.obj \
   $O\Ppmd7Enc.obj \
   $O\Ppmd8.obj \
   $O\Ppmd8Dec.obj \
   $O\Ppmd8Enc.obj \
-  $O\Sha1.obj \
-  $O\Sha256.obj \
   $O\Sort.obj \
   $O\Threads.obj \
   $O\Xz.obj \
@@ -287,4 +289,7 @@ C_OBJS = \
 !include "../../Aes.mak"
 !include "../../Crc.mak"
 !include "../../Crc64.mak"
+!include "../../LzFindOpt.mak"
 !include "../../LzmaDec.mak"
+!include "../../Sha1.mak"
+!include "../../Sha256.mak"

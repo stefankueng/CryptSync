@@ -234,7 +234,7 @@ public:
   UString ArchiveType;
 
   FStringVector _names;
-  FString _folderPrefix;
+  FString _folderPrefix; // for new files from disk
 
   bool _updatePathPrefix_is_AltFolder;
   UString _updatePathPrefix;
@@ -243,6 +243,8 @@ public:
   UString _archiveFilePath;
   DWORD _attrib;
   bool _isDeviceFile;
+  bool _isHashHandler;
+  FString _hashBaseFolderPrefix;
 
   #ifndef EXTRACT_ONLY
   CObjectVector<UString> m_PropNames;
@@ -258,7 +260,7 @@ public:
     return _attrib != INVALID_FILE_ATTRIBUTES && (_attrib & FILE_ATTRIBUTE_READONLY);
   }
 
-  bool IsThereReadOnlyArc() const
+  bool IsThere_ReadOnlyArc() const
   {
     FOR_VECTOR (i, _archiveLink.Arcs)
     {
@@ -292,7 +294,7 @@ public:
           s2 += "Warning: The archive is open with offset";
         else
         {
-          s2 += "Can not open the file as [";
+          s2 += "Cannot open the file as [";
           s2 += g_CodecsObj->GetFormatNamePtr(arc.ErrorInfo.ErrorFormatIndex);
           s2 += "] archive";
         }

@@ -192,17 +192,29 @@ BSTR CPropVariant::AllocBstr(unsigned numChars)
   return bstrVal;
 }
 
+#define SET_PROP_id_dest(id, dest) \
+  if (vt != id) { InternalClear(); vt = id; } dest = value;
+
+void CPropVariant::Set_Int32(Int32 value) throw()
+{
+  SET_PROP_id_dest(VT_I4, lVal);
+}
+
+void CPropVariant::Set_Int64(Int64 value) throw()
+{
+  SET_PROP_id_dest(VT_I8, hVal.QuadPart);
+}
+
 #define SET_PROP_FUNC(type, id, dest) \
   CPropVariant& CPropVariant::operator=(type value) throw() \
-  { if (vt != id) { InternalClear(); vt = id; } \
-    dest = value; return *this; }
+  { SET_PROP_id_dest(id, dest); return *this; }
 
 SET_PROP_FUNC(Byte, VT_UI1, bVal)
 // SET_PROP_FUNC(Int16, VT_I2, iVal)
-SET_PROP_FUNC(Int32, VT_I4, lVal)
+// SET_PROP_FUNC(Int32, VT_I4, lVal)
 SET_PROP_FUNC(UInt32, VT_UI4, ulVal)
 SET_PROP_FUNC(UInt64, VT_UI8, uhVal.QuadPart)
-SET_PROP_FUNC(Int64, VT_I8, hVal.QuadPart)
+// SET_PROP_FUNC(Int64, VT_I8, hVal.QuadPart)
 SET_PROP_FUNC(const FILETIME &, VT_FILETIME, filetime)
 
 HRESULT PropVariant_Clear(PROPVARIANT *prop) throw()
@@ -278,7 +290,8 @@ HRESULT CPropVariant::Attach(PROPVARIANT *pSrc) throw()
   HRESULT hr = Clear();
   if (FAILED(hr))
     return hr;
-  memcpy(this, pSrc, sizeof(PROPVARIANT));
+  // memcpy((PROPVARIANT *)this, pSrc, sizeof(PROPVARIANT));
+  *(PROPVARIANT *)this = *pSrc;
   pSrc->vt = VT_EMPTY;
   return S_OK;
 }
@@ -291,7 +304,8 @@ HRESULT CPropVariant::Detach(PROPVARIANT *pDest) throw()
     if (FAILED(hr))
       return hr;
   }
-  memcpy(pDest, this, sizeof(PROPVARIANT));
+  // memcpy(pDest, this, sizeof(PROPVARIANT));
+  *pDest = *(PROPVARIANT *)this;
   vt = VT_EMPTY;
   return S_OK;
 }

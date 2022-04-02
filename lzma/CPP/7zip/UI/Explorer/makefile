@@ -65,9 +65,11 @@ FM_OBJS = \
   $O\HelpUtils.obj \
   $O\LangUtils.obj \
   $O\ProgramLocation.obj \
+  $O\PropertyName.obj \
   $O\RegistryUtils.obj \
 
 C_OBJS = \
+  $O\CpuArch.obj \
   $O\Threads.obj \
 
 !include "../../7zip.mak"

@@ -969,6 +969,36 @@
     <ClCompile Include="Wrapper-CPP\Helper.cpp">
       <Filter>Wrapper-CPP</Filter>
     </ClCompile>
+    <ClCompile Include="C\Sha1Opt.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="C\Sha256Opt.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="C\LzFindOpt.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="C\Ppmd7aDec.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Archive\VhdxHandler.cpp">
+      <Filter>Archive</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Archive\Base64Handler.cpp">
+      <Filter>Archive</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\Common\CksumReg.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\Common\LzFindPrepare.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\Common\Sha1Prepare.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\Common\Sha256Prepare.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CPP\7zip\Bundles\Format7zF\resource.rc" />
@@ -1673,5 +1703,16 @@
     <CustomBuild Include="Asm\x86\AesOpt.asm">
       <Filter>Asm</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Asm\x86\Sha1Opt.asm">
+      <Filter>Asm</Filter>
+    </None>
+    <None Include="Asm\x86\Sha256Opt.asm">
+      <Filter>Asm</Filter>
+    </None>
+    <None Include="Asm\x86\LzFindOpt.asm">
+      <Filter>Asm</Filter>
+    </None>
   </ItemGroup>
 </Project>

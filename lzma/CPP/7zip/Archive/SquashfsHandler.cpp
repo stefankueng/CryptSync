@@ -4,6 +4,7 @@
 
 #include "../../../C/Alloc.h"
 #include "../../../C/CpuArch.h"
+#include "../../../C/LzmaDec.h"
 #include "../../../C/Xz.h"
 
 #include "../../Common/ComTry.h"
@@ -24,7 +25,7 @@
 
 #include "../Compress/CopyCoder.h"
 #include "../Compress/ZlibDecoder.h"
-#include "../Compress/LzmaDecoder.h"
+// #include "../Compress/LzmaDecoder.h"
 
 namespace NArchive {
 namespace NSquashfs {
@@ -40,9 +41,9 @@ static const unsigned kNumDirLevelsMax = (1 << 10);
 #define Get64(p) (be ? GetBe64(p) : GetUi64(p))
 */
 
-UInt16 Get16b(const Byte *p, bool be) { return be ? GetBe16(p) : GetUi16(p); }
-UInt32 Get32b(const Byte *p, bool be) { return be ? GetBe32(p) : GetUi32(p); }
-UInt64 Get64b(const Byte *p, bool be) { return be ? GetBe64(p) : GetUi64(p); }
+static UInt16 Get16b(const Byte *p, bool be) { return be ? GetBe16(p) : GetUi16(p); }
+static UInt32 Get32b(const Byte *p, bool be) { return be ? GetBe32(p) : GetUi32(p); }
+static UInt64 Get64b(const Byte *p, bool be) { return be ? GetBe64(p) : GetUi64(p); }
 
 #define Get16(p) Get16b(p, be)
 #define Get32(p) Get32b(p, be)
@@ -120,6 +121,10 @@ static const char * const k_Flags[] =
   , "ALWAYS_FRAGMENTS"
   , "DUPLICATES_REMOVED"
   , "EXPORTABLE"
+  , "UNCOMPRESSED_XATTRS"
+  , "NO_XATTRS"
+  , "COMPRESSOR_OPTIONS"
+  , "UNCOMPRESSED_IDS"
 };
 
 static const UInt32 kNotCompressedBit16 = (1 << 15);
@@ -128,10 +133,10 @@ static const UInt32 kNotCompressedBit32 = (1 << 24);
 #define GET_COMPRESSED_BLOCK_SIZE(size) ((size) & ~kNotCompressedBit32)
 #define IS_COMPRESSED_BLOCK(size) (((size) & kNotCompressedBit32) == 0)
 
-static const UInt32 kHeaderSize1 = 0x33;
-static const UInt32 kHeaderSize2 = 0x3F;
+// static const UInt32 kHeaderSize1 = 0x33;
+// static const UInt32 kHeaderSize2 = 0x3F;
 static const UInt32 kHeaderSize3 = 0x77;
-static const UInt32 kHeaderSize4 = 0x60;
+// static const UInt32 kHeaderSize4 = 0x60;
 
 struct CHeader
 {
@@ -866,8 +871,8 @@ class CHandler:
   CBufPtrSeqOutStream *_outStreamSpec;
   CMyComPtr<ISequentialOutStream> _outStream;
 
-  NCompress::NLzma::CDecoder *_lzmaDecoderSpec;
-  CMyComPtr<ICompressCoder> _lzmaDecoder;
+  // NCompress::NLzma::CDecoder *_lzmaDecoderSpec;
+  // CMyComPtr<ICompressCoder> _lzmaDecoder;
 
   NCompress::NZlib::CDecoder *_zlibDecoderSpec;
   CMyComPtr<ICompressCoder> _zlibDecoder;
@@ -1155,12 +1160,13 @@ HRESULT CHandler::Decompress(ISequentialOutStream *outStream, Byte *outBuf, bool
     if (inSize != _zlibDecoderSpec->GetInputProcessedSize())
       return S_FALSE;
   }
+  /*
   else if (method == kMethod_LZMA)
   {
     if (!_lzmaDecoder)
     {
       _lzmaDecoderSpec = new NCompress::NLzma::CDecoder();
-      _lzmaDecoderSpec->FinishStream = true;
+      // _lzmaDecoderSpec->FinishStream = true;
       _lzmaDecoder = _lzmaDecoderSpec;
     }
     const UInt32 kPropsSize = LZMA_PROPS_SIZE + 8;
@@ -1187,6 +1193,7 @@ HRESULT CHandler::Decompress(ISequentialOutStream *outStream, Byte *outBuf, bool
     if (inSize != propsSize + _lzmaDecoderSpec->GetInputProcessedSize())
       return S_FALSE;
   }
+  */
   else
   {
     if (_inputBuffer.Size() < inSize)
@@ -1200,10 +1207,49 @@ HRESULT CHandler::Decompress(ISequentialOutStream *outStream, Byte *outBuf, bool
       if (!dest)
         return E_OUTOFMEMORY;
     }
+    
     SizeT destLen = outSizeMax, srcLen = inSize;
+
     if (method == kMethod_LZO)
     {
       RINOK(LzoDecode(dest, &destLen, _inputBuffer, &srcLen));
+    }
+    else if (method == kMethod_LZMA)
+    {
+      Byte props[5];
+      const Byte *src = _inputBuffer;
+
+      if (_noPropsLZMA)
+      {
+        props[0] = 0x5D;
+        SetUi32(&props[1], _h.BlockSize);
+      }
+      else
+      {
+        const UInt32 kPropsSize = LZMA_PROPS_SIZE + 8;
+        if (inSize < kPropsSize)
+          return S_FALSE;
+        memcpy(props, src, LZMA_PROPS_SIZE);
+        UInt64 outSize = GetUi64(src + LZMA_PROPS_SIZE);
+        if (outSize > outSizeMax)
+          return S_FALSE;
+        destLen = (SizeT)outSize;
+        src += kPropsSize;
+        inSize -= kPropsSize;
+        srcLen = inSize;
+      }
+
+      ELzmaStatus status;
+      SRes res = LzmaDecode(dest, &destLen,
+          src, &srcLen,
+          props, LZMA_PROPS_SIZE,
+          LZMA_FINISH_END,
+          &status, &g_Alloc);
+      if (res != 0)
+        return SResToHRESULT(res);
+      if (status != LZMA_STATUS_FINISHED_WITH_MARK
+          && status != LZMA_STATUS_MAYBE_FINISHED_WITHOUT_MARK)
+        return S_FALSE;
     }
     else
     {
@@ -1217,6 +1263,7 @@ HRESULT CHandler::Decompress(ISequentialOutStream *outStream, Byte *outBuf, bool
       if (status != CODER_STATUS_NEEDS_MORE_INPUT || !XzUnpacker_IsStreamWasFinished(&_xz))
         return S_FALSE;
     }
+    
     if (inSize != srcLen)
       return S_FALSE;
     if (outBuf)
@@ -1268,7 +1315,7 @@ HRESULT CHandler::ReadData(CData &data, UInt64 start, UInt64 end)
 {
   if (end < start || end - start >= ((UInt64)1 << 32))
     return S_FALSE;
-  UInt32 size = (UInt32)(end - start);
+  const UInt32 size = (UInt32)(end - start);
   RINOK(_stream->Seek(start, STREAM_SEEK_SET, NULL));
   _dynOutStreamSpec->Init();
   UInt32 packPos = 0;
@@ -1280,8 +1327,11 @@ HRESULT CHandler::ReadData(CData &data, UInt64 start, UInt64 end)
       return S_FALSE;
     UInt32 packSize = size - packPos;
     RINOK(ReadMetadataBlock(packSize));
-    if (_dynOutStreamSpec->GetSize() >= ((UInt64)1 << 32))
-      return S_FALSE;
+    {
+      const size_t tSize = _dynOutStreamSpec->GetSize();
+      if (tSize != (UInt32)tSize)
+        return S_FALSE;
+    }
     packPos += packSize;
   }
   data.UnpackPos.Add((UInt32)_dynOutStreamSpec->GetSize());
@@ -1445,7 +1495,7 @@ HRESULT CHandler::OpenDir(int parent, UInt32 startBlock, UInt32 offset, unsigned
       if (_openCodePage == CP_UTF8)
       {
         tempString.SetFrom_CalcLen((const char *)p, size);
-        if (!CheckUTF8(tempString))
+        if (!CheckUTF8_AString(tempString))
           _openCodePage = CP_OEMCP;
       }
 
@@ -1566,11 +1616,14 @@ HRESULT CHandler::Open2(IInStream *inStream)
   {
     UInt32 pos = 0;
     UInt32 totalSize = (UInt32)_inodesData.Data.Size();
+    const unsigned kMinNodeParseSize = 4;
+    if (_h.NumInodes > totalSize / kMinNodeParseSize)
+      return S_FALSE;
     _nodesPos.ClearAndReserve(_h.NumInodes);
     _nodes.ClearAndReserve(_h.NumInodes);
     // we use _blockToNode for binary search seed optimizations
     _blockToNode.ClearAndReserve(_inodesData.GetNumBlocks() + 1);
-    int curBlock = 0;
+    unsigned curBlock = 0;
     for (UInt32 i = 0; i < _h.NumInodes; i++)
     {
       CNode n;
@@ -2048,9 +2101,9 @@ HRESULT CHandler::ReadBlock(UInt64 blockIndex, Byte *dest, size_t blockSize)
   bool compressed;
   if (blockIndex < _blockCompressed.Size())
   {
-    compressed = _blockCompressed[(int)blockIndex];
-    blockOffset = _blockOffsets[(int)blockIndex];
-    packBlockSize = (UInt32)(_blockOffsets[(int)blockIndex + 1] - blockOffset);
+    compressed = _blockCompressed[(unsigned)blockIndex];
+    blockOffset = _blockOffsets[(unsigned)blockIndex];
+    packBlockSize = (UInt32)(_blockOffsets[(unsigned)blockIndex + 1] - blockOffset);
     blockOffset += node.StartBlock;
   }
   else
@@ -2084,14 +2137,16 @@ HRESULT CHandler::ReadBlock(UInt64 blockIndex, Byte *dest, size_t blockSize)
       bool outBufWasWritten;
       UInt32 outBufWasWrittenSize;
       HRESULT res = Decompress(_outStream, _cachedBlock, &outBufWasWritten, &outBufWasWrittenSize, packBlockSize, _h.BlockSize);
+      RINOK(res);
       if (outBufWasWritten)
         _cachedUnpackBlockSize = outBufWasWrittenSize;
       else
         _cachedUnpackBlockSize = (UInt32)_outStreamSpec->GetPos();
-      RINOK(res);
     }
     else
     {
+      if (packBlockSize > _h.BlockSize)
+        return S_FALSE;
       RINOK(ReadStream_FALSE(_limitedInStream, _cachedBlock, packBlockSize));
       _cachedUnpackBlockSize = packBlockSize;
     }

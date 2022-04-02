@@ -20,15 +20,16 @@ CURRENT_OBJS = \
   $O\PluginWrite.obj \
   $O\ProgressBox.obj \
   $O\UpdateCallbackFar.obj \
-  $O\UTFConvert.obj \
 
 COMMON_OBJS = \
+  $O\DynLimBuf.obj \
   $O\IntToString.obj \
   $O\NewHandler.obj \
   $O\MyString.obj \
   $O\StringConvert.obj \
   $O\StringToInt.obj \
   $O\MyVector.obj \
+  $O\UTFConvert.obj \
   $O\Wildcard.obj \
 
 WIN_OBJS = \
@@ -52,6 +53,7 @@ WIN_OBJS = \
   $O\FileStreams.obj \
   $O\FilterCoder.obj \
   $O\LimitedStreams.obj \
+  $O\MethodProps.obj \
   $O\ProgressUtils.obj \
   $O\PropId.obj \
   $O\StreamObjects.obj \
@@ -64,6 +66,7 @@ UI_COMMON_OBJS = \
   $O\DefaultName.obj \
   $O\EnumDirItems.obj \
   $O\ExtractingFilePath.obj \
+  $O\HashCalc.obj \
   $O\LoadCodecs.obj \
   $O\OpenArchive.obj \
   $O\PropIDUtils.obj \
@@ -77,6 +80,7 @@ UI_COMMON_OBJS = \
   $O\ZipRegistry.obj \
 
 AR_COMMON_OBJS = \
+  $O\ItemNameUtils.obj \
   $O\OutStreamWithCRC.obj \
 
 AGENT_OBJS = \

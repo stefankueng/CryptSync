@@ -2,9 +2,13 @@
 
 #include "StdAfx.h"
 
+#ifdef _WIN32
+#include "../../../../C/DllSecur.h"
+#endif
+
 #include "../../../Common/MyWindows.h"
 
-#include <shlwapi.h>
+#include <Shlwapi.h>
 
 #include "../../../Common/MyInitGuid.h"
 
@@ -30,10 +34,18 @@
 
 using namespace NWindows;
 
+#ifdef EXTERNAL_CODECS
+const CExternalCodecs *g_ExternalCodecs_Ptr;
+#endif
+
+extern
+HINSTANCE g_hInstance;
 HINSTANCE g_hInstance;
 
 #ifndef UNDER_CE
 
+extern
+DWORD g_ComCtl32Version;
 DWORD g_ComCtl32Version;
 
 static DWORD GetDllVersion(LPCTSTR dllName)
@@ -42,7 +54,7 @@ static DWORD GetDllVersion(LPCTSTR dllName)
   HINSTANCE hinstDll = LoadLibrary(dllName);
   if (hinstDll)
   {
-    DLLGETVERSIONPROC pDllGetVersion = (DLLGETVERSIONPROC)GetProcAddress(hinstDll, "DllGetVersion");
+    DLLGETVERSIONPROC pDllGetVersion = (DLLGETVERSIONPROC)(void *)GetProcAddress(hinstDll, "DllGetVersion");
     if (pDllGetVersion)
     {
       DLLVERSIONINFO dvi;
@@ -59,6 +71,8 @@ static DWORD GetDllVersion(LPCTSTR dllName)
 
 #endif
 
+extern
+bool g_LVN_ITEMACTIVATE_Support;
 bool g_LVN_ITEMACTIVATE_Support = true;
 
 static void ErrorMessage(LPCWSTR message)
@@ -86,7 +100,7 @@ static int ShowMemErrorMessage()
 
 static int ShowSysErrorMessage(DWORD errorCode)
 {
-  if (errorCode == E_OUTOFMEMORY)
+  if ((HRESULT)errorCode == E_OUTOFMEMORY)
     return ShowMemErrorMessage();
   ErrorMessage(HResultToMessage(errorCode));
   return NExitCode::kFatalError;
@@ -124,8 +138,22 @@ static int Main2()
   codecs->CaseSensitiveChange = options.CaseSensitiveChange;
   codecs->CaseSensitive = options.CaseSensitive;
   ThrowException_if_Error(codecs->Load());
+  Codecs_AddHashArcHandler(codecs);
+ 
+  #ifdef EXTERNAL_CODECS
+  {
+    g_ExternalCodecs_Ptr = &__externalCodecs;
+    UString s;
+    codecs->GetCodecsErrorMessage(s);
+    if (!s.IsEmpty())
+    {
+      MessageBoxW(0, s, L"7-Zip", MB_ICONERROR);
+    }
   
-  bool isExtractGroupCommand = options.Command.IsFromExtractGroup();
+  }
+  #endif
+
+  const bool isExtractGroupCommand = options.Command.IsFromExtractGroup();
   
   if (codecs->Formats.Size() == 0 &&
         (isExtractGroupCommand
@@ -150,7 +178,7 @@ static int Main2()
     return NExitCode::kFatalError;
   }
 
-  CIntVector excludedFormatIndices;
+  CIntVector excludedFormats;
   FOR_VECTOR (k, options.ExcludedArcTypes)
   {
     CIntVector tempIndices;
@@ -160,12 +188,13 @@ static int Main2()
       ErrorLangMessage(IDS_UNSUPPORTED_ARCHIVE_TYPE);
       return NExitCode::kFatalError;
     }
-    excludedFormatIndices.AddToUniqueSorted(tempIndices[0]);
-    // excludedFormatIndices.Sort();
+    excludedFormats.AddToUniqueSorted(tempIndices[0]);
+    // excludedFormats.Sort();
   }
 
   #ifdef EXTERNAL_CODECS
   if (isExtractGroupCommand
+      || options.Command.IsFromUpdateGroup()
       || options.Command.CommandType == NCommandType::kHash
       || options.Command.CommandType == NCommandType::kBenchmark)
     ThrowException_if_Error(__externalCodecs.Load());
@@ -173,7 +202,12 @@ static int Main2()
   
   if (options.Command.CommandType == NCommandType::kBenchmark)
   {
-    HRESULT res = Benchmark(EXTERNAL_CODECS_VARS_L options.Properties);
+    HRESULT res = Benchmark(
+        EXTERNAL_CODECS_VARS_L
+        options.Properties,
+        options.NumIterations_Defined ?
+          options.NumIterations :
+          k_NumBenchIterations_Default);
     /*
     if (res == S_FALSE)
     {
@@ -245,8 +279,10 @@ static int Main2()
 
     ecs->MultiArcMode = (ArchivePathsSorted.Size() > 1);
 
-    HRESULT result = ExtractGUI(codecs,
-          formatIndices, excludedFormatIndices,
+    HRESULT result = ExtractGUI(
+          // EXTERNAL_CODECS_VARS_L
+          codecs,
+          formatIndices, excludedFormats,
           ArchivePathsSorted,
           ArchivePathsFullSorted,
           options.Censor.Pairs.Front().Head,
@@ -339,7 +375,9 @@ static int Main2()
   return 0;
 }
 
+#if defined(_UNICODE) && !defined(_WIN64) && !defined(UNDER_CE)
 #define NT_CHECK_FAIL_ACTION ErrorMessage("Unsupported Windows version"); return NExitCode::kFatalError;
+#endif
 
 int APIENTRY WinMain(HINSTANCE  hInstance, HINSTANCE /* hPrevInstance */,
   #ifdef UNDER_CE
@@ -372,6 +410,10 @@ int APIENTRY WinMain(HINSTANCE  hInstance, HINSTANCE /* hPrevInstance */,
   // setlocale(LC_COLLATE, ".ACP");
   try
   {
+    #ifdef _WIN32
+    My_SetDefaultDllDirectories();
+    #endif
+
     return Main2();
   }
   catch(const CNewException &)

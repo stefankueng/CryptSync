@@ -68,6 +68,8 @@ struct CDllCodecInfo
   UInt32 CodecIndex;
   bool EncoderIsAssigned;
   bool DecoderIsAssigned;
+  bool IsFilter;
+  bool IsFilter_Assigned;
   CLSID Encoder;
   CLSID Decoder;
 };
@@ -119,6 +121,23 @@ struct CArcInfoEx
     CLSID ClassID;
   #endif
 
+  int Compare(const CArcInfoEx &a) const
+  {
+    int res = Name.Compare(a.Name);
+    if (res != 0)
+      return res;
+    #ifdef EXTERNAL_CODECS
+    return MyCompare(LibIndex, a.LibIndex);
+    #else
+    return 0;
+    #endif
+    /*
+    if (LibIndex < a.LibIndex) return -1;
+    if (LibIndex > a.LibIndex) return 1;
+    return 0;
+    */
+  }
+
   bool Flags_KeepName() const { return (Flags & NArcInfoFlags::kKeepName) != 0; }
   bool Flags_FindSignature() const { return (Flags & NArcInfoFlags::kFindSignature) != 0; }
 
@@ -132,7 +151,9 @@ struct CArcInfoEx
   bool Flags_BackwardOpen() const { return (Flags & NArcInfoFlags::kBackwardOpen) != 0; }
   bool Flags_PreArc() const { return (Flags & NArcInfoFlags::kPreArc) != 0; }
   bool Flags_PureStartOpen() const { return (Flags & NArcInfoFlags::kPureStartOpen) != 0; }
-  
+  bool Flags_ByExtOnlyOpen() const { return (Flags & NArcInfoFlags::kByExtOnlyOpen) != 0; }
+  bool Flags_HashHandler() const { return (Flags & NArcInfoFlags::kHashHandler) != 0; }
+
   UString GetMainExt() const
   {
     if (Exts.IsEmpty())
@@ -227,6 +248,28 @@ struct CCodecLib
 
 #endif
 
+struct CCodecError
+{
+  FString Path;
+  HRESULT ErrorCode;
+  AString Message;
+  CCodecError(): ErrorCode(0) {}
+};
+
+
+struct CCodecInfoUser
+{
+  // unsigned LibIndex;
+  // UInt32 CodecIndex;
+  // UInt64 id;
+  bool EncoderIsAssigned;
+  bool DecoderIsAssigned;
+  bool IsFilter;
+  bool IsFilter_Assigned;
+  UInt32 NumStreams;
+  AString Name;
+};
+
 
 class CCodecs:
   #ifdef EXTERNAL_CODECS
@@ -243,7 +286,9 @@ public:
   
   CObjectVector<CCodecLib> Libs;
   FString MainDll_ErrorPath;
-
+  CObjectVector<CCodecError> Errors;
+  
+  void AddLastError(const FString &path);
   void CloseLibs();
 
   class CReleaser
@@ -272,7 +317,7 @@ public:
 
   HRESULT CreateArchiveHandler(const CArcInfoEx &ai, bool outHandler, void **archive) const
   {
-    return Libs[ai.LibIndex].CreateObject(&ai.ClassID, outHandler ? &IID_IOutArchive : &IID_IInArchive, (void **)archive);
+    return Libs[(unsigned)ai.LibIndex].CreateObject(&ai.ClassID, outHandler ? &IID_IOutArchive : &IID_IInArchive, (void **)archive);
   }
   
   #endif
@@ -306,11 +351,11 @@ public:
  
   const wchar_t *GetFormatNamePtr(int formatIndex) const
   {
-    return formatIndex < 0 ? L"#" : (const wchar_t *)Formats[formatIndex].Name;
+    return formatIndex < 0 ? L"#" : (const wchar_t *)Formats[(unsigned)formatIndex].Name;
   }
 
   HRESULT Load();
-  
+
   #ifndef _SFX
   int FindFormatForArchiveName(const UString &arcPath) const;
   int FindFormatForExtension(const UString &ext) const;
@@ -343,6 +388,7 @@ public:
   int GetCodec_LibIndex(UInt32 index) const;
   bool GetCodec_DecoderIsAssigned(UInt32 index) const;
   bool GetCodec_EncoderIsAssigned(UInt32 index) const;
+  bool GetCodec_IsFilter(UInt32 index, bool &isAssigned) const;
   UInt32 GetCodec_NumStreams(UInt32 index);
   HRESULT GetCodec_Id(UInt32 index, UInt64 &id);
   AString GetCodec_Name(UInt32 index);
@@ -351,6 +397,8 @@ public:
   UInt64 GetHasherId(UInt32 index);
   AString GetHasherName(UInt32 index);
   UInt32 GetHasherDigestSize(UInt32 index);
+
+  void GetCodecsErrorMessage(UString &s);
 
   #endif
 
@@ -399,10 +447,12 @@ public:
       if (!arc.UpdateEnabled)
         continue;
       if (arc.Name.IsEqualTo_NoCase(name))
-        return i;
+        return (int)i;
     }
     return -1;
   }
+
+  void Get_CodecsInfoUser_Vector(CObjectVector<CCodecInfoUser> &v);
 
   #endif // _SFX
 };
@@ -420,5 +470,5 @@ public:
     CCodecs *codecs = new CCodecs; \
     CMyComPtr<IUnknown> __codecsRef = codecs;
 #endif
-  
+
 #endif

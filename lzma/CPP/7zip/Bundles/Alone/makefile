@@ -1,18 +1,16 @@
 PROG = 7za.exe
-MY_CONSOLE = 1
-CFLAGS = $(CFLAGS)
-
-!IFNDEF UNDER_CE
-CFLAGS = $(CFLAGS) -DWIN_LONG_PATH -D_7ZIP_LARGE_PAGES -DSUPPORT_DEVICE_FILE
-!ENDIF
-
+# USE_C_AES = 1
+# USE_C_SHA = 1
+# USE_C_LZFINDOPT = 1
 
 COMMON_OBJS = \
   $O\CommandLineParser.obj \
   $O\CRC.obj \
   $O\CrcReg.obj \
+  $O\DynLimBuf.obj \
   $O\IntToString.obj \
   $O\ListFileUtils.obj \
+  $O\LzFindPrepare.obj \
   $O\NewHandler.obj \
   $O\StdInStream.obj \
   $O\StdOutStream.obj \
@@ -40,8 +38,10 @@ WIN_OBJS = \
   $O\PropVariant.obj \
   $O\PropVariantConv.obj \
   $O\PropVariantUtils.obj \
+  $O\Registry.obj \
   $O\Synchronization.obj \
   $O\System.obj \
+  $O\SystemInfo.obj \
   $O\TimeUtils.obj \
 
 7ZIP_COMMON_OBJS = \
@@ -140,7 +140,7 @@ COMPRESS_OBJS = \
   $O\BranchMisc.obj \
   $O\BranchRegister.obj \
   $O\ByteSwap.obj \
-  $O\BZip2CRC.obj \
+  $O\BZip2Crc.obj \
   $O\BZip2Decoder.obj \
   $O\BZip2Encoder.obj \
   $O\BZip2Register.obj \
@@ -208,8 +208,6 @@ C_OBJS = \
   $O\Ppmd8.obj \
   $O\Ppmd8Dec.obj \
   $O\Ppmd8Enc.obj \
-  $O\Sha1.obj \
-  $O\Sha256.obj \
   $O\Sort.obj \
   $O\Threads.obj \
   $O\Xz.obj \
@@ -222,6 +220,9 @@ C_OBJS = \
 !include "../../Aes.mak"
 !include "../../Crc.mak"
 !include "../../Crc64.mak"
+!include "../../LzFindOpt.mak"
 !include "../../LzmaDec.mak"
+!include "../../Sha1.mak"
+!include "../../Sha256.mak"
 
 !include "../../7zip.mak"

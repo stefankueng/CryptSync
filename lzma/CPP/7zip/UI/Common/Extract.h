@@ -17,7 +17,10 @@
 struct CExtractOptionsBase
 {
   CBoolPair ElimDup;
-  
+
+  bool ExcludeDirItems;
+  bool ExcludeFileItems;
+
   bool PathMode_Force;
   bool OverwriteMode_Force;
   NExtract::NPathMode::EEnum PathMode;
@@ -25,8 +28,11 @@ struct CExtractOptionsBase
   
   FString OutputDir;
   CExtractNtOptions NtOptions;
+  UString HashDir;
 
   CExtractOptionsBase():
+      ExcludeDirItems(false),
+      ExcludeFileItems(false),
       PathMode_Force(false),
       OverwriteMode_Force(false),
       PathMode(NExtract::NPathMode::kFullPaths),
@@ -48,15 +54,17 @@ struct CExtractOptions: public CExtractOptionsBase
   CObjectVector<CProperty> Properties;
   #endif
 
+  /*
   #ifdef EXTERNAL_CODECS
   CCodecs *Codecs;
   #endif
+  */
 
   CExtractOptions():
-      TestMode(false),
       StdInMode(false),
       StdOutMode(false),
-      YesToAll(false)
+      YesToAll(false),
+      TestMode(false)
       {}
 };
 
@@ -77,6 +85,7 @@ struct CDecompressStat
 };
 
 HRESULT Extract(
+    // DECL_EXTERNAL_CODECS_LOC_VARS
     CCodecs *codecs,
     const CObjectVector<COpenType> &types,
     const CIntVector &excludedFormats,

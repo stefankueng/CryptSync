@@ -537,6 +537,14 @@ SOURCE=..\..\..\Windows\Control\ListView.h
 # End Group
 # Begin Source File
 
+SOURCE=..\..\..\Windows\Clipboard.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\Windows\Clipboard.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\Windows\CommonDialog.cpp
 # End Source File
 # Begin Source File
@@ -590,6 +598,14 @@ SOURCE=..\..\..\Windows\FileName.cpp
 # Begin Source File
 
 SOURCE=..\..\..\Windows\FileName.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\Windows\MemoryGlobal.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\Windows\MemoryGlobal.h
 # End Source File
 # Begin Source File
 
@@ -698,6 +714,10 @@ SOURCE=..\..\..\Common\NewHandler.cpp
 # Begin Source File
 
 SOURCE=..\..\..\Common\NewHandler.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\Common\Sha256Prepare.cpp
 # End Source File
 # Begin Source File
 
@@ -956,6 +976,11 @@ SOURCE=..\..\..\..\C\Ppmd7Dec.c
 # Begin Source File
 
 SOURCE=..\..\..\..\C\Sha256.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\..\C\Sha256Opt.c
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File

@@ -86,7 +86,7 @@ HRESULT CAltStreamsFolder::Init(const FString &path /* , IFolderFolder *parentFo
   {
     CFileInfo fi;
     if (!fi.Find(_pathBaseFile))
-      return GetLastError();
+      return GetLastError_noZero_HRESULT();
   }
 
   unsigned prefixSize = GetFsParentPrefixSize(_pathBaseFile);
@@ -468,7 +468,7 @@ static HRESULT UpdateFile(NFsFolder::CCopyStateIO &state, CFSTR inPath, CFSTR ou
 {
   if (NFind::DoesFileOrDirExist(outPath))
   {
-    RINOK(SendMessageError(callback, NError::MyFormatMessage(ERROR_ALREADY_EXISTS), outPath));
+    RINOK(SendMessageError(callback, NError::MyFormatMessage(ERROR_ALREADY_EXISTS), FString(outPath)));
     CFileInfo fi;
     if (fi.Find(inPath))
     {
@@ -612,7 +612,7 @@ static HRESULT CopyStream(
   FString destPath = destPathSpec;
   if (CompareFileNames(destPath, srcPath) == 0)
   {
-    RINOK(SendMessageError(callback, "can not copy file onto itself", destPath));
+    RINOK(SendMessageError(callback, "Cannot copy file onto itself", destPath));
     return E_ABORT;
   }
 
@@ -716,7 +716,7 @@ STDMETHODIMP CAltStreamsFolder::CopyTo(Int32 moveMode, const UInt32 *indices, UI
   if (destPath.IsEmpty() /* && !ExtractToStreamCallback */)
     return E_INVALIDARG;
 
-  bool isAltDest = NName::IsAltPathPrefix(destPath);;
+  bool isAltDest = NName::IsAltPathPrefix(destPath);
   bool isDirectPath = (!isAltDest && !IsPathSepar(destPath.Back()));
 
   if (isDirectPath)
@@ -764,7 +764,7 @@ STDMETHODIMP CAltStreamsFolder::CopyFrom(Int32 /* moveMode */, const wchar_t * /
 
   if (CompareFileNames(fromFolderPath, fs2us(_pathPrefix)) == 0)
   {
-    RINOK(SendMessageError(callback, "can not copy file onto itself", _pathPrefix));
+    RINOK(SendMessageError(callback, "Cannot copy file onto itself", _pathPrefix));
     return E_ABORT;
   }
 

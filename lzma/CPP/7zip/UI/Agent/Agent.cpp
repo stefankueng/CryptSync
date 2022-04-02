@@ -27,8 +27,11 @@ CCodecs *g_CodecsObj;
 
 #ifdef EXTERNAL_CODECS
   CExternalCodecs g_ExternalCodecs;
-  CCodecs::CReleaser g_CodecsReleaser;
+  const CExternalCodecs *g_ExternalCodecs_Ptr;
+  static CCodecs::CReleaser g_CodecsReleaser;
 #else
+  extern
+  CMyComPtr<IUnknown> g_CodecsRef;
   CMyComPtr<IUnknown> g_CodecsRef;
 #endif
 
@@ -51,6 +54,7 @@ void FreeGlobalCodecs()
   g_CodecsReleaser.Set(NULL);
   g_CodecsObj = NULL;
   g_ExternalCodecs.ClearAndRelease();
+  g_ExternalCodecs_Ptr = NULL;
   #else
   g_CodecsRef.Release();
   #endif
@@ -81,8 +85,11 @@ HRESULT LoadGlobalCodecs()
     return E_NOTIMPL;
   }
 
+  Codecs_AddHashArcHandler(g_CodecsObj);
+
   #ifdef EXTERNAL_CODECS
   RINOK(g_ExternalCodecs.Load());
+  g_ExternalCodecs_Ptr = &g_ExternalCodecs;
   #endif
 
   return S_OK;
@@ -1221,7 +1228,11 @@ STDMETHODIMP CAgentFolder::GetFolderProperty(PROPID propID, PROPVARIANT *value)
     if (_agentSpec->Is_Attrib_ReadOnly())
       prop = true;
     else
-      prop = _agentSpec->IsThereReadOnlyArc();
+      prop = _agentSpec->IsThere_ReadOnlyArc();
+  }
+  else if (propID == kpidIsHash)
+  {
+    prop = _agentSpec->_isHashHandler;
   }
   else if (_proxy2)
   {
@@ -1245,7 +1256,7 @@ STDMETHODIMP CAgentFolder::GetFolderProperty(PROPID propID, PROPVARIANT *value)
         // case kpidName:         prop = dir.Name; break;
       // case kpidPath:         prop = _proxy2->GetFullPathPrefix(_proxyDirIndex); break;
       case kpidType: prop = UString("7-Zip.") + _agentSpec->ArchiveType; break;
-      case kpidCRC: if (dir.CrcIsDefined) prop = dir.Crc; break;
+      case kpidCRC: if (dir.CrcIsDefined) { prop = dir.Crc; } break;
     }
     
   }
@@ -1444,6 +1455,10 @@ STDMETHODIMP CAgentFolder::Extract(const UInt32 *indices,
     IFolderArchiveExtractCallback *extractCallback2)
 {
   COM_TRY_BEGIN
+
+  if (!testMode && _agentSpec->_isHashHandler)
+    return E_NOTIMPL;
+
   CArchiveExtractCallback *extractCallbackSpec = new CArchiveExtractCallback;
   CMyComPtr<IArchiveExtractCallback> extractCallback = extractCallbackSpec;
   UStringVector pathParts;
@@ -1498,6 +1513,9 @@ STDMETHODIMP CAgentFolder::Extract(const UInt32 *indices,
   if (_proxy2)
     extractCallbackSpec->SetBaseParentFolderIndex(_proxy2->Dirs[_proxyDirIndex].ArcIndex);
 
+  // do we need another base folder for subfolders ?
+  extractCallbackSpec->DirPathPrefix_for_HashFiles = _agentSpec->_hashBaseFolderPrefix;
+
   CUIntVector realIndices;
   GetRealIndices(indices, numItems, IntToBool(includeAltStreams),
       false, // includeFolderSubItemsInFlatMode
@@ -1533,8 +1551,9 @@ STDMETHODIMP CAgentFolder::Extract(const UInt32 *indices,
 CAgent::CAgent():
     _proxy(NULL),
     _proxy2(NULL),
+    _updatePathPrefix_is_AltFolder(false),
     _isDeviceFile(false),
-    _updatePathPrefix_is_AltFolder(false)
+    _isHashHandler(false)
 {
 }
 
@@ -1569,9 +1588,11 @@ STDMETHODIMP CAgent::Open(
 {
   COM_TRY_BEGIN
   _archiveFilePath = filePath;
+  _hashBaseFolderPrefix.Empty();
   _attrib = 0;
-  NFile::NFind::CFileInfo fi;
   _isDeviceFile = false;
+  _isHashHandler = false;
+  NFile::NFind::CFileInfo fi;
   if (!inStream)
   {
     if (!fi.Find(us2fs(_archiveFilePath)))
@@ -1580,6 +1601,12 @@ STDMETHODIMP CAgent::Open(
       return E_FAIL;
     _attrib = fi.Attrib;
     _isDeviceFile = fi.IsDevice;
+    FString dirPrefix, fileName;
+    if (NFile::NDir::GetFullPathAndSplit(us2fs(_archiveFilePath), dirPrefix, fileName))
+    {
+      NFile::NName::NormalizeDirPathPrefix(dirPrefix);
+      _hashBaseFolderPrefix = dirPrefix;
+    }
   }
   CArcInfoEx archiverInfo0, archiverInfo1;
 
@@ -1611,23 +1638,32 @@ STDMETHODIMP CAgent::Open(
   options.filePath = _archiveFilePath;
   options.callback = openArchiveCallback;
 
-  RINOK(_archiveLink.Open(options));
+  HRESULT res = _archiveLink.Open(options);
 
-  CArc &arc = _archiveLink.Arcs.Back();
-  if (!inStream)
+  if (!_archiveLink.Arcs.IsEmpty())
   {
-    arc.MTimeDefined = !fi.IsDevice;
-    arc.MTime = fi.MTime;
+    CArc &arc = _archiveLink.Arcs.Back();
+    if (!inStream)
+    {
+      arc.MTimeDefined = !fi.IsDevice;
+      arc.MTime = fi.MTime;
+    }
+    
+    ArchiveType = GetTypeOfArc(arc);
+    if (archiveType)
+    {
+      RINOK(StringToBstr(ArchiveType, archiveType));
+    }
+
+    if (arc.IsHashHandler(options))
+      _isHashHandler = true;
   }
 
-  ArchiveType = GetTypeOfArc(arc);
-  if (archiveType)
-  {
-    RINOK(StringToBstr(ArchiveType, archiveType));
-  }
-  return S_OK;
+  return res;
+
   COM_TRY_END
 }
+
 
 STDMETHODIMP CAgent::ReOpen(IArchiveOpenCallback *openArchiveCallback)
 {
@@ -1717,7 +1753,10 @@ HRESULT CAgent::ReadItems()
 STDMETHODIMP CAgent::BindToRootFolder(IFolderFolder **resultFolder)
 {
   COM_TRY_BEGIN
-  RINOK(ReadItems());
+  if (!_archiveLink.Arcs.IsEmpty())
+  {
+    RINOK(ReadItems());
+  }
   CAgentFolder *folderSpec = new CAgentFolder;
   CMyComPtr<IFolderFolder> rootFolder = folderSpec;
   folderSpec->Init(_proxy, _proxy2, k_Proxy_RootDirIndex, /* NULL, */ this);
@@ -1734,6 +1773,10 @@ STDMETHODIMP CAgent::Extract(
     IFolderArchiveExtractCallback *extractCallback2)
 {
   COM_TRY_BEGIN
+
+  if (!testMode && _isHashHandler)
+    return E_NOTIMPL;
+
   CArchiveExtractCallback *extractCallbackSpec = new CArchiveExtractCallback;
   CMyComPtr<IArchiveExtractCallback> extractCallback = extractCallbackSpec;
   extractCallbackSpec->InitForMulti(
@@ -1757,6 +1800,8 @@ STDMETHODIMP CAgent::Extract(
       us2fs(path),
       UStringVector(), false,
       (UInt64)(Int64)-1);
+
+  extractCallbackSpec->DirPathPrefix_for_HashFiles = _hashBaseFolderPrefix;
 
   #ifdef SUPPORT_LINKS
 
@@ -1813,6 +1858,20 @@ STDMETHODIMP CAgent::GetArcProp(UInt32 level, PROPID propID, PROPVARIANT *value)
         if (_archiveLink.NonOpen_ErrorInfo.ErrorFormatIndex >= 0)
           prop = g_CodecsObj->Formats[_archiveLink.NonOpen_ErrorInfo.ErrorFormatIndex].Name;
         break;
+      case kpidErrorFlags:
+      {
+        UInt32 flags = _archiveLink.NonOpen_ErrorInfo.GetErrorFlags();
+        if (flags != 0)
+          prop = flags;
+        break;
+      }
+      case kpidWarningFlags:
+      {
+        UInt32 flags = _archiveLink.NonOpen_ErrorInfo.GetWarningFlags();
+        if (flags != 0)
+          prop = flags;
+        break;
+      }
     }
   }
   else
@@ -1822,26 +1881,29 @@ STDMETHODIMP CAgent::GetArcProp(UInt32 level, PROPID propID, PROPVARIANT *value)
     {
       case kpidType: prop = GetTypeOfArc(arc); break;
       case kpidPath: prop = arc.Path; break;
-      case kpidErrorType: if (arc.ErrorInfo.ErrorFormatIndex >= 0) prop = g_CodecsObj->Formats[arc.ErrorInfo.ErrorFormatIndex].Name; break;
+      case kpidErrorType:
+        if (arc.ErrorInfo.ErrorFormatIndex >= 0)
+          prop = g_CodecsObj->Formats[arc.ErrorInfo.ErrorFormatIndex].Name;
+        break;
       case kpidErrorFlags:
       {
-        UInt32 flags = arc.ErrorInfo.GetErrorFlags();
+        const UInt32 flags = arc.ErrorInfo.GetErrorFlags();
         if (flags != 0)
           prop = flags;
         break;
       }
       case kpidWarningFlags:
       {
-        UInt32 flags = arc.ErrorInfo.GetWarningFlags();
+        const UInt32 flags = arc.ErrorInfo.GetWarningFlags();
         if (flags != 0)
           prop = flags;
         break;
       }
       case kpidOffset:
       {
-        Int64 v = arc.GetGlobalOffset();
+        const Int64 v = arc.GetGlobalOffset();
         if (v != 0)
-          prop = v;
+          prop.Set_Int64(v);
         break;
       }
       case kpidTailSize:

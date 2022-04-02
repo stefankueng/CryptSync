@@ -24,6 +24,7 @@ GUI_OBJS = \
 COMMON_OBJS = \
   $O\CommandLineParser.obj \
   $O\CRC.obj \
+  $O\DynLimBuf.obj \
   $O\IntToString.obj \
   $O\Lang.obj \
   $O\ListFileUtils.obj \
@@ -55,6 +56,7 @@ WIN_OBJS = \
   $O\Shell.obj \
   $O\Synchronization.obj \
   $O\System.obj \
+  $O\SystemInfo.obj \
   $O\TimeUtils.obj \
   $O\Window.obj \
 
@@ -101,6 +103,7 @@ UI_COMMON_OBJS = \
   $O\ZipRegistry.obj \
 
 AR_COMMON_OBJS = \
+  $O\ItemNameUtils.obj \
   $O\OutStreamWithCRC.obj \
 
 FM_OBJS = \
@@ -134,6 +137,7 @@ COMPRESS_OBJS = \
 C_OBJS = \
   $O\Alloc.obj \
   $O\CpuArch.obj \
+  $O\DllSecur.obj \
   $O\Sort.obj \
   $O\Threads.obj \
 

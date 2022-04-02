@@ -33,12 +33,16 @@ using namespace NWindows;
 
 #define k7zGui  "7zG.exe"
 
+// 21.07 : we can disable wildcard
+// #define ISWITCH_NO_WILDCARD_POSTFIX "w-"
+#define ISWITCH_NO_WILDCARD_POSTFIX
+
 #define kShowDialogSwitch  " -ad"
 #define kEmailSwitch  " -seml."
-#define kIncludeSwitch  " -i"
 #define kArchiveTypeSwitch  " -t"
-#define kArcIncludeSwitches  " -an -ai"
-#define kHashIncludeSwitches  " -i"
+#define kIncludeSwitch  " -i" ISWITCH_NO_WILDCARD_POSTFIX
+#define kArcIncludeSwitches  " -an -ai" ISWITCH_NO_WILDCARD_POSTFIX
+#define kHashIncludeSwitches  kIncludeSwitch
 #define kStopSwitchParsing  " --"
 
 extern HWND g_HWND;
@@ -76,11 +80,12 @@ static HRESULT Call7zGui(const UString &params,
   imageName += k7zGui;
 
   CProcess process;
-  WRes res = process.Create(imageName, params, NULL); // curDir);
-  if (res != 0)
+  const WRes wres = process.Create(imageName, params, NULL); // curDir);
+  if (wres != 0)
   {
-    ErrorMessageHRESULT(res, imageName);
-    return res;
+    HRESULT hres = HRESULT_FROM_WIN32(wres);
+    ErrorMessageHRESULT(hres, imageName);
+    return hres;
   }
   if (waitFinish)
     process.Wait();
@@ -130,12 +135,11 @@ static HRESULT CreateMap(const UStringVector &names,
   for (;;)
   {
     random.GenerateName(mappingName, "7zMap");
-
-    WRes res = fileMapping.Create(PAGE_READWRITE, totalSize, GetSystemString(mappingName));
-    if (fileMapping.IsCreated() && res == 0)
+    const WRes wres = fileMapping.Create(PAGE_READWRITE, totalSize, GetSystemString(mappingName));
+    if (fileMapping.IsCreated() && wres == 0)
       break;
-    if (res != ERROR_ALREADY_EXISTS)
-      return res;
+    if (wres != ERROR_ALREADY_EXISTS)
+      return HRESULT_FROM_WIN32(wres);
     fileMapping.Close();
   }
   
@@ -143,11 +147,11 @@ static HRESULT CreateMap(const UStringVector &names,
   for (;;)
   {
     random.GenerateName(eventName, "7zEvent");
-    WRes res = event.CreateWithName(false, GetSystemString(eventName));
-    if (event.IsCreated() && res == 0)
+    const WRes wres = event.CreateWithName(false, GetSystemString(eventName));
+    if (event.IsCreated() && wres == 0)
       break;
-    if (res != ERROR_ALREADY_EXISTS)
-      return res;
+    if (wres != ERROR_ALREADY_EXISTS)
+      return HRESULT_FROM_WIN32(wres);
     event.Close();
   }
 
@@ -265,22 +269,56 @@ void ExtractArchives(const UStringVector &arcPaths, const UString &outFolder, bo
   MY_TRY_FINISH_VOID
 }
 
-void TestArchives(const UStringVector &arcPaths)
+
+void TestArchives(const UStringVector &arcPaths, bool hashMode)
 {
   MY_TRY_BEGIN
   UString params ('t');
+  if (hashMode)
+  {
+    params += kArchiveTypeSwitch;
+    params += "hash";
+  }
   ExtractGroupCommand(arcPaths, params, false);
   MY_TRY_FINISH_VOID
 }
 
-void CalcChecksum(const UStringVector &paths, const UString &methodName)
+
+void CalcChecksum(const UStringVector &paths,
+    const UString &methodName,
+    const UString &arcPathPrefix,
+    const UString &arcFileName)
 {
   MY_TRY_BEGIN
+
+  if (!arcFileName.IsEmpty())
+  {
+    CompressFiles(
+      arcPathPrefix,
+      arcFileName,
+      UString("hash"),
+      false, // addExtension,
+      paths,
+      false, // email,
+      false, // showDialog,
+      false  // waitFinish
+      );
+    return;
+  }
+
   UString params ('h');
   if (!methodName.IsEmpty())
   {
     params += " -scrc";
     params += methodName;
+    /*
+    if (!arcFileName.IsEmpty())
+    {
+      // not used alternate method of generating file
+      params += " -scrf=";
+      params += GetQuotedString(arcPathPrefix + arcFileName);
+    }
+    */
   }
   ExtractGroupCommand(paths, params, true);
   MY_TRY_FINISH_VOID

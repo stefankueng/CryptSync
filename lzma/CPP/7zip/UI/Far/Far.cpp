@@ -3,6 +3,10 @@
 
 #include "StdAfx.h"
 
+#ifdef __clang__
+  #pragma clang diagnostic ignored "-Wmissing-prototypes"
+#endif
+
 #include "../../../Common/MyWindows.h"
 
 #include "../../../Common/MyInitGuid.h"
@@ -39,7 +43,9 @@ const char *g_PluginName_for_Error = "7-Zip";
 
 }
 
+#if defined(_UNICODE) && !defined(_WIN64) && !defined(UNDER_CE)
 #define NT_CHECK_FAIL_ACTION return FALSE;
+#endif
 
 BOOL WINAPI DllMain(
   #ifdef UNDER_CE
@@ -327,7 +333,7 @@ HRESULT OpenArchive(const CSysString &fileName,
 }
 */
 
-static HANDLE MyOpenFilePluginW(const wchar_t *name)
+static HANDLE MyOpenFilePluginW(const wchar_t *name, bool isAbortCodeSupported)
 {
   FString normalizedName = us2fs(name);
   normalizedName.Trim();
@@ -373,7 +379,12 @@ static HANDLE MyOpenFilePluginW(const wchar_t *name)
       archiverInfoResult, defaultName, openArchiveCallback);
   */
   if (result == E_ABORT)
-    return (HANDLE)-2;
+  {
+    // fixed 18.06:
+    // OpenFilePlugin() is allowed to return (HANDLE)-2 as abort code
+    // OpenPlugin() is not allowed to return (HANDLE)-2.
+    return isAbortCodeSupported ? (HANDLE)-2 : INVALID_HANDLE_VALUE;
+  }
 
   UString errorMessage = agent->GetErrorMessage();
   if (!errorMessage.IsEmpty())
@@ -403,7 +414,7 @@ static HANDLE MyOpenFilePluginW(const wchar_t *name)
   return (HANDLE)(plugin);
 }
 
-static HANDLE MyOpenFilePlugin(const char *name)
+static HANDLE MyOpenFilePlugin(const char *name, bool isAbortCodeSupported)
 {
   UINT codePage =
   #ifdef UNDER_CE
@@ -411,7 +422,7 @@ static HANDLE MyOpenFilePlugin(const char *name)
   #else
     ::AreFileApisANSI() ? CP_ACP : CP_OEMCP;
   #endif
-  return MyOpenFilePluginW(GetUnicodeString(name, codePage));
+  return MyOpenFilePluginW(GetUnicodeString(name, codePage), isAbortCodeSupported);
 }
 
 EXTERN_C HANDLE WINAPI OpenFilePlugin(char *name, const unsigned char * /* data */, int /* dataSize */)
@@ -423,7 +434,7 @@ EXTERN_C HANDLE WINAPI OpenFilePlugin(char *name, const unsigned char * /* data 
     // if (!Opt.ProcessShiftF1)
       return(INVALID_HANDLE_VALUE);
   }
-  return MyOpenFilePlugin(name);
+  return MyOpenFilePlugin(name, true); // isAbortCodeSupported
   MY_TRY_END2("OpenFilePlugin", INVALID_HANDLE_VALUE);
 }
 
@@ -458,7 +469,7 @@ EXTERN_C HANDLE WINAPI OpenPlugin(int openFrom, INT_PTR item)
       fileName.DeleteBack();
       fileName.DeleteFrontal(1);
     }
-    return MyOpenFilePlugin(fileName);
+    return MyOpenFilePlugin(fileName, false); // isAbortCodeSupported
   }
   
   if (openFrom == OPEN_PLUGINSMENU)
@@ -470,7 +481,7 @@ EXTERN_C HANDLE WINAPI OpenPlugin(int openFrom, INT_PTR item)
         PluginPanelItem pluginPanelItem;
         if (!g_StartupInfo.ControlGetActivePanelCurrentItemInfo(pluginPanelItem))
           throw 142134;
-        return MyOpenFilePlugin(pluginPanelItem.FindData.cFileName);
+        return MyOpenFilePlugin(pluginPanelItem.FindData.cFileName, false); // isAbortCodeSupported
       }
       
       case 1:
