@@ -1,8 +1,7 @@
 First, you need to install the compiler package.
 
-- You need VS2017.
-  If you want to build the msi make sure the "Tools for Redistributing
-  Applications" are installed.
+- You need VS2019 or VS2022.
+  If you want to build the msi make sure the "Installer Projects" are installed.
 
 Next you need to install some utilities/programs:
 - TortoiseGit           : https://tortoisegit.org/
@@ -22,8 +21,8 @@ Now you're almost ready. Only a few more steps to do:
 
 Building packages
 
-  Hint: before you can start building CryptSync, you need to call the vsvars32.bat
-  file which is located in %VS140COMNTOOLS%.
+  Hint: before you can start building CryptSync, you need to call the VsDevCmd.bat
+  file which is located in "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 
   > nant
   will compile CryptSync and create the msi installer
@@ -39,4 +38,4 @@ Building packages
   After the script finished, the packages can be found in .\bin.
 
 Once CryptSync has been built with the NAnt script, you can build it again
-with VS2017 alone.
+with VS2019 or VS2022 alone.
