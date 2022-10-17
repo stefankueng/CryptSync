@@ -606,7 +606,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         std::wstring targetFolder = cryptPath;
                         targetFolder              = targetFolder.substr(0, targetFolder.find_last_of('\\'));
                         CPathUtils::CreateRecursiveDirectory(targetFolder);
-                        if (!CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE))
+                        if (CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE))
                             retVal |= ErrorCopy;
                     }
                 }
