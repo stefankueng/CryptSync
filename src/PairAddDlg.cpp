@@ -36,6 +36,7 @@ CPairAddDlg::CPairAddDlg(HWND hParent)
     , m_useGpg(false)
     , m_fat(true)
     , m_syncDeleted(true)
+    , m_ResetOriginalArchAttr(false)
     , m_hParent(hParent)
     , m_pDropTargetOrig(nullptr)
     , m_pDropTargetCrypt(nullptr)
@@ -69,10 +70,12 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encNames ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_NEWNAMEENCRYPTION, BM_SETCHECK, m_encNamesNew ? BST_CHECKED : BST_UNCHECKED, NULL);
             CheckRadioButton(*this, IDC_SYNCBOTHRADIO, IDC_SYNCDSTTOSRCRADIO, m_syncDir == BothWays ? IDC_SYNCBOTHRADIO : (m_syncDir == SrcToDst ? IDC_SYNCSRCTODSTRADIO : IDC_SYNCDSTTOSRCRADIO));
+            DialogEnableWindow(IDC_RESETORIGINALARCH, m_syncDir != DstToSrc);
             SendDlgItemMessage(*this, IDC_SYNCDELETED, BM_SETCHECK, m_syncDeleted ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_USE7ZEXT, BM_SETCHECK, m_7ZExt ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_USEGPG, BM_SETCHECK, m_useGpg ? BST_CHECKED : BST_UNCHECKED, NULL);
             SendDlgItemMessage(*this, IDC_FAT, BM_SETCHECK, m_fat ? BST_CHECKED : BST_UNCHECKED, NULL);
+            SendDlgItemMessage(*this, IDC_RESETORIGINALARCH, BM_SETCHECK, m_ResetOriginalArchAttr ? BST_CHECKED : BST_UNCHECKED, NULL);
 
             DialogEnableWindow(IDC_USE7ZEXT, !m_useGpg);
 
@@ -82,6 +85,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             AddToolTip(IDC_NOSYNC, L"File masks, separated by '|' example: *.jpg|*.zip");
             AddToolTip(IDC_SYNCDELETED, L"Delete files in original/encrypted if missing from encrypted/original (not applicable to Both Ways sync direction) ");
             AddToolTip(IDC_NEWNAMEENCRYPTION, L"New encryption method for names:\r\nUses less characters, but is harder to 'read' and not all filesystems support these characters.");
+            AddToolTip(IDC_RESETORIGINALARCH, L"Reset archive attribute on original after succsssful encryption / copy");
 
             // the path edit control should work as a drop target for files and folders
             HWND hOrigPath    = GetDlgItem(hwndDlg, IDC_ORIGPATH);
@@ -195,6 +199,7 @@ LRESULT CPairAddDlg::DoCommand(int id)
             m_syncDeleted   = !!SendDlgItemMessage(*this, IDC_SYNCDELETED, BM_GETCHECK, 0, NULL);
             m_useGpg = !!SendDlgItemMessage(*this, IDC_USEGPG, BM_GETCHECK, 0, NULL);
             m_fat     = !!SendDlgItemMessage(*this, IDC_FAT, BM_GETCHECK, 0, NULL);
+            m_ResetOriginalArchAttr = !!SendDlgItemMessage(*this, IDC_RESETORIGINALARCH, BM_GETCHECK, 0, NULL);
             if (m_useGpg && m_password.empty())
             {
                 ::MessageBox(*this, L"empty passwords are not allowed when using GPG for encryption!", L"empty password", MB_ICONERROR);
@@ -241,6 +246,11 @@ LRESULT CPairAddDlg::DoCommand(int id)
             break;
         case IDC_ENCNAMES:
             DialogEnableWindow(IDC_NEWNAMEENCRYPTION, SendDlgItemMessage(*this, IDC_ENCNAMES, BM_GETCHECK, 0, NULL));
+            break;
+        case IDC_SYNCBOTHRADIO:
+        case IDC_SYNCSRCTODSTRADIO:
+        case IDC_SYNCDSTTOSRCRADIO:
+            DialogEnableWindow(IDC_RESETORIGINALARCH, id != IDC_SYNCDSTTOSRCRADIO);
             break;
     }
     return 1;

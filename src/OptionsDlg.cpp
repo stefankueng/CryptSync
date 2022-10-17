@@ -175,7 +175,7 @@ LRESULT COptionsDlg::DoCommand(int id)
             {
                 if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                 {
-                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted))
+                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted, dlg.m_ResetOriginalArchAttr))
                         InitPairList();
                     g_pairs.SavePairs();
                 }
@@ -210,12 +210,13 @@ LRESULT COptionsDlg::DoCommand(int id)
                 dlg.m_fat          = t.m_fat;
                 dlg.m_compressSize = t.m_compressSize;
                 dlg.m_syncDeleted  = t.m_syncDeleted;
+                dlg.m_ResetOriginalArchAttr = t.m_ResetOriginalArchAttr;
                 if (dlg.DoModal(hResource, IDD_PAIRADD, *this) == IDOK)
                 {
                     if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                     {
                         g_pairs.erase(g_pairs.begin() + iItem);
-                        if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted))
+                        if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted, dlg.m_ResetOriginalArchAttr))
                             InitPairList();
                         g_pairs.SavePairs();
                     }
@@ -393,12 +394,13 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
             dlg.m_fat          = t.m_fat;
             dlg.m_compressSize = t.m_compressSize;
             dlg.m_syncDeleted  = t.m_syncDeleted;
+            dlg.m_ResetOriginalArchAttr = t.m_ResetOriginalArchAttr;
             if (dlg.DoModal(hResource, IDD_PAIRADD, *this) == IDOK)
             {
                 if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                 {
                     g_pairs.erase(g_pairs.begin() + lpNMItemActivate->iItem);
-                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted))
+                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted, dlg.m_ResetOriginalArchAttr))
                         InitPairList();
                     g_pairs.SavePairs();
                 }

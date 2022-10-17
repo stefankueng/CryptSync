@@ -34,6 +34,7 @@ class PairData
 public:
     PairData()
         : m_enabled(true)
+        , m_ResetOriginalArchAttr(false)
         , m_encNames(false)
         , m_encNamesNew(false)
         , m_syncDir(BothWays)
@@ -46,6 +47,7 @@ public:
     }
 
     bool         m_enabled;
+    bool         m_ResetOriginalArchAttr;
     std::wstring m_origPath;
     std::wstring m_cryptPath;
     std::wstring m_password;
@@ -129,7 +131,8 @@ public:
                  bool                use7ZExt,
                  bool                useGpg,
                  bool                fat,
-                 bool                syncDeleted);
+                 bool                syncDeleted,
+                 bool                ResetOriginalArchAttr);
 
 protected:
     void InitPairList();

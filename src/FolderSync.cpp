@@ -473,16 +473,28 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
             fd.ft = fDataOrig.ftLastWriteTime;
             if (bCopyOnly)
             {
+                bool bCopyFileResult;
                 CCircularLog::Instance()(_T("INFO:    copy file %s to %s"), orig.c_str(), crypt.c_str());
-                if (!CopyFile(orig.c_str(), crypt.c_str(), FALSE))
+                bCopyFileResult = CopyFile(orig.c_str(), crypt.c_str(), FALSE);
+                if (!bCopyFileResult)
                 {
                     std::wstring targetFolder = crypt.substr(0, crypt.find_last_of('\\'));
                     CPathUtils::CreateRecursiveDirectory(targetFolder);
-                    CopyFile(orig.c_str(), crypt.c_str(), FALSE);
+                    bCopyFileResult = CopyFile(orig.c_str(), crypt.c_str(), FALSE);
+                }
+                if (bCopyFileResult && pt.m_ResetOriginalArchAttr)
+                {
+                    // Reset archive attribute on original file
+                    fDataOrig.dwFileAttributes = fDataOrig.dwFileAttributes & (~FILE_ATTRIBUTE_ARCHIVE);
+                    SetFileAttributes(orig.c_str(), fDataOrig.dwFileAttributes);
                 }
             }
-            else
-                EncryptFile(orig, crypt, pt.m_password, fd, pt.m_useGpg, bCryptOnly, pt.m_compressSize);
+            else if (EncryptFile(orig, crypt, pt.m_password, fd, pt.m_useGpg, bCryptOnly, pt.m_compressSize) && pt.m_ResetOriginalArchAttr)
+            {
+                // Reset archive attribute on original file
+                fDataOrig.dwFileAttributes = fDataOrig.dwFileAttributes & (~FILE_ATTRIBUTE_ARCHIVE);
+                SetFileAttributes(orig.c_str(), fDataOrig.dwFileAttributes);
+            }
         }
     }
     else if (cmp == 0)
@@ -498,12 +510,13 @@ int CFolderSync::SyncFolder(const PairData& pt)
         return ErrorNone;
 
     CCircularLog::Instance()(L"INFO:    syncing folder orig \"%s\" with crypt \"%s\"", pt.m_origPath.c_str(), pt.m_cryptPath.c_str());
-    CCircularLog::Instance()(L"INFO:    settings: encrypt names: %s, use 7z: %s, use GPG: %s, use FAT workaround: %s, sync deleted: %s",
+    CCircularLog::Instance()(L"INFO:    settings: encrypt names: %s, use 7z: %s, use GPG: %s, use FAT workaround: %s, sync deleted: %s, reset archive attr: %s",
                              pt.m_encNames ? L"yes" : L"no",
                              pt.m_use7Z ? L"yes" : L"no",
                              pt.m_useGpg ? L"yes" : L"no",
                              pt.m_fat ? L"yes" : L"no",
-                             pt.m_syncDeleted ? L"yes" : L"no");
+                             pt.m_syncDeleted ? L"yes" : L"no",
+                             pt.m_ResetOriginalArchAttr ? L"yes" : L"no");
     if (m_pProgDlg)
     {
         m_pProgDlg->SetLine(0, L"scanning...");
@@ -598,17 +611,33 @@ int CFolderSync::SyncFolder(const PairData& pt)
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist in encrypted folder\n"), it->first.c_str());
                 if (bCopyOnly)
                 {
+                    bool         bCopyFileResult;
+
                     std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, it->first));
                     std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                     CCircularLog::Instance()(_T("INFO:    copy file %s to %s"), origPath.c_str(), cryptPath.c_str());
-                    if (!CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE))
+                    bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
+                    if (!bCopyFileResult)
                     {
                         std::wstring targetFolder = cryptPath;
                         targetFolder              = targetFolder.substr(0, targetFolder.find_last_of('\\'));
                         CPathUtils::CreateRecursiveDirectory(targetFolder);
-                        if (!CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE))
+                        bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
+                        if (!bCopyFileResult)  // Original file did not use !, need to confirm with author
                             retVal |= ErrorCopy;
                     }
+                    if (bCopyFileResult && pt.m_ResetOriginalArchAttr)
+                    {
+                        // Reset archive attribute on original file
+                        WIN32_FILE_ATTRIBUTE_DATA fDataOrig = {0};
+
+                        if (GetFileAttributesEx(origPath.c_str(), GetFileExInfoStandard, &fDataOrig))
+                        {
+                            fDataOrig.dwFileAttributes = fDataOrig.dwFileAttributes & (~FILE_ATTRIBUTE_ARCHIVE);
+                            SetFileAttributes(origPath.c_str(), fDataOrig.dwFileAttributes);
+                        }
+                    }
+
                 }
                 else
                 {
@@ -616,6 +645,17 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                     if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize))
                         retVal |= ErrorCrypt;
+                    else if (pt.m_ResetOriginalArchAttr)
+                    {
+                        // Reset archive attribute on original file
+                        WIN32_FILE_ATTRIBUTE_DATA fDataOrig = {0};
+
+                        if (GetFileAttributesEx(origPath.c_str(), GetFileExInfoStandard, &fDataOrig))
+                        {
+                            fDataOrig.dwFileAttributes = fDataOrig.dwFileAttributes & (~FILE_ATTRIBUTE_ARCHIVE);
+                            SetFileAttributes(origPath.c_str(), fDataOrig.dwFileAttributes);
+                        }
+                    }
                 }
             }
             else if (pt.m_syncDir == DstToSrc)
@@ -743,6 +783,8 @@ int CFolderSync::SyncFolder(const PairData& pt)
                 // encrypted file is older than the original file
                 if ((pt.m_syncDir == BothWays) || (pt.m_syncDir == SrcToDst))
                 {
+                    BOOL bCopyFileResult;
+
                     // encrypt the file
                     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s is newer than its encrypted partner\n"), it->first.c_str());
                     if (bCopyOnly)
@@ -750,13 +792,26 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, it->first));
                         std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                         CCircularLog::Instance()(_T("INFO:    copy file %s to %s"), origPath.c_str(), cryptPath.c_str());
-                        if (!CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE))
+                        bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
+                        if (!bCopyFileResult)
                         {
                             std::wstring targetFolder = pt.m_cryptPath + L"\\" + it->first;
                             targetFolder              = targetFolder.substr(0, targetFolder.find_last_of('\\'));
                             CPathUtils::CreateRecursiveDirectory(targetFolder);
-                            if (!CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE))
+                            bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
+                            if (!bCopyFileResult)
                                 retVal |= ErrorCopy;
+                        }
+                        if (bCopyFileResult && pt.m_ResetOriginalArchAttr)
+                        {
+                            // Clear archive attibute
+                            WIN32_FILE_ATTRIBUTE_DATA fDataOrig = {0};
+
+                            if (GetFileAttributesEx(origPath.c_str(), GetFileExInfoStandard, &fDataOrig))
+                            {
+                                fDataOrig.dwFileAttributes = fDataOrig.dwFileAttributes & (~FILE_ATTRIBUTE_ARCHIVE);
+                                SetFileAttributes(origPath.c_str(), fDataOrig.dwFileAttributes);
+                            }
                         }
                     }
                     else
@@ -765,6 +820,17 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         std::wstring origPath  = CPathUtils::Append(pt.m_origPath, it->first);
                         if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize))
                             retVal |= ErrorCrypt;
+                        else if (pt.m_ResetOriginalArchAttr)
+                        {
+                            // Reset archive attribute
+                            WIN32_FILE_ATTRIBUTE_DATA fDataOrig = {0};
+
+                            if (GetFileAttributesEx(origPath.c_str(), GetFileExInfoStandard, &fDataOrig))
+                            {
+                                fDataOrig.dwFileAttributes = fDataOrig.dwFileAttributes & (~FILE_ATTRIBUTE_ARCHIVE);
+                                SetFileAttributes(origPath.c_str(), fDataOrig.dwFileAttributes);
+                            }
+                        }
                     }
                 }
             }

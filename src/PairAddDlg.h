@@ -46,6 +46,7 @@ public:
     bool         m_useGpg;
     bool         m_fat;
     bool         m_syncDeleted;
+    bool         m_ResetOriginalArchAttr;
 
 protected:
     LRESULT CALLBACK DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;

@@ -89,6 +89,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"/useGPG       : use GnuPG encryption\n"
                              L"/fat          : use FAT write time accuracy (2s)\n"
                              L"/nosyncdeleted: don't sync file deletions\n"
+                             L"/resetoriarchattr: reset archive attribute on original file\n" 
                              L"/ignore       : ignore patterns\n"
                              L"/compresssize : max size in MB a file is compressed. Larger\n"
                              L"                files are only encrypted\n"
@@ -170,6 +171,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         bool         useGpg        = !!parser.HasKey(L"useGPG");
         bool         fat           = !!parser.HasKey(L"fat");
         bool         syncDeletions = !parser.HasKey(L"nosyncdeleted");
+        bool         resetoriginalarchAttr = !!parser.HasKey(L"resetoriarchattr");
         int          compresssize  = parser.GetLongVal(L"compresssize");
         std::wstring ign           = parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
         if (!parser.HasKey(L"compresssize"))
@@ -185,7 +187,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             syncDir = SrcToDst;
         if (mirrorback && !mirror)
             syncDir = DstToSrc;
-        pair.AddPair(true, src, dst, pw, ncp, cpy, nsy, compresssize, encnames || encnamesNew, encnamesNew, syncDir, use7Z, useGpg, fat, syncDeletions);
+        pair.AddPair(true, src, dst, pw, ncp, cpy, nsy, compresssize, encnames || encnamesNew, encnamesNew, syncDir, use7Z, useGpg, fat, syncDeletions, resetoriginalarchAttr);
         CFolderSync foldersync;
         if (decryptonly)
             foldersync.DecryptOnly(true);

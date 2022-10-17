@@ -169,6 +169,10 @@ void CPairs::InitPairList()
         CRegStdDWORD compressSizeReg(key, 100);
         pd.m_compressSize = static_cast<DWORD>(compressSizeReg);
 
+        swprintf_s(key, L"Software\\CryptSync\\ResetOriginalArchiveAttribute%d", p);
+        CRegStdDWORD resetOriginalArchiveAttrReg(key, FALSE);
+        pd.m_ResetOriginalArchAttr = !!static_cast<DWORD>(resetOriginalArchiveAttrReg);
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEnabled%d", p);
         CRegStdDWORD enabledReg(key, TRUE);
         pd.m_enabled = !!static_cast<DWORD>(enabledReg);
@@ -244,6 +248,10 @@ void CPairs::SavePairs()
         CRegStdDWORD compressSizeReg(key, 100, true);
         compressSizeReg = static_cast<DWORD>(it->m_compressSize);
 
+        swprintf_s(key, L"Software\\CryptSync\\ResetOriginalArchiveAttribute%d", p);
+        CRegStdDWORD resetOriginalArchiveAttrReg(key, FALSE, true);
+        resetOriginalArchiveAttrReg = static_cast<DWORD>(it->m_ResetOriginalArchAttr);
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairEnabled%d", p);
         CRegStdDWORD enabledReg(key, TRUE, true);
         enabledReg = static_cast<DWORD>(it->m_enabled);
@@ -311,7 +319,7 @@ void CPairs::SavePairs()
     }
 }
 
-bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, bool encryptNamesNew, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat, bool syncDeleted)
+bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, bool encryptNamesNew, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat, bool syncDeleted, bool ResetOriginalArchAttr)
 {
     PairData pd;
     pd.m_enabled   = enabled;
@@ -329,6 +337,7 @@ bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring&
     pd.m_fat          = fat;
     pd.m_compressSize = compressSize;
     pd.m_syncDeleted  = syncDeleted;
+    pd.m_ResetOriginalArchAttr = ResetOriginalArchAttr;
 
     // make sure the paths are not root names but if root then root paths (i.e., ends with a backslash)
     if (*pd.m_origPath.rbegin() == ':')
