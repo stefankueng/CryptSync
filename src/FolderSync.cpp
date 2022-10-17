@@ -605,12 +605,10 @@ int CFolderSync::SyncFolder(const PairData& pt)
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist in encrypted folder\n"), it->first.c_str());
                 if (bCopyOnly)
                 {
-                    bool         bCopyFileResult;
-
                     std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, it->first));
                     std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                     CCircularLog::Instance()(_T("INFO:    copy file %s to %s"), origPath.c_str(), cryptPath.c_str());
-                    bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
+                    bool bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
                     if (!bCopyFileResult)
                     {
                         std::wstring targetFolder = cryptPath;
@@ -1122,7 +1120,6 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
     }
     if (bRet)
     {
-        int retry = 5;
         if (resetArchAttr)
         {
             // Reset archive attribute on original file
@@ -1130,7 +1127,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
         }
 
         // set the file timestamp
-        retry = 5;
+        int retry = 5;
         do
         {
             if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
@@ -1585,7 +1582,7 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
     } while (!bRet && (retry-- > 0));
 
     if (!bRet)
-        CCircularLog::Instance()(_T("failed to clear archive attribute on %s (error %d)", orig.c_str(), error);
+        CCircularLog::Instance()(_T("failed to clear archive attribute on %s (error %d)"), orig.c_str(), error);
     else
     {
         bRet                = false;
