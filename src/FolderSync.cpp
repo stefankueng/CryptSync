@@ -494,7 +494,15 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
     else if (cmp == 0)
     {
         // files are identical (have the same last-write-time):
-        // nothing to do.
+        // nothing to copy. Check if we need to reset Archive attribute on source file
+        if ((pt.m_syncDir == BothWays) || (pt.m_syncDir == SrcToDst))
+        {
+            if (pt.m_ResetOriginalArchAttr)
+            {
+                // Clear archive attibute
+                AdjustFileAttributes(orig.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
+            }
+        }
     }
 }
 
@@ -1601,7 +1609,7 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAtt
     if (!bRet)
     {
         CCircularLog::Instance()(_T("INFO:    failed to adjust attributes on %s (error %d)"), orig.c_str(), error);
-        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to adjust file attribute on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet=%d \n"), dwFileAttributesToClear, orig.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to adjust file attributes on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet=%d \n"), dwFileAttributesToClear, orig.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
     }
     else
     {
