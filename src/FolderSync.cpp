@@ -1570,11 +1570,13 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAtt
     WIN32_FILE_ATTRIBUTE_DATA fDataOrig = {0};
     DWORD                     error;
 
-    int                       retry = 5;
-    bool bRet = true;
+    int  retry = 5;
+    bool bRet;
     do
     {
-        if ( (bRet=GetFileAttributesEx(orig.c_str(), GetFileExInfoStandard, &fDataOrig)) != 0)
+        if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+            break;
+        if ((bRet = GetFileAttributesEx(orig.c_str(), GetFileExInfoStandard, &fDataOrig)) != 0)
         {
             if ((fDataOrig.dwFileAttributes & dwFileAttributesToClear) == 0 && (dwFileAttributesToSet == 0) )  
             {
@@ -1611,7 +1613,9 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAtt
             retry = 5;
             do
             {
-                bRet = !!SetFileTime(hFileOrig, &fDataOrig.ftCreationTime, &fDataOrig.ftLastAccessTime, &fDataOrig.ftLastWriteTime);
+                if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+                    break;
+                bRet  = !!SetFileTime(hFileOrig, &fDataOrig.ftCreationTime, &fDataOrig.ftLastAccessTime, &fDataOrig.ftLastWriteTime);
                 error = ::GetLastError();
                 if (!bRet)
                     Sleep(200);
