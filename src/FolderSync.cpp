@@ -484,7 +484,7 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
                 if (bCopyFileResult && pt.m_ResetOriginalArchAttr)
                 {
                     // Reset archive attribute on original file
-                    ClearArchiveAttribute(orig.c_str());
+                    AdjustFileAttributes(orig.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
                 }
             }
             else
@@ -621,7 +621,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     if (bCopyFileResult && pt.m_ResetOriginalArchAttr)
                     {
                         // Reset archive attribute on original file
-                        ClearArchiveAttribute(origPath.c_str());
+                        AdjustFileAttributes(origPath.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
                     }
 
                 }
@@ -778,7 +778,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         if (bCopyFileResult && pt.m_ResetOriginalArchAttr)
                         {
                             // Clear archive attibute
-                            ClearArchiveAttribute(origPath.c_str());
+                            AdjustFileAttributes(origPath.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
                         }
                     }
                     else
@@ -801,7 +801,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         std::wstring origPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
 
                         // Clear archive attibute
-                        ClearArchiveAttribute(origPath.c_str());
+                        AdjustFileAttributes(origPath.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
                     }
                 }
             }
@@ -1060,23 +1060,16 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
                 DeleteFile(encryptTmpFile.c_str());
 
                 // set content not indexed and the file timestamp 
-                int  retry = 5;
-                bool bRet  = true;
-                do
-                {
-                    bRet = !!SetFileAttributes((targetFolder + L"\\" + cryptName).c_str(), FILE_ATTRIBUTE_NOT_CONTENT_INDEXED);
-                    if (!bRet)
-                        Sleep(200);
-                } while (!bRet && (retry-- > 0));
+                AdjustFileAttributes(targetFolder + L"\\" + cryptName.c_str(), 0, FILE_ATTRIBUTE_NOT_CONTENT_INDEXED);
 
                 if (resetArchAttr)
                 {
                     // Reset archive attribute on original file
-                    ClearArchiveAttribute(orig.c_str());
+                    AdjustFileAttributes(orig.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
                 }
 
-                retry = 5;
-                bRet  = true;
+                int  retry = 5;
+                bool bRet  = true;
                 do
                 {
                     if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
@@ -1133,7 +1126,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
         if (resetArchAttr)
         {
             // Reset archive attribute on original file
-            ClearArchiveAttribute(orig.c_str());
+            AdjustFileAttributes(orig.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
         }
 
         // set the file timestamp
@@ -1571,9 +1564,9 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
 }
 
 
- void CFolderSync::ClearArchiveAttribute(const std::wstring& orig)
+void CFolderSync::AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet)
 {
-    // Reset archive attribute on original file
+    // Asdjust file attributes on file without impacing file times
     WIN32_FILE_ATTRIBUTE_DATA fDataOrig = {0};
     DWORD                     error;
 
@@ -1583,15 +1576,20 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
     {
         if ( (bRet=GetFileAttributesEx(orig.c_str(), GetFileExInfoStandard, &fDataOrig)) != 0)
         {
-            if ((fDataOrig.dwFileAttributes & FILE_ATTRIBUTE_ARCHIVE) == 0)  
+            if ((fDataOrig.dwFileAttributes & dwFileAttributesToClear) == 0 && (dwFileAttributesToSet == 0) )  
             {
-                // Archive attribute already cleared
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s already has Archive attribute cleared\n"), orig.c_str());
+                // Attribute already cleared and nothing to set
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Attribute %d already cleared on file %s \n"), dwFileAttributesToClear, orig.c_str());
                 return;
             }
 
-            fDataOrig.dwFileAttributes &= (~FILE_ATTRIBUTE_ARCHIVE);
-            bRet = SetFileAttributes(orig.c_str(), fDataOrig.dwFileAttributes);
+            if ((dwFileAttributesToClear & dwFileAttributesToSet) != 0)
+            {
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unexpected usage: clearing and setting same attribute on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet (will be set)=%d \n"), dwFileAttributesToClear, orig.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
+            }
+
+            fDataOrig.dwFileAttributes &= (~dwFileAttributesToClear);
+            bRet = SetFileAttributes(orig.c_str(), fDataOrig.dwFileAttributes | dwFileAttributesToSet);
         }
         error = ::GetLastError();
         if (!bRet)
@@ -1599,7 +1597,10 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
     } while (!bRet && (retry-- > 0));
 
     if (!bRet)
-        CCircularLog::Instance()(_T("INFO:    failed to clear archive attribute on %s (error %d)"), orig.c_str(), error);
+    {
+        CCircularLog::Instance()(_T("INFO:    failed to adjust attributes on %s (error %d)"), orig.c_str(), error);
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to adjust file attribute on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet=%d \n"), dwFileAttributesToClear, orig.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
+    }
     else
     {
         bRet                = false;
@@ -1618,9 +1619,12 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
             hFileOrig.CloseHandle();
         }
         if (!bRet)
-            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while clearing its Archive attribute (error %d"), orig.c_str(), error);
+        {
+            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (error %d"), orig.c_str(), error);
+            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to set file time on %s\n"), orig.c_str());
+        }
         else
-            CCircularLog::Instance()(_T("INFO:    successfully clearing Archive attribute on %s"), orig.c_str());
+            CCircularLog::Instance()(_T("INFO:    successfully adjusted attribute on %s"), orig.c_str());
     }
 }
 

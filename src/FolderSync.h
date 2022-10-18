@@ -91,7 +91,8 @@ private:
     bool                                       DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGpg);
     static std::wstring                        GetFileTimeStringForLog(const FILETIME& ft);
     bool                                       RunGPG(LPWSTR cmdline, const std::wstring& cwd) const;
-    void                                ClearArchiveAttribute(const std::wstring& orig);
+    // Would AdjustFileAttributes be a andidate for sktools?
+    void                                       AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet);
 
     CReaderWriterLock              m_guard;
     CReaderWriterLock              m_failureGuard;
