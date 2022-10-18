@@ -1568,10 +1568,10 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAtt
 {
     // Asdjust file attributes on file without impacing file times
     WIN32_FILE_ATTRIBUTE_DATA fDataOrig = {0};
-    DWORD                     error;
+    DWORD                     error     =  0;
 
     int  retry = 5;
-    bool bRet;
+    bool bRet  = true;
     do
     {
         if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
