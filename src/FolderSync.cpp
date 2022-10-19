@@ -1572,11 +1572,11 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
 }
 
 
-void CFolderSync::AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet)
+void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet)
 {
-    // Asdjust file attributes on file without impacing file times
-    WIN32_FILE_ATTRIBUTE_DATA fDataOrig = {0};
-    DWORD                     error     =  0;
+    // Adjust file attributes on file without impacing file times
+    WIN32_FILE_ATTRIBUTE_DATA fData = {0};
+    DWORD                     error =  0;
 
     int  retry = 5;
     bool bRet  = true;
@@ -1584,22 +1584,22 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAtt
     {
         if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
             break;
-        if ((bRet = GetFileAttributesEx(orig.c_str(), GetFileExInfoStandard, &fDataOrig)) != 0)
+        if ((bRet = GetFileAttributesEx(fName.c_str(), GetFileExInfoStandard, &fData)) != 0)
         {
-            if ((fDataOrig.dwFileAttributes & dwFileAttributesToClear) == 0 && (dwFileAttributesToSet == 0) )  
+            if (((fData.dwFileAttributes & dwFileAttributesToSet) == dwFileAttributesToSet) && ((fData.dwFileAttributes & dwFileAttributesToClear) == 0))
             {
-                // Attribute already cleared and nothing to set
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Attribute %d already cleared on file %s \n"), dwFileAttributesToClear, orig.c_str());
+                // Attribute already set / cleared as requested
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Attribute %d already set correctly on file %s \n"), dwFileAttributesToSet, fName.c_str());
                 return;
             }
 
             if ((dwFileAttributesToClear & dwFileAttributesToSet) != 0)
             {
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unexpected usage: clearing and setting same attribute on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet (will be set)=%d \n"), dwFileAttributesToClear, orig.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unexpected usage: clearing and setting same attribute on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet (will be set)=%d \n"), dwFileAttributesToClear, fName.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
             }
 
-            fDataOrig.dwFileAttributes &= (~dwFileAttributesToClear);
-            bRet = SetFileAttributes(orig.c_str(), fDataOrig.dwFileAttributes | dwFileAttributesToSet);
+            fData.dwFileAttributes &= (~dwFileAttributesToClear);
+            bRet = SetFileAttributes(fName.c_str(), fData.dwFileAttributes | dwFileAttributesToSet);
         }
         error = ::GetLastError();
         if (!bRet)
@@ -1608,35 +1608,35 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAtt
 
     if (!bRet)
     {
-        CCircularLog::Instance()(_T("INFO:    failed to adjust attributes on %s (error %d)"), orig.c_str(), error);
-        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to adjust file attributes on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet=%d \n"), dwFileAttributesToClear, orig.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
+        CCircularLog::Instance()(_T("INFO:    failed to adjust attributes on %s (error %d)"), fName.c_str(), error);
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to adjust file attributes on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet=%d \n"), dwFileAttributesToClear, fName.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
     }
     else
     {
-        bRet                = false;
-        CAutoFile hFileOrig = CreateFile(orig.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
-        error               = ::GetLastError();
-        if (hFileOrig.IsValid())
+        bRet            = false;
+        CAutoFile hFile = CreateFile(fName.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+        error           = ::GetLastError();
+        if (hFile.IsValid())
         {
             retry = 5;
             do
             {
                 if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
                     break;
-                bRet  = !!SetFileTime(hFileOrig, &fDataOrig.ftCreationTime, &fDataOrig.ftLastAccessTime, &fDataOrig.ftLastWriteTime);
+                bRet  = !!SetFileTime(hFile, &fData.ftCreationTime, &fData.ftLastAccessTime, &fData.ftLastWriteTime);
                 error = ::GetLastError();
                 if (!bRet)
                     Sleep(200);
             } while (!bRet && (retry-- > 0));
-            hFileOrig.CloseHandle();
+            hFile.CloseHandle();
         }
         if (!bRet)
         {
-            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (error %d"), orig.c_str(), error);
-            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to set file time on %s\n"), orig.c_str());
+            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (error %d"), fName.c_str(), error);
+            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to set file time on %s\n"), fName.c_str());
         }
         else
-            CCircularLog::Instance()(_T("INFO:    successfully adjusted attribute on %s"), orig.c_str());
+            CCircularLog::Instance()(_T("INFO:    successfully adjusted attribute on %s"), fName.c_str());
     }
 }
 
