@@ -23,7 +23,7 @@ Now you're almost ready. Only a few more steps to do:
 Building packages
 
   Hint: before you can start building CryptSync, you need to call the VsDevCmd.bat
-  file which is located in "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+  file which is located in %VS140COMNTOOLS% (%VS170COMNTOOLS% for VS2022)
 
   > nant
   will compile CryptSync and create the msi installer
