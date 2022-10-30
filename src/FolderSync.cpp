@@ -474,7 +474,7 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
             if (bCopyOnly)
             {
                 CCircularLog::Instance()(_T("INFO:    copy file %s to %s"), orig.c_str(), crypt.c_str());
-                bool bCopyFileResult = bCopyFileResult = CopyFile(orig.c_str(), crypt.c_str(), FALSE);
+                bool bCopyFileResult = CopyFile(orig.c_str(), crypt.c_str(), FALSE);
                 if (!bCopyFileResult)
                 {
                     std::wstring targetFolder = crypt.substr(0, crypt.find_last_of('\\'));
