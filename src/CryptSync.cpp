@@ -89,7 +89,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                              L"/useGPG       : use GnuPG encryption\n"
                              L"/fat          : use FAT write time accuracy (2s)\n"
                              L"/nosyncdeleted: don't sync file deletions\n"
-                             L"/resetoriarchattr: reset archive attribute on original file\n" 
+                             L"/resetarchiveattr: reset archive attribute on original file\n" 
                              L"/ignore       : ignore patterns\n"
                              L"/compresssize : max size in MB a file is compressed. Larger\n"
                              L"                files are only encrypted\n"
@@ -171,7 +171,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         bool         useGpg        = !!parser.HasKey(L"useGPG");
         bool         fat           = !!parser.HasKey(L"fat");
         bool         syncDeletions = !parser.HasKey(L"nosyncdeleted");
-        bool         resetoriginalarchAttr = !!parser.HasKey(L"resetoriarchattr");
+        bool         resetoriginalarchAttr = !!parser.HasKey(L"resetarchiveattr");
         int          compresssize  = parser.GetLongVal(L"compresssize");
         std::wstring ign           = parser.HasVal(L"ignore") ? parser.GetVal(L"ignore") : L"";
         if (!parser.HasKey(L"compresssize"))

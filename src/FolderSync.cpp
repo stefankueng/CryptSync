@@ -1595,7 +1595,7 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
 
             if ((dwFileAttributesToClear & dwFileAttributesToSet) != 0)
             {
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unexpected usage: clearing and setting same attribute on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet (will be set)=%d \n"), dwFileAttributesToClear, fName.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unexpected usage: clearing and setting same attribute on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet (will be set)=%d \n"), fName.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
             }
 
             fData.dwFileAttributes &= (~dwFileAttributesToClear);
@@ -1609,7 +1609,7 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
     if (!bRet)
     {
         CCircularLog::Instance()(_T("INFO:    failed to adjust attributes on %s (error %d)"), fName.c_str(), error);
-        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to adjust file attributes on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet=%d \n"), dwFileAttributesToClear, fName.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to adjust file attributes on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet=%d \n"), fName.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
     }
     else
     {
