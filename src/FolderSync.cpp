@@ -1632,7 +1632,7 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
         }
         if (!bRet)
         {
-            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (error %d"), fName.c_str(), error);
+            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (error %d)"), fName.c_str(), error);
             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to set file time on %s\n"), fName.c_str());
         }
         else
