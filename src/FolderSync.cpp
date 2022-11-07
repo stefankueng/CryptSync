@@ -474,21 +474,35 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
             if (bCopyOnly)
             {
                 CCircularLog::Instance()(_T("INFO:    copy file %s to %s"), orig.c_str(), crypt.c_str());
-                if (!CopyFile(orig.c_str(), crypt.c_str(), FALSE))
+                bool bCopyFileResult = CopyFile(orig.c_str(), crypt.c_str(), FALSE);
+                if (!bCopyFileResult)
                 {
                     std::wstring targetFolder = crypt.substr(0, crypt.find_last_of('\\'));
                     CPathUtils::CreateRecursiveDirectory(targetFolder);
-                    CopyFile(orig.c_str(), crypt.c_str(), FALSE);
+                    bCopyFileResult = CopyFile(orig.c_str(), crypt.c_str(), FALSE);
+                }
+                if (bCopyFileResult && pt.m_ResetOriginalArchAttr)
+                {
+                    // Reset archive attribute on original file
+                    AdjustFileAttributes(orig.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
                 }
             }
             else
-                EncryptFile(orig, crypt, pt.m_password, fd, pt.m_useGpg, bCryptOnly, pt.m_compressSize);
+                EncryptFile(orig, crypt, pt.m_password, fd, pt.m_useGpg, bCryptOnly, pt.m_compressSize, pt.m_ResetOriginalArchAttr);
         }
     }
     else if (cmp == 0)
     {
         // files are identical (have the same last-write-time):
-        // nothing to do.
+        // nothing to copy. Check if we need to reset Archive attribute on source file
+        if ((pt.m_syncDir == BothWays) || (pt.m_syncDir == SrcToDst))
+        {
+            if (pt.m_ResetOriginalArchAttr)
+            {
+                // Clear archive attibute
+                AdjustFileAttributes(orig.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
+            }
+        }
     }
 }
 
@@ -498,12 +512,13 @@ int CFolderSync::SyncFolder(const PairData& pt)
         return ErrorNone;
 
     CCircularLog::Instance()(L"INFO:    syncing folder orig \"%s\" with crypt \"%s\"", pt.m_origPath.c_str(), pt.m_cryptPath.c_str());
-    CCircularLog::Instance()(L"INFO:    settings: encrypt names: %s, use 7z: %s, use GPG: %s, use FAT workaround: %s, sync deleted: %s",
+    CCircularLog::Instance()(L"INFO:    settings: encrypt names: %s, use 7z: %s, use GPG: %s, use FAT workaround: %s, sync deleted: %s, reset archive attr: %s",
                              pt.m_encNames ? L"yes" : L"no",
                              pt.m_use7Z ? L"yes" : L"no",
                              pt.m_useGpg ? L"yes" : L"no",
                              pt.m_fat ? L"yes" : L"no",
-                             pt.m_syncDeleted ? L"yes" : L"no");
+                             pt.m_syncDeleted ? L"yes" : L"no",
+                             pt.m_ResetOriginalArchAttr ? L"yes" : L"no");
     if (m_pProgDlg)
     {
         m_pProgDlg->SetLine(0, L"scanning...");
@@ -601,20 +616,28 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, it->first));
                     std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                     CCircularLog::Instance()(_T("INFO:    copy file %s to %s"), origPath.c_str(), cryptPath.c_str());
-                    if (!CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE))
+                    bool bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
+                    if (!bCopyFileResult)
                     {
                         std::wstring targetFolder = cryptPath;
                         targetFolder              = targetFolder.substr(0, targetFolder.find_last_of('\\'));
                         CPathUtils::CreateRecursiveDirectory(targetFolder);
-                        if (!CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE))
+                        bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
+                        if (!bCopyFileResult)  // Original file did not use !, need to confirm with author
                             retVal |= ErrorCopy;
                     }
+                    if (bCopyFileResult && pt.m_ResetOriginalArchAttr)
+                    {
+                        // Reset archive attribute on original file
+                        AdjustFileAttributes(origPath.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
+                    }
+
                 }
                 else
                 {
                     std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg)));
                     std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
-                    if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize))
+                    if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize, pt.m_ResetOriginalArchAttr))
                         retVal |= ErrorCrypt;
                 }
             }
@@ -750,20 +773,27 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, it->first));
                         std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                         CCircularLog::Instance()(_T("INFO:    copy file %s to %s"), origPath.c_str(), cryptPath.c_str());
-                        if (!CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE))
+                        bool bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
+                        if (!bCopyFileResult)
                         {
                             std::wstring targetFolder = pt.m_cryptPath + L"\\" + it->first;
                             targetFolder              = targetFolder.substr(0, targetFolder.find_last_of('\\'));
                             CPathUtils::CreateRecursiveDirectory(targetFolder);
-                            if (!CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE))
+                            bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
+                            if (!bCopyFileResult)
                                 retVal |= ErrorCopy;
+                        }
+                        if (bCopyFileResult && pt.m_ResetOriginalArchAttr)
+                        {
+                            // Clear archive attibute
+                            AdjustFileAttributes(origPath.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
                         }
                     }
                     else
                     {
                         std::wstring cryptPath = CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg));
                         std::wstring origPath  = CPathUtils::Append(pt.m_origPath, it->first);
-                        if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize))
+                        if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize, pt.m_ResetOriginalArchAttr))
                             retVal |= ErrorCrypt;
                     }
                 }
@@ -771,7 +801,17 @@ int CFolderSync::SyncFolder(const PairData& pt)
             else if (cmp == 0)
             {
                 // files are identical (have the same last-write-time):
-                // nothing to do.
+                // nothing to copy. Check if we need to reset Archive attribute on source file
+                if ((pt.m_syncDir == BothWays) || (pt.m_syncDir == SrcToDst))
+                {
+                    if (pt.m_ResetOriginalArchAttr)
+                    {
+                        std::wstring origPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
+
+                        // Clear archive attibute
+                        AdjustFileAttributes(origPath.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
+                    }
+                }
             }
         }
     }
@@ -974,7 +1014,7 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
     return fileList;
 }
 
-bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGpg, bool noCompress, int compresssize)
+bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGpg, bool noCompress, int compresssize, bool resetArchAttr)
 {
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": encrypt file %s to %s\n"), orig.c_str(), crypt.c_str());
     CCircularLog::Instance()(_T("INFO:    encrypt file %s to %s"), orig.c_str(), crypt.c_str());
@@ -1027,18 +1067,17 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
             {
                 DeleteFile(encryptTmpFile.c_str());
 
-                // set the file timestamp
+                // set content not indexed and the file timestamp 
+                AdjustFileAttributes(targetFolder + L"\\" + cryptName.c_str(), 0, FILE_ATTRIBUTE_NOT_CONTENT_INDEXED);
+
+                if (resetArchAttr)
+                {
+                    // Reset archive attribute on original file
+                    AdjustFileAttributes(orig.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
+                }
+
                 int  retry = 5;
                 bool bRet  = true;
-                do
-                {
-                    bRet = !!SetFileAttributes((targetFolder + L"\\" + cryptName).c_str(), FILE_ATTRIBUTE_NOT_CONTENT_INDEXED);
-                    if (!bRet)
-                        Sleep(200);
-                } while (!bRet && (retry-- > 0));
-
-                retry = 5;
-                bRet  = true;
                 do
                 {
                     if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
@@ -1054,7 +1093,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
                         Sleep(200);
                 } while (!bRet && (retry-- > 0));
                 if (!bRet)
-                    CCircularLog::Instance()(_T("failed to set file time on %s"), crypt.c_str());
+                    CCircularLog::Instance()(_T("INFO:    failed to set file time on %s"), crypt.c_str());
                 CAutoWriteLock locker(m_failureGuard);
                 m_failures.erase(orig);
                 return true;
@@ -1092,6 +1131,12 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
     }
     if (bRet)
     {
+        if (resetArchAttr)
+        {
+            // Reset archive attribute on original file
+            AdjustFileAttributes(orig.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
+        }
+
         // set the file timestamp
         int retry = 5;
         do
@@ -1109,7 +1154,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
                 Sleep(200);
         } while (!bRet && (retry-- > 0));
         if (!bRet)
-            CCircularLog::Instance()(_T("failed to set file time on %s"), crypt.c_str());
+            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s"), crypt.c_str());
         CAutoWriteLock locker(m_failureGuard);
         m_failures.erase(orig);
     }
@@ -1524,6 +1569,75 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
     }
 
     return false;
+}
+
+
+void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet)
+{
+    // Adjust file attributes on file without impacing file times
+    WIN32_FILE_ATTRIBUTE_DATA fData = {0};
+    DWORD                     error =  0;
+
+    int  retry = 5;
+    bool bRet  = true;
+    do
+    {
+        if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+            break;
+        if ((bRet = GetFileAttributesEx(fName.c_str(), GetFileExInfoStandard, &fData)) != 0)
+        {
+            if (((fData.dwFileAttributes & dwFileAttributesToSet) == dwFileAttributesToSet) && ((fData.dwFileAttributes & dwFileAttributesToClear) == 0))
+            {
+                // Attribute already set / cleared as requested
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Attribute %d already set correctly on file %s \n"), dwFileAttributesToSet, fName.c_str());
+                return;
+            }
+
+            if ((dwFileAttributesToClear & dwFileAttributesToSet) != 0)
+            {
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unexpected usage: clearing and setting same attribute on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet (will be set)=%d \n"), fName.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
+            }
+
+            fData.dwFileAttributes &= (~dwFileAttributesToClear);
+            bRet = SetFileAttributes(fName.c_str(), fData.dwFileAttributes | dwFileAttributesToSet);
+        }
+        error = ::GetLastError();
+        if (!bRet)
+            Sleep(200);
+    } while (!bRet && (retry-- > 0));
+
+    if (!bRet)
+    {
+        CCircularLog::Instance()(_T("INFO:    failed to adjust attributes on %s (error %d)"), fName.c_str(), error);
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to adjust file attributes on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet=%d \n"), fName.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
+    }
+    else
+    {
+        bRet            = false;
+        CAutoFile hFile = CreateFile(fName.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+        error           = ::GetLastError();
+        if (hFile.IsValid())
+        {
+            retry = 5;
+            do
+            {
+                if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
+                    break;
+                bRet  = !!SetFileTime(hFile, &fData.ftCreationTime, &fData.ftLastAccessTime, &fData.ftLastWriteTime);
+                error = ::GetLastError();
+                if (!bRet)
+                    Sleep(200);
+            } while (!bRet && (retry-- > 0));
+            hFile.CloseHandle();
+        }
+        if (!bRet)
+        {
+            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (error %d)"), fName.c_str(), error);
+            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to set file time on %s\n"), fName.c_str());
+        }
+        else
+            CCircularLog::Instance()(_T("INFO:    successfully adjusted attribute on %s"), fName.c_str());
+    }
 }
 
 std::map<std::wstring, SyncOp> CFolderSync::GetFailures()
