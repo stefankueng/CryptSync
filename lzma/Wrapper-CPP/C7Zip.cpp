@@ -27,6 +27,7 @@
 #include "Helper.h"
 #include "../CPP/7zip/IDecl.h"
 #include "../CPP/Windows/PropVariant.h"
+#include <cassert>
 
 
 C7Zip::C7Zip()
@@ -209,22 +210,31 @@ bool C7Zip::AddPath(const std::wstring& path)
 
     // set the compression properties
     bool                         encryptHeaders = (m_compressionFormat == CompressionFormat::SevenZip && !m_password.empty());
-    const size_t                 numProps       = 2;
+    const size_t                 numProps       = 5;
     const wchar_t*               names[numProps];  // = { L"x" };
+    int                          propIndex = 0;
     NWindows::NCOM::CPropVariant values[numProps]; // = { static_cast<UInt32>(m_compressionLevel) };
-    names[0]  = L"x";
-    values[0] = static_cast<UInt32>(m_compressionLevel);
+
+    names[propIndex]     = L"x";
+    values[propIndex++]  = static_cast<UInt32>(m_compressionLevel);
+    names[propIndex]     = L"tc"; // Stores Creation timestamp for files.
+    values[propIndex++]  = true;
+    names[propIndex]     = L"ta"; // Stores last Access timestamp for files.
+    values[propIndex++]  = true;
+    names[propIndex]     = L"tm"; // Stores last modified timestamp for files.
+    values[propIndex++]  = true;
     if (encryptHeaders)
     {
-        names[1]  = L"he";
-        values[1] = true;
+        names[propIndex] = L"he";
+        values[propIndex++] = true;
     }
+    assert(propIndex <= numProps);  // Ensure future additions to names/values array will respect declared array size
 
     CMyComPtr<ISetProperties> setter;
     archive->QueryInterface(IID_ISetProperties, reinterpret_cast<void**>(&setter));
     if (setter != nullptr)
     {
-        hr = setter->SetProperties(names, values, encryptHeaders ? 2 : 1);
+        hr = setter->SetProperties(names, values, propIndex);
         if (hr != S_OK)
         {
             return false;
