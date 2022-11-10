@@ -1027,7 +1027,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
             {
                 DeleteFile(encryptTmpFile.c_str());
 
-                // set the file timestamp
+                // set the file "do not index" attribute
                 int  retry = 5;
                 bool bRet  = true;
                 do
@@ -1037,6 +1037,8 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
                         Sleep(200);
                 } while (!bRet && (retry-- > 0));
 
+                // Do equivalent of 7zip's -stl option and set archive time based on archive's file timestamp
+                // This is required to ensure future sync operations work (based on source / encrypted file's last-modified date)
                 retry = 5;
                 bRet  = true;
                 do
@@ -1053,7 +1055,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
                     if (!bRet)
                         Sleep(200);
                 } while (!bRet && (retry-- > 0));
-                if (!bRet)
+                if (!bRet)   // Should archive file be erased in this case (future sync will be unreliable due to incorrect date)?
                     CCircularLog::Instance()(_T("failed to set file time on %s"), crypt.c_str());
                 CAutoWriteLock locker(m_failureGuard);
                 m_failures.erase(orig);
@@ -1154,7 +1156,11 @@ bool CFolderSync::DecryptFile(const std::wstring& orig, const std::wstring& cryp
         CPathUtils::CreateRecursiveDirectory(targetFolder);
         if (extractor.Extract(targetFolder))
         {
-            // set the file timestamp
+#if 0
+            // Setting the file last write time is not required: 7zip will have set it based on archive content, even
+            // for files with read-only attributes (code below logs error msg for those files). Files stored on NTFS and encryypted 
+            // will have their timestamp correctly restored independantly of file system on which the encrypted archives is stored (e.g.: FAT)
+            // or on the cloud storage's ability to preserve the last modified timestamp when bringing back the archive to a local disk
             int  retry = 5;
             bool bRet  = true;
             do
@@ -1173,6 +1179,7 @@ bool CFolderSync::DecryptFile(const std::wstring& orig, const std::wstring& cryp
             } while (!bRet && (retry-- > 0));
             if (!bRet)
                 CCircularLog::Instance()(_T("ERROR:   failed to set file time on %s"), orig.c_str());
+#endif
             CAutoWriteLock locker(m_failureGuard);
             m_failures.erase(orig);
             return true;

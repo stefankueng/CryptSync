@@ -209,22 +209,26 @@ bool C7Zip::AddPath(const std::wstring& path)
 
     // set the compression properties
     bool                         encryptHeaders = (m_compressionFormat == CompressionFormat::SevenZip && !m_password.empty());
-    const size_t                 numProps       = 2;
+    const size_t                 numProps       = 4;
     const wchar_t*               names[numProps];  // = { L"x" };
     NWindows::NCOM::CPropVariant values[numProps]; // = { static_cast<UInt32>(m_compressionLevel) };
     names[0]  = L"x";
     values[0] = static_cast<UInt32>(m_compressionLevel);
+    names[1]  = L"tc";  // Stores Creation timestamps for files. 
+    values[1] = true;
+    names[2]  = L"ta";  // Stores last Access timestamps for files.
+    values[2] = true;
     if (encryptHeaders)
     {
-        names[1]  = L"he";
-        values[1] = true;
+        names[3]  = L"he";
+        values[3] = true;
     }
 
     CMyComPtr<ISetProperties> setter;
     archive->QueryInterface(IID_ISetProperties, reinterpret_cast<void**>(&setter));
     if (setter != nullptr)
     {
-        hr = setter->SetProperties(names, values, encryptHeaders ? 2 : 1);
+        hr = setter->SetProperties(names, values, encryptHeaders ? numProps : numProps - 1);
         if (hr != S_OK)
         {
             return false;
