@@ -1581,7 +1581,7 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
 
 void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet)
 {
-    // Adjust file attributes on file without impacing file times
+    // Adjust file attributes on file without impacting file times
     WIN32_FILE_ATTRIBUTE_DATA fData = {0};
     DWORD                     error =  0;
 
@@ -1621,7 +1621,9 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
     else
     {
         bRet            = false;
-        CAutoFile hFile = CreateFile(fName.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+        // Use FILE_WRITE_ATTRIBUTES below to prevent sharing violation if working on 
+        // file open by another application
+        CAutoFile hFile = CreateFile(fName.c_str(), FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
         error           = ::GetLastError();
         if (hFile.IsValid())
         {
@@ -1669,7 +1671,7 @@ std::set<std::wstring> CFolderSync::GetNotifyIgnores()
 
 std::wstring CFolderSync::GetFileTimeStringForLog(const FILETIME& ft)
 {
-    SYSTEMTIME stUtc, stLocal;
+    SYSTEMTIME stUtc, stLocal = {0, 0, 0, 0, 0, 0, 0, 0};
     FileTimeToSystemTime(&ft, &stUtc);
     SystemTimeToTzSpecificLocalTime(nullptr, &stUtc, &stLocal);
 
