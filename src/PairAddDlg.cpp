@@ -68,6 +68,7 @@ LRESULT CPairAddDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SetDlgItemText(hwndDlg, IDC_NOSYNC, m_noSync.c_str());
             SetDlgItemText(hwndDlg, IDC_COMPRESSSIZE, std::to_wstring(m_compressSize).c_str());
             SendDlgItemMessage(*this, IDC_ENCNAMES, BM_SETCHECK, m_encNames ? BST_CHECKED : BST_UNCHECKED, NULL);
+            DialogEnableWindow(IDC_NEWNAMEENCRYPTION, m_encNames);
             SendDlgItemMessage(*this, IDC_NEWNAMEENCRYPTION, BM_SETCHECK, m_encNamesNew ? BST_CHECKED : BST_UNCHECKED, NULL);
             CheckRadioButton(*this, IDC_SYNCBOTHRADIO, IDC_SYNCDSTTOSRCRADIO, m_syncDir == BothWays ? IDC_SYNCBOTHRADIO : (m_syncDir == SrcToDst ? IDC_SYNCSRCTODSTRADIO : IDC_SYNCDSTTOSRCRADIO));
             DialogEnableWindow(IDC_RESETORIGINALARCH, m_syncDir != DstToSrc);
