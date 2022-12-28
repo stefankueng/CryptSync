@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016, 2021 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2021-2022 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,11 +28,11 @@
 #include <WindowsX.h>
 #include <process.h>
 
-constexpr auto TIMER_DETECTCHANGES         = 100;
-constexpr auto TIMER_DETECTCHANGESINTERVAL = 10000;
-constexpr auto TIMER_FULLSCAN              = 101;
+constexpr auto                              TIMER_DETECTCHANGES                       = 100;
+constexpr auto                              TIMER_DETECTCHANGESINTERVAL               = 10000;
+constexpr auto                              TIMER_FULLSCAN                            = 101;
 
-DWORD g_timer_fullScanInterval = CRegStdDWORD(L"Software\\CryptSync\\FullScanInterval", 60000 * 30);
+DWORD                                       g_timer_fullScanInterval                  = CRegStdDWORD(L"Software\\CryptSync\\FullScanInterval", 60000 * 30);
 
 static UINT                                 WM_TASKBARCREATED                         = RegisterWindowMessage(_T("TaskbarCreated"));
 CTrayWindow::PFNCHANGEWINDOWMESSAGEFILTEREX CTrayWindow::m_pChangeWindowMessageFilter = nullptr;
@@ -41,9 +41,9 @@ CTrayWindow::PFNCHANGEWINDOWMESSAGEFILTEREX CTrayWindow::m_pChangeWindowMessageF
 
 DWORD CTrayWindow::GetDllVersion(LPCTSTR lpszDllName)
 {
-    DWORD dwVersion = 0;
+    DWORD     dwVersion = 0;
 
-    HINSTANCE hInstDll = LoadLibrary(lpszDllName);
+    HINSTANCE hInstDll  = LoadLibrary(lpszDllName);
 
     if (hInstDll)
     {
@@ -68,6 +68,14 @@ DWORD CTrayWindow::GetDllVersion(LPCTSTR lpszDllName)
         FreeLibrary(hInstDll);
     }
     return dwVersion;
+}
+
+CTrayWindow::~CTrayWindow()
+{
+    if (m_iconNormal)
+        DestroyIcon(m_iconNormal);
+    if (m_iconError)
+        DestroyIcon(m_iconError);
 }
 
 bool CTrayWindow::RegisterAndCreateWindow()
@@ -106,6 +114,10 @@ bool CTrayWindow::RegisterAndCreateWindow()
                 }
                 FreeLibrary(hLib);
             }
+            m_iconNormal = static_cast<HICON>(LoadImage(hResource, MAKEINTRESOURCE(IDI_CryptSync),
+                                                        IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
+            m_iconError  = static_cast<HICON>(LoadImage(hResource, MAKEINTRESOURCE(IDI_CryptSyncError),
+                                                        IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
 
             ShowTrayIcon();
             return true;
@@ -128,11 +140,10 @@ void CTrayWindow::ShowTrayIcon()
     else
         m_niData.cbSize = NOTIFYICONDATA_V1_SIZE;
 
-    m_niData.uID    = IDI_CryptSync;
-    m_niData.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_INFO;
+    m_niData.uID              = IDI_CryptSync;
+    m_niData.uFlags           = NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_INFO;
 
-    m_niData.hIcon            = static_cast<HICON>(LoadImage(hResource, MAKEINTRESOURCE(IDI_CryptSync),
-                                                  IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
+    m_niData.hIcon            = m_folderSyncer.GetFailureCount() > 0 ? m_iconError : m_iconNormal;
     m_niData.hWnd             = *this;
     m_niData.uCallbackMessage = TRAY_WM_MESSAGE;
     m_niData.uVersion         = 6;
@@ -297,6 +308,9 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                                 m_watcher.AddPath(cryptPath);
                         }
                     }
+
+                    m_niData.hIcon = m_folderSyncer.GetFailureCount() > 0 ? m_iconError : m_iconNormal;
+                    Shell_NotifyIcon(NIM_MODIFY, &m_niData);
                 }
                 break;
                 case TIMER_FULLSCAN:
@@ -345,6 +359,8 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                         SetTimer(*this, TIMER_FULLSCAN, g_timer_fullScanInterval, nullptr);
                     else
                         KillTimer(*this, TIMER_FULLSCAN);
+                    m_niData.hIcon = m_folderSyncer.GetFailureCount() > 0 ? m_iconError : m_iconNormal;
+                    Shell_NotifyIcon(NIM_MODIFY, &m_niData);
                 }
                 break;
             }
@@ -414,6 +430,8 @@ LRESULT CTrayWindow::DoCommand(int id)
                     SetTimer(*this, TIMER_FULLSCAN, g_timer_fullScanInterval, nullptr);
                 else
                     KillTimer(*this, TIMER_FULLSCAN);
+                m_niData.hIcon = m_folderSyncer.GetFailureCount() > 0 ? m_iconError : m_iconNormal;
+                Shell_NotifyIcon(NIM_MODIFY, &m_niData);
             }
             else
             {

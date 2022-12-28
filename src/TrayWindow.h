@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2021 - Stefan Kueng
+// Copyright (C) 2012-2014, 2021-2022 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,6 +33,9 @@ class CTrayWindow : public CWindow
 public:
     CTrayWindow(HINSTANCE hInst, const WNDCLASSEX* wcx = nullptr)
         : CWindow(hInst, wcx)
+        , m_niData{}
+        , m_iconNormal(nullptr)
+        , m_iconError(nullptr)
         , m_hwndNextViewer(nullptr)
         , m_foregroundWnd(nullptr)
         , m_bNewerVersionAvailable(false)
@@ -45,7 +48,8 @@ public:
         SetWindowTitle(static_cast<LPCTSTR>(ResString(hResource, IDS_APP_TITLE)));
     };
 
-    ~CTrayWindow(){};
+    ~CTrayWindow() override;
+    ;
 
     bool RegisterAndCreateWindow();
 
@@ -67,6 +71,8 @@ protected:
 
 protected:
     NOTIFYICONDATA         m_niData;
+    HICON                  m_iconNormal;
+    HICON                  m_iconError;
     HWND                   m_hwndNextViewer;
     HWND                   m_foregroundWnd;
     CPathWatcher           m_watcher;
