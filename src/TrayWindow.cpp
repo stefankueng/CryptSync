@@ -28,6 +28,8 @@
 #include <WindowsX.h>
 #include <process.h>
 
+#include "TextDlg.h"
+
 constexpr auto                              TIMER_DETECTCHANGES                       = 100;
 constexpr auto                              TIMER_DETECTCHANGESINTERVAL               = 10000;
 constexpr auto                              TIMER_FULLSCAN                            = 101;
@@ -215,6 +217,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     GetCursorPos(&pt);
                     HMENU hMenu    = LoadMenu(hResource, MAKEINTRESOURCE(IDC_CryptSync));
                     HMENU hPopMenu = GetSubMenu(hMenu, 0);
+                    if (m_folderSyncer.GetFailureCount() == 0)
+                    {
+                        EnableMenuItem(hPopMenu, ID_FILE_SHOWFAILEDSYNCS, MF_BYCOMMAND | MF_DISABLED);
+                    }
                     SetForegroundWindow(*this);
                     TrackPopupMenu(hPopMenu, TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, 0, *this, nullptr);
                     DestroyMenu(hMenu);
@@ -445,6 +451,24 @@ LRESULT CTrayWindow::DoCommand(int id)
         case ID_FILE_SYNCNOW:
             SetTimer(*this, TIMER_FULLSCAN, 1, nullptr);
             break;
+        case ID_FILE_SHOWFAILEDSYNCS:
+        {
+            auto         failures  = m_folderSyncer.GetFailures();
+            std::wstring sFailures = L"the following paths failed to sync:\r\n";
+            for (const auto& [failPath, failType] : failures)
+            {
+                if (failType == Encrypt)
+                    sFailures += L"Encrypting : ";
+                else
+                    sFailures += L"Decrypting : ";
+                sFailures += failPath;
+                sFailures += L"\r\n";
+            }
+            CTextDlg dlg(*this);
+            dlg.m_text = sFailures;
+            dlg.DoModal(hResource, IDD_TEXTDLG, *this);
+        }
+        break;
         default:
             break;
     };
