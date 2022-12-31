@@ -116,10 +116,6 @@ bool CTrayWindow::RegisterAndCreateWindow()
                 }
                 FreeLibrary(hLib);
             }
-            m_iconNormal = static_cast<HICON>(LoadImage(hResource, MAKEINTRESOURCE(IDI_CryptSync),
-                                                        IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
-            m_iconError  = static_cast<HICON>(LoadImage(hResource, MAKEINTRESOURCE(IDI_CryptSyncError),
-                                                        IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
 
             ShowTrayIcon();
             return true;
@@ -130,6 +126,15 @@ bool CTrayWindow::RegisterAndCreateWindow()
 
 void CTrayWindow::ShowTrayIcon()
 {
+    if (m_iconNormal)
+        DestroyIcon(m_iconNormal);
+    if (m_iconError)
+        DestroyIcon(m_iconError);
+    m_iconNormal = static_cast<HICON>(LoadImage(hResource, MAKEINTRESOURCE(IDI_CryptSync),
+                                                IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
+    m_iconError  = static_cast<HICON>(LoadImage(hResource, MAKEINTRESOURCE(IDI_CryptSyncError),
+                                                IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
+
     // since our main window is hidden most of the time
     // we have to add an auxiliary window to the system tray
     SecureZeroMemory(&m_niData, sizeof(m_niData));
@@ -172,6 +177,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
     HandleCustomMessages(hwnd, uMsg, wParam, lParam);
     switch (uMsg)
     {
+        case WM_DISPLAYCHANGE:
+        case WM_DPICHANGED:
+            ShowTrayIcon();
+            break;
         case WM_CREATE:
         {
             m_hwnd = hwnd;
