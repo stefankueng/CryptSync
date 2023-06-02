@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016, 2021-2022 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2021-2023 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -302,24 +302,26 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                     // because the drive wasn't ready yet when CS started,
                     // or even due to an access violation (virus scanners, ...)
                     size_t watchPathCount = 0;
-                    for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
+                    for (const auto& pair : g_pairs)
                     {
-                        if ((it->m_syncDir == BothWays) || (it->m_syncDir == DstToSrc))
+                        if (!pair.m_enabled)
+                            continue;
+                        if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == DstToSrc))
                             ++watchPathCount;
-                        if ((it->m_syncDir == BothWays) || (it->m_syncDir == SrcToDst))
+                        if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == SrcToDst))
                             ++watchPathCount;
                     }
 
                     if (m_watcher.GetNumberOfWatchedPaths() != watchPathCount)
                     {
                         m_watcher.ClearPaths();
-                        for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
+                        for (const auto& pair : g_pairs)
                         {
-                            std::wstring origPath  = it->m_origPath;
-                            std::wstring cryptPath = it->m_cryptPath;
-                            if ((it->m_syncDir == BothWays) || (it->m_syncDir == SrcToDst))
+                            std::wstring origPath  = pair.m_origPath;
+                            std::wstring cryptPath = pair.m_cryptPath;
+                            if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == SrcToDst))
                                 m_watcher.AddPath(origPath);
-                            if ((it->m_syncDir == BothWays) || (it->m_syncDir == DstToSrc))
+                            if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == DstToSrc))
                                 m_watcher.AddPath(cryptPath);
                         }
                     }
