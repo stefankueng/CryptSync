@@ -623,7 +623,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         targetFolder              = targetFolder.substr(0, targetFolder.find_last_of('\\'));
                         CPathUtils::CreateRecursiveDirectory(targetFolder);
                         bCopyFileResult = CopyFile(origPath.c_str(), cryptPath.c_str(), FALSE);
-                        if (!bCopyFileResult)  // Original file did not use !, need to confirm with author
+                        if (!bCopyFileResult) // Original file did not use !, need to confirm with author
                             retVal |= ErrorCopy;
                     }
                     if (bCopyFileResult && pt.m_ResetOriginalArchAttr)
@@ -631,7 +631,6 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         // Reset archive attribute on original file
                         AdjustFileAttributes(origPath.c_str(), FILE_ATTRIBUTE_ARCHIVE, 0);
                     }
-
                 }
                 else
                 {
@@ -899,10 +898,10 @@ int CFolderSync::SyncFolder(const PairData& pt)
             }
 
             else if ((pt.m_syncDir == BothWays) || (pt.m_syncDir == DstToSrc)
-                     /** Only restore files in original folder 
-                 * if syncing is both ways or encrypted to original direction.
-                 * Otherwise assume the intention is file should not be restored
-                 **/
+                     /** Only restore files in original folder
+                      * if syncing is both ways or encrypted to original direction.
+                      * Otherwise assume the intention is file should not be restored
+                      **/
                      || (origFileList.empty() && (pt.m_syncDir == BothWays || pt.m_syncDir == DstToSrc)))
             {
                 // decrypt the file
@@ -1068,7 +1067,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
             {
                 DeleteFile(encryptTmpFile.c_str());
 
-                // set content not indexed and the file timestamp 
+                // set content not indexed and the file timestamp
                 AdjustFileAttributes(targetFolder + L"\\" + cryptName.c_str(), 0, FILE_ATTRIBUTE_NOT_CONTENT_INDEXED);
 
                 if (resetArchAttr)
@@ -1202,21 +1201,33 @@ bool CFolderSync::DecryptFile(const std::wstring& orig, const std::wstring& cryp
         CPathUtils::CreateRecursiveDirectory(targetFolder);
         if (extractor.Extract(targetFolder))
         {
-#if 0
-            // Setting the file last write time is not required: 7zip will have set it based on archive content, even
-            // for files with read-only attributes (code below logs error msg for those files). Files stored on NTFS and encryypted 
-            // will have their timestamp correctly restored independantly of file system on which the encrypted archives is stored (e.g.: FAT)
-            // or on the cloud storage's ability to preserve the last modified timestamp when bringing back the archive to a local disk
+            // Setting the file last write time is usually not required: 7zip will have set it based on archive content, even
+            // for files with read-only attributes (code below logs error msg for those files).
+            //
+            // but it is possible that the encrypted file has the last-write-time changed (i.e. different than the source file).
+            // so we check here if the file time is correct and if not, try to adjust it.
             int  retry = 5;
             bool bRet  = true;
             do
             {
                 if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
                     break;
-                CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+
+                CAutoFile hFile = CreateFile(orig.c_str(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
                 if (hFile.IsValid())
                 {
-                    bRet = !!SetFileTime(hFile, nullptr, nullptr, &fd.ft);
+                    FILETIME ftCreate{};
+                    bRet = !!GetFileTime(hFile, nullptr, nullptr, &ftCreate);
+                    if (bRet)
+                    {
+                        bRet = CompareFileTime(&fd.ft, &ftCreate) == 0;
+                    }
+                    if (!bRet)
+                    {
+                        hFile.CloseHandle();
+                        hFile = CreateFile(orig.c_str(), FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+                        bRet  = !!SetFileTime(hFile, nullptr, nullptr, &fd.ft);
+                    }
                 }
                 else
                     bRet = false;
@@ -1225,7 +1236,6 @@ bool CFolderSync::DecryptFile(const std::wstring& orig, const std::wstring& cryp
             } while (!bRet && (retry-- > 0));
             if (!bRet)
                 CCircularLog::Instance()(_T("ERROR:   failed to set file time on %s"), orig.c_str());
-#endif
             CAutoWriteLock locker(m_failureGuard);
             m_failures.erase(orig);
             return true;
@@ -1579,15 +1589,14 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
     return false;
 }
 
-
-void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet)
+void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet) const
 {
     // Adjust file attributes on file without impacting file times
     WIN32_FILE_ATTRIBUTE_DATA fData = {0};
-    DWORD                     error =  0;
+    DWORD                     error = 0;
 
-    int  retry = 5;
-    bool bRet  = true;
+    int                       retry = 5;
+    bool                      bRet  = true;
     do
     {
         if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
@@ -1622,7 +1631,7 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
     else
     {
         bRet            = false;
-        // Use FILE_WRITE_ATTRIBUTES below to prevent sharing violation if working on 
+        // Use FILE_WRITE_ATTRIBUTES below to prevent sharing violation if working on
         // file open by another application
         CAutoFile hFile = CreateFile(fName.c_str(), FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
         error           = ::GetLastError();
