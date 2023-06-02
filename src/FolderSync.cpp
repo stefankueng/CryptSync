@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016, 2018-2021 - Stefan Kueng
+// Copyright (C) 2012-2016, 2018-2021, 2023 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -937,6 +937,7 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
     std::wstring enumpath = path;
     if ((enumpath.size() == 2) && (enumpath[1] == ':'))
         enumpath += L"\\";
+    enumpath = CPathUtils::AdjustForMaxPath(enumpath);
     CDirFileEnum                               enumerator(enumpath);
 
     std::map<std::wstring, FileData, ci_lessW> fileList;
@@ -965,12 +966,12 @@ std::map<std::wstring, FileData, ci_lessW> CFolderSync::GetFileList(bool orig, c
             fd.ft = enumerator.GetCreateTime();
 
         std::wstring relPath = filePath;
-        if (path.size() < filePath.size())
+        if (enumpath.size() < filePath.size())
         {
-            if (*path.rbegin() == '\\')
-                relPath = filePath.substr(path.size());
+            if (*enumpath.rbegin() == '\\')
+                relPath = filePath.substr(enumpath.size());
             else
-                relPath = filePath.substr(path.size() + 1);
+                relPath = filePath.substr(enumpath.size() + 1);
         }
         fd.fileRelPath                = relPath;
 
