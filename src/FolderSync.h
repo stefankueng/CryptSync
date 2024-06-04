@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016, 2018-2019, 2021, 2023 - Stefan Kueng
+// Copyright (C) 2012-2016, 2018-2019, 2021, 2023-2024 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,11 +54,11 @@ enum SyncOp
     Decrypt,
 };
 
-const int ErrorNone      = 0;
-const int ErrorCancelled = 1;
-const int ErrorAccess    = 2;
-const int ErrorCrypt     = 4;
-const int ErrorCopy      = 8;
+constexpr int ErrorNone      = 0;
+constexpr int ErrorCancelled = 1;
+constexpr int ErrorAccess    = 2;
+constexpr int ErrorCrypt     = 4;
+constexpr int ErrorCopy      = 8;
 
 class CFolderSync
 {
@@ -91,7 +91,7 @@ private:
     bool                                       DecryptFile(const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const FileData& fd, bool useGpg);
     static std::wstring                        GetFileTimeStringForLog(const FILETIME& ft);
     bool                                       RunGPG(LPWSTR cmdline, const std::wstring& cwd) const;
-    // Would AdjustFileAttributes be a andidate for sktools?
+    // Would AdjustFileAttributes be a candidate for sktools?
     void                                       AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet) const;
 
     CReaderWriterLock              m_guard;
