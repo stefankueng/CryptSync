@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 1
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MY7Z_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /Gr /MT /W4 /WX /GX /O1 /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MY7Z_EXPORTS" /D "NO_REGISTRY" /D "EXTERNAL_CODECS" /D "_7ZIP_LARGE_PAGES" /D "_7ZIP_ST_9" /FAcs /Yu"StdAfx.h" /FD /GF /c
+# ADD CPP /nologo /Gr /MD /W4 /WX /GX /O1 /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MY7Z_EXPORTS" /D "Z7_EXTERNAL_CODECS" /D "Z7_LARGE_PAGES" /D "Z7_ST_9" /FAcs /Yu"StdAfx.h" /FD /GF /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x419 /d "NDEBUG"
@@ -70,7 +70,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 1
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MY7Z_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /Gr /MTd /W4 /WX /Gm /GX /ZI /Od /I "..\..\..\..\SDK" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MY7Z_EXPORTS" /D "NO_REGISTRY" /D "EXTERNAL_CODECS" /D "_7ZIP_LARGE_PAGES" /D "_7ZIP_ST_9" /Yu"StdAfx.h" /FD /GZ /c
+# ADD CPP /nologo /Gr /MTd /W4 /WX /Gm /GX /ZI /Od /I "..\..\..\..\SDK" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MY7Z_EXPORTS" /D "Z7_EXTERNAL_CODECS" /D "Z7_LARGE_PAGES" /D "Z7_ST_9" /Yu"StdAfx.h" /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x419 /d "_DEBUG"
@@ -195,6 +195,10 @@ SOURCE=..\..\Archive\Icons\z.ico
 
 SOURCE=..\..\Archive\Icons\zip.ico
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\Archive\Icons\zst.ico
+# End Source File
 # End Group
 # Begin Source File
 
@@ -231,7 +235,19 @@ SOURCE=.\StdAfx.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=..\..\..\Common\AutoPtr.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\Common\Common.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\Common\Common0.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\Common\ComTry.h
 # End Source File
 # Begin Source File
 
@@ -396,6 +412,10 @@ SOURCE=..\..\..\Common\Wildcard.cpp
 # Begin Source File
 
 SOURCE=..\..\..\Common\Wildcard.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\Common\Xxh64Reg.cpp
 # End Source File
 # Begin Source File
 
@@ -1065,6 +1085,14 @@ SOURCE=..\..\Compress\ZDecoder.cpp
 
 SOURCE=..\..\Compress\ZDecoder.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\Compress\ZstdDecoder.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Compress\ZstdDecoder.h
+# End Source File
 # End Group
 # Begin Group "Crypto"
 
@@ -1631,6 +1659,14 @@ SOURCE=..\..\..\..\C\7zStream.c
 # Begin Source File
 
 SOURCE=..\..\..\..\C\7zTypes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\..\C\7zVersion.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\..\C\7zWindows.h
 # End Source File
 # Begin Source File
 
@@ -2214,7 +2250,23 @@ SOURCE=..\..\..\..\C\Sort.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\..\C\StdAfx.h
+SOURCE=..\..\..\..\C\SwapBytes.c
+
+!IF  "$(CFG)" == "7z - Win32 Release"
+
+# ADD CPP /O2
+# SUBTRACT CPP /YX /Yc /Yu
+
+!ELSEIF  "$(CFG)" == "7z - Win32 Debug"
+
+# SUBTRACT CPP /YX /Yc /Yu
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\..\C\SwapBytes.h
 # End Source File
 # Begin Source File
 
@@ -2224,6 +2276,46 @@ SOURCE=..\..\..\..\C\Threads.c
 # Begin Source File
 
 SOURCE=..\..\..\..\C\Threads.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\..\C\Xxh64.c
+
+!IF  "$(CFG)" == "7z - Win32 Release"
+
+# ADD CPP /O2
+# SUBTRACT CPP /YX /Yc /Yu
+
+!ELSEIF  "$(CFG)" == "7z - Win32 Debug"
+
+# SUBTRACT CPP /YX /Yc /Yu
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\..\C\Xxh64.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\..\C\ZstdDec.c
+
+!IF  "$(CFG)" == "7z - Win32 Release"
+
+# ADD CPP /O2
+# SUBTRACT CPP /YX /Yc /Yu
+
+!ELSEIF  "$(CFG)" == "7z - Win32 Debug"
+
+# SUBTRACT CPP /YX /Yc /Yu
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\..\C\ZstdDec.h
 # End Source File
 # End Group
 # Begin Group "Archive"
@@ -2763,6 +2855,10 @@ SOURCE=..\..\Archive\Udf\UdfIn.h
 # End Group
 # Begin Source File
 
+SOURCE=..\..\Archive\ApfsHandler.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Archive\ApmHandler.cpp
 # End Source File
 # Begin Source File
@@ -2843,11 +2939,19 @@ SOURCE=..\..\Archive\HfsHandler.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Archive\HfsHandler.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Archive\IArchive.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\Archive\IhexHandler.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Archive\LpHandler.cpp
 # End Source File
 # Begin Source File
 
@@ -2905,6 +3009,10 @@ SOURCE=..\..\Archive\RpmHandler.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Archive\SparseHandler.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Archive\SplitHandler.cpp
 # End Source File
 # Begin Source File
@@ -2951,6 +3059,10 @@ SOURCE=..\..\Archive\XzHandler.h
 
 SOURCE=..\..\Archive\ZHandler.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\Archive\ZstdHandler.cpp
+# End Source File
 # End Group
 # Begin Group "7zip"
 
@@ -2974,6 +3086,10 @@ SOURCE=..\..\IProgress.h
 # Begin Source File
 
 SOURCE=..\..\IStream.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\MyVersion.h
 # End Source File
 # Begin Source File
 
@@ -3021,11 +3137,27 @@ SOURCE=..\..\..\Windows\FileName.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\..\Windows\Handle.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\Windows\NtCheck.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\Windows\PropVariant.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\..\Windows\PropVariant.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\Windows\PropVariantConv.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\Windows\PropVariantConv.h
 # End Source File
 # Begin Source File
 

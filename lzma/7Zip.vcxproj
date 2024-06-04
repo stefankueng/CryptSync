@@ -261,12 +261,23 @@
     <CustomBuild Include="CPP\7zip\Archive\Archive2.def" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CPP\7zip\Archive\ApfsHandler.cpp" />
+    <ClCompile Include="CPP\7zip\Archive\AvbHandler.cpp" />
     <ClCompile Include="CPP\7zip\Archive\Base64Handler.cpp" />
+    <ClCompile Include="CPP\7zip\Archive\LpHandler.cpp" />
+    <ClCompile Include="CPP\7zip\Archive\LvmHandler.cpp" />
+    <ClCompile Include="CPP\7zip\Archive\SparseHandler.cpp" />
     <ClCompile Include="CPP\7zip\Archive\VhdxHandler.cpp" />
+    <ClCompile Include="CPP\7zip\Archive\ZstdHandler.cpp" />
+    <ClCompile Include="CPP\7zip\Common\FileStreams.cpp" />
+    <ClCompile Include="CPP\7zip\Common\MultiOutStream.cpp" />
+    <ClCompile Include="CPP\7zip\Compress\ZstdDecoder.cpp" />
     <ClCompile Include="CPP\Common\CksumReg.cpp" />
     <ClCompile Include="CPP\Common\LzFindPrepare.cpp" />
     <ClCompile Include="CPP\Common\Sha1Prepare.cpp" />
     <ClCompile Include="CPP\Common\Sha256Prepare.cpp" />
+    <ClCompile Include="CPP\Common\Xxh64Reg.cpp" />
+    <ClCompile Include="CPP\Windows\PropVariantConv.cpp" />
     <ClCompile Include="C\7zBuf2.c" />
     <ClCompile Include="C\7zCrc.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
@@ -391,8 +402,10 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MaxSpeed</Optimization>
     </ClCompile>
+    <ClCompile Include="C\SwapBytes.c" />
     <ClCompile Include="C\Threads.c">
     </ClCompile>
+    <ClCompile Include="C\Xxh64.c" />
     <ClCompile Include="C\Xz.c">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Level4</WarningLevel>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Level4</WarningLevel>
@@ -757,6 +770,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="C\ZstdDec.c" />
     <ClCompile Include="Wrapper-CPP\ArchiveExtractCallback.cpp" />
     <ClCompile Include="Wrapper-CPP\ArchiveOpenCallback.cpp" />
     <ClCompile Include="Wrapper-CPP\ArchiveUpdateCallback.cpp" />
@@ -772,9 +786,14 @@
     <ResourceCompile Include="CPP\7zip\Bundles\Format7zF\resource.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CPP\7zip\Common\FileStreams.h" />
+    <ClInclude Include="CPP\7zip\Common\MultiOutStream.h" />
+    <ClInclude Include="CPP\7zip\Compress\ZstdDecoder.h" />
+    <ClInclude Include="CPP\Windows\PropVariantConv.h" />
     <ClInclude Include="C\7zBuf.h" />
     <ClInclude Include="C\7zCrc.h" />
     <ClInclude Include="C\7zTypes.h" />
+    <ClInclude Include="C\7zWindows.h" />
     <ClInclude Include="C\Aes.h" />
     <ClInclude Include="C\Alloc.h" />
     <ClInclude Include="C\Bcj2.h" />
@@ -804,7 +823,9 @@
     <ClInclude Include="C\Sha256.h" />
     <ClInclude Include="C\Sort.h" />
     <ClInclude Include="CPP\7zip\Bundles\Format7zF\StdAfx.h" />
+    <ClInclude Include="C\SwapBytes.h" />
     <ClInclude Include="C\Threads.h" />
+    <ClInclude Include="C\Xxh64.h" />
     <ClInclude Include="C\Xz.h" />
     <ClInclude Include="C\XzCrc64.h" />
     <ClInclude Include="C\XzEnc.h" />
@@ -990,6 +1011,7 @@
     <ClInclude Include="CPP\7zip\IProgress.h" />
     <ClInclude Include="CPP\7zip\IStream.h" />
     <ClInclude Include="CPP\7zip\PropID.h" />
+    <ClInclude Include="C\ZstdDec.h" />
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="Wrapper-CPP\ArchiveExtractCallback.h" />
     <ClInclude Include="Wrapper-CPP\ArchiveOpenCallback.h" />

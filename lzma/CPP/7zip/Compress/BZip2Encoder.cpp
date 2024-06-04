@@ -46,7 +46,7 @@ void CThreadInfo::Free()
   m_Block = NULL;
 }
 
-#ifndef _7ZIP_ST
+#ifndef Z7_ST
 
 static THREAD_FUNC_DECL MFThread(void *threadCoderInfo)
 {
@@ -98,8 +98,8 @@ THREAD_FUNC_RET_TYPE CThreadInfo::ThreadFunc()
     bool needLeave = true;
     try
     {
-      UInt32 blockSize = Encoder->ReadRleBlock(m_Block);
-      m_PackSize = Encoder->m_InStream.GetProcessedSize();
+      const UInt32 blockSize = Encoder->ReadRleBlock(m_Block);
+      m_UnpackSize = Encoder->m_InStream.GetProcessedSize();
       m_BlockIndex = Encoder->NextBlockIndex;
       if (++Encoder->NextBlockIndex == Encoder->NumThreads)
         Encoder->NextBlockIndex = 0;
@@ -146,14 +146,14 @@ CEncoder::CEncoder()
 {
   _props.Normalize(-1);
 
-  #ifndef _7ZIP_ST
+  #ifndef Z7_ST
   ThreadsInfo = NULL;
   m_NumThreadsPrev = 0;
   NumThreads = 1;
   #endif
 }
 
-#ifndef _7ZIP_ST
+#ifndef Z7_ST
 CEncoder::~CEncoder()
 {
   Free();
@@ -222,7 +222,8 @@ UInt32 CEncoder::ReadRleBlock(Byte *buffer)
   Byte prevByte;
   if (m_InStream.ReadByte(prevByte))
   {
-    UInt32 blockSize = _props.BlockSizeMult * kBlockSizeStep - 1;
+    NumBlocks++;
+    const UInt32 blockSize = _props.BlockSizeMult * kBlockSizeStep - 1;
     unsigned numReps = 1;
     buffer[i++] = prevByte;
     while (i < blockSize) // "- 1" to support RLE
@@ -557,8 +558,8 @@ void CThreadInfo::EncodeBlock(const Byte *block, UInt32 blockSize)
     {
       UInt32 groupSize = 0;
       UInt32 groupIndex = 0;
-      const Byte *lens = 0;
-      const UInt32 *codes = 0;
+      const Byte *lens = NULL;
+      const UInt32 *codes = NULL;
       UInt32 mtfPos = 0;
       do
       {
@@ -705,7 +706,7 @@ HRESULT CThreadInfo::EncodeBlock3(UInt32 blockSize)
 
   EncodeBlock2(m_Block, blockSize, Encoder->_props.NumPasses);
 
-  #ifndef _7ZIP_ST
+  #ifndef Z7_ST
   if (Encoder->MtMode)
     Encoder->ThreadsInfo[m_BlockIndex].CanWriteEvent.Lock();
   #endif
@@ -713,7 +714,7 @@ HRESULT CThreadInfo::EncodeBlock3(UInt32 blockSize)
     Encoder->CombinedCrc.Update(m_CRCs[i]);
   Encoder->WriteBytes(m_TempArray, outStreamTemp.GetPos(), outStreamTemp.GetCurByte());
   HRESULT res = S_OK;
-  #ifndef _7ZIP_ST
+  #ifndef Z7_ST
   if (Encoder->MtMode)
   {
     UInt32 blockIndex = m_BlockIndex + 1;
@@ -722,8 +723,8 @@ HRESULT CThreadInfo::EncodeBlock3(UInt32 blockSize)
 
     if (Encoder->Progress)
     {
-      UInt64 unpackSize = Encoder->m_OutStream.GetProcessedSize();
-      res = Encoder->Progress->SetRatioInfo(&m_PackSize, &unpackSize);
+      const UInt64 packSize = Encoder->m_OutStream.GetProcessedSize();
+      res = Encoder->Progress->SetRatioInfo(&m_UnpackSize, &packSize);
     }
 
     Encoder->ThreadsInfo[blockIndex].CanWriteEvent.Set();
@@ -744,13 +745,14 @@ void CEncoder::WriteBytes(const Byte *data, UInt32 sizeInBits, Byte lastByte)
 HRESULT CEncoder::CodeReal(ISequentialInStream *inStream, ISequentialOutStream *outStream,
     const UInt64 * /* inSize */, const UInt64 * /* outSize */, ICompressProgressInfo *progress)
 {
-  #ifndef _7ZIP_ST
+  NumBlocks = 0;
+  #ifndef Z7_ST
   Progress = progress;
-  RINOK(Create());
+  RINOK(Create())
   for (UInt32 t = 0; t < NumThreads; t++)
   #endif
   {
-    #ifndef _7ZIP_ST
+    #ifndef Z7_ST
     CThreadInfo &ti = ThreadsInfo[t];
     if (MtMode)
     {
@@ -785,7 +787,7 @@ HRESULT CEncoder::CodeReal(ISequentialInStream *inStream, ISequentialOutStream *
   m_OutStream.Init();
 
   CombinedCrc.Init();
-  #ifndef _7ZIP_ST
+  #ifndef Z7_ST
   NextBlockIndex = 0;
   StreamWasFinished = false;
   CloseThreads = false;
@@ -797,7 +799,7 @@ HRESULT CEncoder::CodeReal(ISequentialInStream *inStream, ISequentialOutStream *
   WriteByte(kArSig2);
   WriteByte((Byte)(kArSig3 + _props.BlockSizeMult));
 
-  #ifndef _7ZIP_ST
+  #ifndef Z7_ST
 
   if (MtMode)
   {
@@ -812,7 +814,7 @@ HRESULT CEncoder::CodeReal(ISequentialInStream *inStream, ISequentialOutStream *
     for (t = 0; t < NumThreads; t++)
       ThreadsInfo[t].WaitingWasStartedEvent.Lock();
     CanStartWaitingEvent.Reset();
-    RINOK(Result);
+    RINOK(Result)
   }
   else
   #endif
@@ -820,7 +822,7 @@ HRESULT CEncoder::CodeReal(ISequentialInStream *inStream, ISequentialOutStream *
     for (;;)
     {
       CThreadInfo &ti =
-      #ifndef _7ZIP_ST
+      #ifndef Z7_ST
       ThreadsInfo[0];
       #else
       ThreadsInfo;
@@ -828,12 +830,12 @@ HRESULT CEncoder::CodeReal(ISequentialInStream *inStream, ISequentialOutStream *
       UInt32 blockSize = ReadRleBlock(ti.m_Block);
       if (blockSize == 0)
         break;
-      RINOK(ti.EncodeBlock3(blockSize));
+      RINOK(ti.EncodeBlock3(blockSize))
       if (progress)
       {
-        UInt64 packSize = m_InStream.GetProcessedSize();
-        UInt64 unpackSize = m_OutStream.GetProcessedSize();
-        RINOK(progress->SetRatioInfo(&packSize, &unpackSize));
+        const UInt64 unpackSize = m_InStream.GetProcessedSize();
+        const UInt64 packSize = m_OutStream.GetProcessedSize();
+        RINOK(progress->SetRatioInfo(&unpackSize, &packSize))
       }
     }
   }
@@ -845,11 +847,14 @@ HRESULT CEncoder::CodeReal(ISequentialInStream *inStream, ISequentialOutStream *
   WriteByte(kFinSig5);
 
   WriteCrc(CombinedCrc.GetDigest());
-  return Flush();
+  RINOK(Flush())
+  if (!m_InStream.WasFinished())
+    return E_FAIL;
+  return S_OK;
 }
 
-STDMETHODIMP CEncoder::Code(ISequentialInStream *inStream, ISequentialOutStream *outStream,
-    const UInt64 *inSize, const UInt64 *outSize, ICompressProgressInfo *progress)
+Z7_COM7F_IMF(CEncoder::Code(ISequentialInStream *inStream, ISequentialOutStream *outStream,
+    const UInt64 *inSize, const UInt64 *outSize, ICompressProgressInfo *progress))
 {
   try { return CodeReal(inStream, outStream, inSize, outSize, progress); }
   catch(const CInBufferException &e) { return e.ErrorCode; }
@@ -857,7 +862,7 @@ STDMETHODIMP CEncoder::Code(ISequentialInStream *inStream, ISequentialOutStream 
   catch(...) { return S_FALSE; }
 }
 
-HRESULT CEncoder::SetCoderProperties(const PROPID *propIDs, const PROPVARIANT *coderProps, UInt32 numProps)
+Z7_COM7F_IMF(CEncoder::SetCoderProperties(const PROPID *propIDs, const PROPVARIANT *coderProps, UInt32 numProps))
 {
   int level = -1;
   CEncProps props;
@@ -887,7 +892,7 @@ HRESULT CEncoder::SetCoderProperties(const PROPID *propIDs, const PROPVARIANT *c
       case NCoderPropID::kLevel: level = (int)v; break;
       case NCoderPropID::kNumThreads:
       {
-        #ifndef _7ZIP_ST
+        #ifndef Z7_ST
         SetNumberOfThreads(v);
         #endif
         break;
@@ -900,8 +905,8 @@ HRESULT CEncoder::SetCoderProperties(const PROPID *propIDs, const PROPVARIANT *c
   return S_OK;
 }
 
-#ifndef _7ZIP_ST
-STDMETHODIMP CEncoder::SetNumberOfThreads(UInt32 numThreads)
+#ifndef Z7_ST
+Z7_COM7F_IMF(CEncoder::SetNumberOfThreads(UInt32 numThreads))
 {
   const UInt32 kNumThreadsMax = 64;
   if (numThreads < 1) numThreads = 1;

@@ -1,7 +1,7 @@
 // HandlerOut.h
 
-#ifndef __HANDLER_OUT_H
-#define __HANDLER_OUT_H
+#ifndef ZIP7_INC_HANDLER_OUT_H
+#define ZIP7_INC_HANDLER_OUT_H
 
 #include "../../../Windows/System.h"
 
@@ -16,7 +16,8 @@ class CCommonMethodProps
 protected:
   void InitCommon()
   {
-    #ifndef _7ZIP_ST
+    // _Write_MTime = true;
+    #ifndef Z7_ST
     _numProcessors = _numThreads = NWindows::NSystem::GetNumberOfProcessors();
     _numThreads_WasForced = false;
     #endif
@@ -45,7 +46,7 @@ protected:
   }
 
 public:
-  #ifndef _7ZIP_ST
+  #ifndef Z7_ST
   UInt32 _numThreads;
   UInt32 _numProcessors;
   bool _numThreads_WasForced;
@@ -62,7 +63,7 @@ public:
 };
 
 
-#ifndef EXTRACT_ONLY
+#ifndef Z7_EXTRACT_ONLY
 
 class CMultiMethodProps: public CCommonMethodProps
 {
@@ -79,7 +80,7 @@ public:
   
   void SetGlobalLevelTo(COneMethodInfo &oneMethodInfo) const;
 
-  #ifndef _7ZIP_ST
+  #ifndef Z7_ST
   static void SetMethodThreadsTo_IfNotFinded(CMethodProps &props, UInt32 numThreads);
   static void SetMethodThreadsTo_Replace(CMethodProps &props, UInt32 numThreads);
   #endif
@@ -118,10 +119,35 @@ public:
   CSingleMethodProps() { InitSingle(); }
   
   int GetLevel() const { return _level == (UInt32)(Int32)-1 ? 5 : (int)_level; }
+  HRESULT SetProperty(const wchar_t *name, const PROPVARIANT &values);
   HRESULT SetProperties(const wchar_t * const *names, const PROPVARIANT *values, UInt32 numProps);
 };
 
 #endif
+
+struct CHandlerTimeOptions
+{
+  CBoolPair Write_MTime;
+  CBoolPair Write_ATime;
+  CBoolPair Write_CTime;
+  UInt32 Prec;
+
+  void Init()
+  {
+    Write_MTime.Init();
+    Write_MTime.Val = true;
+    Write_ATime.Init();
+    Write_CTime.Init();
+    Prec = (UInt32)(Int32)-1;
+  }
+
+  CHandlerTimeOptions()
+  {
+    Init();
+  }
+
+  HRESULT Parse(const UString &name, const PROPVARIANT &prop, bool &processed);
+};
 
 }
 

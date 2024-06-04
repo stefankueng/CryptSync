@@ -999,6 +999,48 @@
     <ClCompile Include="CPP\Common\Sha256Prepare.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="C\SwapBytes.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="C\Xxh64.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="C\ZstdDec.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Archive\SparseHandler.cpp">
+      <Filter>Archive</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Archive\ZstdHandler.cpp">
+      <Filter>Archive</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Archive\ApfsHandler.cpp">
+      <Filter>Archive</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Archive\AvbHandler.cpp">
+      <Filter>Archive</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Archive\LpHandler.cpp">
+      <Filter>Archive</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Archive\LvmHandler.cpp">
+      <Filter>Archive</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Compress\ZstdDecoder.cpp">
+      <Filter>Compress</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Common\MultiOutStream.cpp">
+      <Filter>7zip Common</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\Common\Xxh64Reg.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\Windows\PropVariantConv.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\7zip\Common\FileStreams.cpp">
+      <Filter>7zip Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CPP\7zip\Bundles\Format7zF\resource.rc" />
@@ -1688,6 +1730,30 @@
     </ClInclude>
     <ClInclude Include="Wrapper-CPP\Helper.h">
       <Filter>Wrapper-CPP</Filter>
+    </ClInclude>
+    <ClInclude Include="C\SwapBytes.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="C\7zWindows.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="C\Xxh64.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="C\ZstdDec.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="CPP\7zip\Compress\ZstdDecoder.h">
+      <Filter>Compress</Filter>
+    </ClInclude>
+    <ClInclude Include="CPP\7zip\Common\MultiOutStream.h">
+      <Filter>7zip Common</Filter>
+    </ClInclude>
+    <ClInclude Include="CPP\Windows\PropVariantConv.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="CPP\7zip\Common\FileStreams.h">
+      <Filter>7zip Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

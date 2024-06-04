@@ -1,7 +1,7 @@
 // Windows/FileDir.h
 
-#ifndef __WINDOWS_FILE_DIR_H
-#define __WINDOWS_FILE_DIR_H
+#ifndef ZIP7_INC_WINDOWS_FILE_DIR_H
+#define ZIP7_INC_WINDOWS_FILE_DIR_H
 
 #include "../Common/MyString.h"
 
@@ -14,7 +14,12 @@ namespace NDir {
 bool GetWindowsDir(FString &path);
 bool GetSystemDir(FString &path);
 
-bool SetDirTime(CFSTR path, const FILETIME *cTime, const FILETIME *aTime, const FILETIME *mTime);
+/*
+WIN32 API : SetFileTime() doesn't allow to set zero timestamps in file
+but linux : allows unix time = 0 in filesystem
+*/
+
+bool SetDirTime(CFSTR path, const CFiTime *cTime, const CFiTime *aTime, const CFiTime *mTime);
 
 
 #ifdef _WIN32
@@ -27,6 +32,9 @@ bool SetFileAttrib(CFSTR path, DWORD attrib);
   SetFileAttrib_PosixHighDetect() tries to detect posix field, and it extracts only attribute
   bits that are related to current system only.
 */
+#else
+
+int my_chown(CFSTR path, uid_t owner, gid_t group);
 
 #endif
 
@@ -64,6 +72,8 @@ bool GetCurrentDir(FString &resultPath);
 #endif
 
 bool MyGetTempPath(FString &resultPath);
+
+bool CreateTempFile2(CFSTR prefix, bool addRandom, AString &postfix, NIO::COutFile *outFile);
 
 class CTempFile  MY_UNCOPYABLE
 {
