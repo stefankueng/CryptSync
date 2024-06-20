@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016, 2018-2021, 2023 - Stefan Kueng
+// Copyright (C) 2012-2016, 2018-2021, 2023-2024 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -226,12 +226,13 @@ void CFolderSync::SyncFile(const std::wstring& path)
     }
 }
 
-void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
+void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
 {
     std::wstring orig  = pt.m_origPath;
     std::wstring crypt = pt.m_cryptPath;
     if (orig.empty() || crypt.empty())
         return;
+    auto path = plainPath;
     if (pt.IsIgnored(path))
         return;
     if (!pt.m_enabled)
@@ -269,6 +270,7 @@ void CFolderSync::SyncFile(const std::wstring& path, const PairData& pt)
     }
     crypt                                   = CPathUtils::AdjustForMaxPath(crypt);
     orig                                    = CPathUtils::AdjustForMaxPath(orig);
+    path                                    = CPathUtils::AdjustForMaxPath(plainPath);
 
     WIN32_FILE_ATTRIBUTE_DATA fDataOrig     = {0};
     WIN32_FILE_ATTRIBUTE_DATA fDdataCrypt   = {0};
