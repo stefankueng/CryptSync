@@ -19,3 +19,12 @@
 /x64
 /Release
 /Tests/Release
+*.tlog
+*.obj
+*.pdb
+/Tests/Debug
+/Debug/Tests.ilk
+/Debug/Tests.exe
+/buildlog.txt
+/defect_descr.txt
+*.aps
