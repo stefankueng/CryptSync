@@ -288,6 +288,7 @@ LRESULT COptionsDlg::DoCommand(int id)
         case ID_SYNCNOW:
         case ID_SYNCNOWANDEXIT:
         {
+            SaveSettings();
             HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
             int  nCount       = ListView_GetItemCount(hListControl);
             if (nCount == 0)
