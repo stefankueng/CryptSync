@@ -19,6 +19,7 @@
 #include "stdafx.h"
 #include "PathWatcher.h"
 #include "DebugOutput.h"
+#include "PathUtils.h"
 
 #include <Dbt.h>
 #include <process.h>
@@ -109,8 +110,6 @@ void CPathWatcher::WorkerThread()
     DWORD          numBytes;
     CDirWatchInfo* pdi = nullptr;
     LPOVERLAPPED   lpOverlapped;
-    const int      bufferSize      = MAX_PATH * 4;
-    TCHAR          buf[bufferSize] = {0};
     while (m_bRunning)
     {
         if (!watchedPaths.empty())
@@ -137,7 +136,7 @@ void CPathWatcher::WorkerThread()
                 CAutoReadLock locker(m_guard);
                 for (auto p = watchedPaths.cbegin(); p != watchedPaths.cend(); ++p)
                 {
-                    CAutoFile hDir = CreateFile(p->c_str(),
+                    CAutoFile hDir = CreateFile(CPathUtils::AdjustForMaxPath(p->c_str()).c_str(),
                                                 FILE_LIST_DIRECTORY,
                                                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                                                 nullptr, //security attributes
@@ -202,21 +201,30 @@ void CPathWatcher::WorkerThread()
                     DWORD nOffset = pnotify->NextEntryOffset;
                     do
                     {
-                        nOffset = pnotify->NextEntryOffset;
-                        SecureZeroMemory(buf, bufferSize * sizeof(TCHAR));
-                        wcsncpy_s(buf, bufferSize, pdi->m_dirPath.c_str(), bufferSize);
-                        errno_t err = wcsncat_s(buf + pdi->m_dirPath.size(), bufferSize - pdi->m_dirPath.size(), pnotify->FileName, min(pnotify->FileNameLength / sizeof(WCHAR), bufferSize - pdi->m_dirPath.size()));
-                        if (err == STRUNCATE)
+                        size_t bufferSize = pdi->m_dirPath.size() + (pnotify->FileNameLength / sizeof(pnotify->FileName[0])) + 1;
+                        auto   buf        = std::make_unique<wchar_t[]>(bufferSize);
+                        nOffset           = pnotify->NextEntryOffset;
+ 
+                        wcscpy_s(buf.get(), bufferSize, pdi->m_dirPath.c_str());
+
+                        // pnotify->FileName is not null terminated, the second argument to wcsncat_s limits the number of characters
+                        // concatenated and the last parameter forces truncation; STRUNCATE, the expected return value since buf is allocated
+                        // accordingly, is a valid return value.
+                        errno_t err     = wcsncat_s(buf.get() + pdi->m_dirPath.size(), min(pnotify->FileNameLength / sizeof(pnotify->FileName[0]) + 1, bufferSize - pdi->m_dirPath.size()), pnotify->FileName, _TRUNCATE);
+                        buf[bufferSize - 1] = 0;
+                        if (err == STRUNCATE) // Validate if STRUNCATE is valid or not (should always be since we allocated a sufficiently large buf).
+                            err = pnotify->FileNameLength / sizeof(pnotify->FileName[0]) + pdi->m_dirPath.size() < bufferSize ? 0 : STRUNCATE;
+
+                        if (err != 0)
                         {
                             pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
                             continue;
                         }
-                        buf[min(bufferSize - 1, pdi->m_dirPath.size() + (pnotify->FileNameLength / sizeof(WCHAR)))] = 0;
-                        pnotify                                                                                     = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
-                        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": change notification for %s\n"), buf);
+                        pnotify             = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
+                        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": change notification for %s\n"), buf.get());
                         {
                             CAutoWriteLock locker(m_guard);
-                            m_changedPaths.insert(std::wstring(buf));
+                            m_changedPaths.insert(std::wstring(buf.get()));
                         }
                         if (reinterpret_cast<ULONG_PTR>(pnotify) - reinterpret_cast<ULONG_PTR>(pdi->m_buffer) > READ_DIR_CHANGE_BUFFER_SIZE)
                             break;
