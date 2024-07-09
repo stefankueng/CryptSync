@@ -469,7 +469,7 @@ LRESULT CTrayWindow::DoCommand(int id)
         case ID_FILE_SHOWFAILEDSYNCS:
         {
             auto         failures  = m_folderSyncer.GetFailures();
-            std::wstring sFailures = L"the following paths failed to sync:\r\n";
+            std::wstring sFailures = L"The following paths failed to sync:\r\n";
             for (const auto& [failPath, failType] : failures)
             {
                 if (failType == Encrypt)
@@ -481,7 +481,7 @@ LRESULT CTrayWindow::DoCommand(int id)
             }
             CTextDlg dlg(*this);
             dlg.m_text = sFailures;
-            dlg.DoModal(hResource, IDD_TEXTDLG, *this);
+            dlg.DoModal(hResource, IDD_TEXTDLG, nullptr);
         }
         break;
         default:
