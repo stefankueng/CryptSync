@@ -23,6 +23,9 @@
 
 #include <Dbt.h>
 #include <process.h>
+#ifdef _DEBUG 
+#include < comdef.h>
+#endif
 
 CPathWatcher::CPathWatcher()
     : m_hCompPort(nullptr)
@@ -107,6 +110,7 @@ unsigned int CPathWatcher::ThreadEntry(void* pContext)
 
 void CPathWatcher::WorkerThread()
 {
+    DWORD          lasterr;
     DWORD          numBytes;
     CDirWatchInfo* pdi = nullptr;
     LPOVERLAPPED   lpOverlapped;
@@ -128,7 +132,15 @@ void CPathWatcher::WorkerThread()
                     CAutoWriteLock locker(m_guard);
                     ClearInfoMap();
                 }
-                DWORD lasterr = GetLastError();
+                lasterr = GetLastError();
+#ifdef _DEBUG
+                if (m_hCompPort)
+                {
+                    _com_error com_error(lasterr);
+                    LPCTSTR    com_errorText = com_error.ErrorMessage();
+                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": GetQueuedCompletionStatus (%s) \n"), com_errorText);
+                }
+#endif
                 if ((m_hCompPort) && (lasterr != ERROR_SUCCESS) && (lasterr != ERROR_INVALID_HANDLE))
                 {
                     m_hCompPort.CloseHandle();
@@ -193,41 +205,56 @@ void CPathWatcher::WorkerThread()
                 {
                     if (numBytes == 0)
                     {
+#ifdef _DEBUG
+                        if (m_hCompPort)
+                        {
+                            lasterr = GetLastError();
+                            _com_error com_error(lasterr);
+                            LPCTSTR    com_errorText = com_error.ErrorMessage();
+                            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": GetQueuedCompletionStatus returned zero numBytes (%s) for watched folder \"%s\"\n"), com_errorText, pdi->m_dirPath.c_str());
+                        }
+#endif
                         goto continuewatching;
                     }
                     PFILE_NOTIFY_INFORMATION pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(pdi->m_buffer);
-                    if (reinterpret_cast<ULONG_PTR>(pnotify) - reinterpret_cast<ULONG_PTR>(pdi->m_buffer) > READ_DIR_CHANGE_BUFFER_SIZE)
-                        goto continuewatching;
-                    DWORD nOffset = pnotify->NextEntryOffset;
+                    DWORD nOffset;
                     do
                     {
                         size_t bufferSize = pdi->m_dirPath.size() + (pnotify->FileNameLength / sizeof(pnotify->FileName[0])) + 1;
                         auto   buf        = std::make_unique<wchar_t[]>(bufferSize);
                         nOffset           = pnotify->NextEntryOffset;
+                        auto Action       = pnotify->Action;
+
+                        if (reinterpret_cast<ULONG_PTR>(pnotify) - reinterpret_cast<ULONG_PTR>(pdi->m_buffer) > READ_DIR_CHANGE_BUFFER_SIZE)
+                            break;
  
                         wcscpy_s(buf.get(), bufferSize, pdi->m_dirPath.c_str());
 
                         // pnotify->FileName is not null terminated, the second argument to wcsncat_s limits the number of characters
                         // concatenated and the last parameter forces truncation; STRUNCATE, the expected return value since buf is allocated
                         // accordingly, is a valid return value.
-                        errno_t err     = wcsncat_s(buf.get() + pdi->m_dirPath.size(), min(pnotify->FileNameLength / sizeof(pnotify->FileName[0]) + 1, bufferSize - pdi->m_dirPath.size()), pnotify->FileName, _TRUNCATE);
+                        //errno_t err     = wcsncat_s(buf.get() + pdi->m_dirPath.size(), min(pnotify->FileNameLength / sizeof(pnotify->FileName[0]) + 1, bufferSize - pdi->m_dirPath.size()), pnotify->FileName, _TRUNCATE);
+                        // Above code may do a one-wchar_t source buffer read overrun on m_buffer, we can either declare m_buffer as "READ_DIR_CHANGE_BUFFER_SIZE + sizeof(wchar_t)" bytes
+                        // or use memmove_s() to prevent source buffer overrun
+
+                        errno_t err = wmemmove_s(buf.get() + pdi->m_dirPath.size(), 
+                            min(pnotify->FileNameLength / sizeof(pnotify->FileName[0]), bufferSize - pdi->m_dirPath.size()),
+                            pnotify->FileName, 
+                            pnotify->FileNameLength / sizeof(pnotify->FileName[0]));
+
                         buf[bufferSize - 1] = 0;
                         if (err == STRUNCATE) // Validate if STRUNCATE is valid or not (should always be since we allocated a sufficiently large buf).
                             err = pnotify->FileNameLength / sizeof(pnotify->FileName[0]) + pdi->m_dirPath.size() < bufferSize ? 0 : STRUNCATE;
-
+                        pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
                         if (err != 0)
                         {
-                            pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
                             continue;
                         }
-                        pnotify             = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
-                        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": change notification for %s\n"), buf.get());
+                        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": change notification for %s (Action:%d)\n"), buf.get(), Action);
                         {
                             CAutoWriteLock locker(m_guard);
                             m_changedPaths.insert(std::wstring(buf.get()));
                         }
-                        if (reinterpret_cast<ULONG_PTR>(pnotify) - reinterpret_cast<ULONG_PTR>(pdi->m_buffer) > READ_DIR_CHANGE_BUFFER_SIZE)
-                            break;
                     } while (nOffset);
                 continuewatching:
                     SecureZeroMemory(pdi->m_buffer, sizeof(pdi->m_buffer));

@@ -115,6 +115,7 @@ private:
 
         CAutoFile    m_hDir;                                ///< handle to the directory that we're watching
         std::wstring m_dirName;                             ///< the directory that we're watching
+        __declspec(align(sizeof(DWORD)))                    ///< buffer must be DWORD-aligned as per doc
         CHAR         m_buffer[READ_DIR_CHANGE_BUFFER_SIZE]; ///< buffer for ReadDirectoryChangesW
         OVERLAPPED   m_overlapped;
         std::wstring m_dirPath; ///< the directory name we're watching with a backslash at the end
