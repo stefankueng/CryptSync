@@ -31,8 +31,11 @@
 
 #include <process.h>
 #include <shlobj.h>
+#include <shobjidl_core.h>
 #include <cctype>
 #include <algorithm>
+#include <pathcch.h>
+#include <comdef.h>
 
 #include "../base4k/base4k.h"
 #include "../lzma/Wrapper-CPP/C7Zip.h"
@@ -305,25 +308,20 @@ void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), orig.c_str(), crypt.c_str());
             CCircularLog::Instance()(_T("INFO:    file %s does not exist, delete file %s"), orig.c_str(), crypt.c_str());
 
-            SHFILEOPSTRUCT fop = {nullptr};
-            fop.wFunc          = FO_DELETE;
-            fop.fFlags         = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
-            auto delBuf        = std::make_unique<wchar_t[]>(crypt.size() + 2);
-            wcscpy_s(delBuf.get(), crypt.size() + 2, crypt.c_str());
-            delBuf[crypt.size()]     = 0;
-            delBuf[crypt.size() + 1] = 0;
-            fop.pFrom                = delBuf.get();
-            if (SHFileOperation(&fop))
+            if (! DeleteFileOrFolder(crypt))
             {
+                auto delBuf = std::make_unique<wchar_t[]>(crypt.size() + 2);
+                size_t iLastPeriod;
                 // in case the notification was for a folder that got removed,
-                // the GetDecryptedFilename() call above added the .cryptsync extension which
+                // the GetDecryptedFilename() call above added the .cryptsync (or .7z) extension which
                 // folders don't have. Remove that extension and try deleting again.
-                crypt = crypt.substr(0, crypt.find_last_of('.'));
+                // delBuf contains the path without the extension.
+                if ((iLastPeriod = crypt.find_last_of('.')) == -1)
+                    iLastPeriod = crypt.size();
                 wcscpy_s(delBuf.get(), crypt.size() + 2, crypt.c_str());
-                delBuf[crypt.size()]     = 0;
-                delBuf[crypt.size() + 1] = 0;
-                fop.pFrom                = delBuf.get();
-                if (SHFileOperation(&fop))
+                delBuf[iLastPeriod]     = 0;
+                delBuf[iLastPeriod + 1] = 0;
+                if (! DeleteFileOrFolder(delBuf.get()))
                 {
                     // could not delete file to the trashbin, so delete it directly
                     DeleteFile(crypt.c_str());
@@ -370,15 +368,7 @@ void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), crypt.c_str(), orig.c_str());
                 CCircularLog::Instance()(_T("INFO:    file %s does not exist, delete file %s"), crypt.c_str(), orig.c_str());
 
-                SHFILEOPSTRUCT fop = {nullptr};
-                fop.wFunc          = FO_DELETE;
-                fop.fFlags         = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
-                auto delBuf        = std::make_unique<wchar_t[]>(orig.size() + 2);
-                wcscpy_s(delBuf.get(), orig.size() + 2, orig.c_str());
-                delBuf[orig.size()]     = 0;
-                delBuf[orig.size() + 1] = 0;
-                fop.pFrom               = delBuf.get();
-                if (SHFileOperation(&fop))
+                if (!DeleteFileOrFolder(orig))
                 {
                     // could not delete file to the trashbin, so delete it directly
                     DeleteFile(orig.c_str());
@@ -649,23 +639,16 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     // remove the original file
                     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in crypted folder, delete file\n"), it->first.c_str());
                     CCircularLog::Instance()(_T("INFO:    counterpart of file %s does not exist in crypted folder, delete file"), it->first.c_str());
-                    SHFILEOPSTRUCT fop  = {nullptr};
-                    fop.wFunc           = FO_DELETE;
-                    fop.fFlags          = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
-                    std::wstring orig   = CPathUtils::Append(pt.m_origPath, it->second.fileRelPath);
-                    auto         delBuf = std::make_unique<wchar_t[]>(orig.size() + 2);
-                    wcscpy_s(delBuf.get(), orig.size() + 2, orig.c_str());
-                    delBuf[orig.size()]     = 0;
-                    delBuf[orig.size() + 1] = 0;
-                    fop.pFrom               = delBuf.get();
+                    std::wstring orig = CPathUtils::Append(pt.m_origPath, it->second.fileRelPath);
                     {
                         CAutoWriteLock nLocker(m_notingGuard);
                         m_notifyIgnores.insert(orig);
                     }
-                    if (SHFileOperation(&fop))
+                    orig = CPathUtils::AdjustForMaxPath(orig);
+                    if (!DeleteFileOrFolder(orig))
                     {
                         // could not delete file to the trashbin, so delete it directly
-                        DeleteFile(it->first.c_str());
+                        DeleteFile(orig.c_str());
                     }
                 }
 
@@ -792,8 +775,8 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     }
                     else
                     {
-                        std::wstring cryptPath = CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg));
-                        std::wstring origPath  = CPathUtils::Append(pt.m_origPath, it->first);
+                        std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg)));
+                        std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                         if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize, pt.m_ResetOriginalArchAttr))
                             retVal |= ErrorCrypt;
                     }
@@ -853,23 +836,16 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     // remove the encrypted file
                     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in src folder, delete file\n"), it->first.c_str());
                     CCircularLog::Instance()(_T("INFO:    counterpart of file %s does not exist in src folder, delete file"), it->first.c_str());
-                    SHFILEOPSTRUCT fop  = {nullptr};
-                    fop.wFunc           = FO_DELETE;
-                    fop.fFlags          = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
-                    std::wstring crypt  = CPathUtils::Append(pt.m_cryptPath, it->second.fileRelPath);
-                    auto         delBuf = std::make_unique<wchar_t[]>(crypt.size() + 2);
-                    wcscpy_s(delBuf.get(), crypt.size() + 2, crypt.c_str());
-                    delBuf[crypt.size()]     = 0;
-                    delBuf[crypt.size() + 1] = 0;
-                    fop.pFrom                = delBuf.get();
+                    std::wstring crypt = CPathUtils::Append(pt.m_cryptPath, it->second.fileRelPath);
                     {
                         CAutoWriteLock nlocker(m_notingGuard);
                         m_notifyIgnores.insert(crypt);
                     }
-                    if (SHFileOperation(&fop))
+                    crypt = CPathUtils::AdjustForMaxPath(crypt);
+                    if (!DeleteFileOrFolder(crypt))
                     {
                         // could not delete file to the trashbin, so delete it directly
-                        DeleteFile(it->first.c_str());
+                        DeleteFile(crypt.c_str());
                     }
                 }
 
@@ -1102,6 +1078,10 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
                 m_failures.erase(orig);
                 return true;
             }
+            _com_error com_error(::GetLastError());
+            LPCTSTR    com_errorText = com_error.ErrorMessage();
+
+            CCircularLog::Instance()(L"ERROR:   error moving temporary encrypted file \"%s\" to \"%s\" (%s)", encryptTmpFile.c_str(), crypt.c_str(), com_errorText);
             DeleteFile(encryptTmpFile.c_str());
             return false;
         }
@@ -1608,7 +1588,7 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
             if (((fData.dwFileAttributes & dwFileAttributesToSet) == dwFileAttributesToSet) && ((fData.dwFileAttributes & dwFileAttributesToClear) == 0))
             {
                 // Attribute already set / cleared as requested
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Attribute %d already set correctly on file %s \n"), dwFileAttributesToSet, fName.c_str());
+                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Attributes already set correctly on file %s (%d)\n"), fName.c_str(), fData.dwFileAttributes);
                 return;
             }
 
@@ -1627,7 +1607,10 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
 
     if (!bRet)
     {
-        CCircularLog::Instance()(_T("INFO:    failed to adjust attributes on %s (error %d)"), fName.c_str(), error);
+        _com_error com_error(error);
+        LPCTSTR    com_errorText = com_error.ErrorMessage();
+
+        CCircularLog::Instance()(_T("INFO:    failed to adjust attributes on %s (%s)"), fName.c_str(), com_errorText);
         CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to adjust file attributes on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet=%d \n"), fName.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
     }
     else
@@ -1653,12 +1636,177 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
         }
         if (!bRet)
         {
-            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (error %d)"), fName.c_str(), error);
-            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to set file time on %s\n"), fName.c_str());
+            _com_error com_error(error);
+            LPCTSTR    com_errorText = com_error.ErrorMessage();
+            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (%s)"), fName.c_str(), com_errorText);
+            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to set file time on %s (%s)\n"), fName.c_str(), com_errorText);
         }
         else
             CCircularLog::Instance()(_T("INFO:    successfully adjusted attribute on %s"), fName.c_str());
     }
+}
+
+bool CFolderSync::DeleteFileOrFolder(const std::wstring& fileOrFolderPath)
+{
+#if 1
+    bool           bResult = false;
+    SHFILEOPSTRUCT fop     = {nullptr};
+
+    fop.wFunc          = FO_DELETE;
+    fop.fFlags         = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
+    //fop.fFlags         = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NO_CONNECTED_ELEMENTS | FOF_NORECURSION;
+
+    size_t buffer_size = fileOrFolderPath.size() + 2;   // +2: two null characters
+    auto   delBuf      = std::make_unique<wchar_t[]>(buffer_size);
+
+    fop.pFrom          = delBuf.get();
+    fop.fAnyOperationsAborted = FALSE;
+    fop.hwnd                  = NULL; 
+
+    if (fileOrFolderPath.substr(0, 4).compare(L"\\\\?\\") == 0)
+    {
+        // A path name beginning wuth \\?\ is not supported by SHFileOperation.
+        // Convert path name to supported format.
+        fop.pFrom = delBuf.get() + 4;
+        if (false)
+        {
+            HRESULT hResult;
+            if ((hResult = PathCchCanonicalizeEx(delBuf.get(), fileOrFolderPath.size() + 2, fileOrFolderPath.c_str(), PATHCCH_NONE)) != S_OK)
+            {
+                _com_error com_error(hResult);
+                LPCTSTR    com_errorText = com_error.ErrorMessage();
+                DWORD      length;
+
+                // Some path names have an underligning short path name. If so, we can use
+                // this in SHFileOperation() in hope to move the deleted file to 
+                // the Recycle Bin
+                length = GetShortPathName(fileOrFolderPath.c_str(), NULL, 0);
+                // length is the buffer size required, including the null character
+                if (length > buffer_size - 1)
+                {
+                    delBuf      = std::make_unique<wchar_t[]>(length + 1); // +1: second null character
+                    buffer_size = length + 2;
+                }
+                length = GetShortPathName(fileOrFolderPath.c_str(), delBuf.get(), length);
+
+                if (length == 0)
+                {
+                    if (::GetLastError() == ERROR_FILE_NOT_FOUND)
+                        return true;  // Deleting a non-existing file is a successful delete
+                    CCircularLog::Instance()(_T("INFO:    unable to canonicalize filename \"%s\" (%s)"), fileOrFolderPath.c_str(), com_errorText);
+                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": unable to canonicalize filename \"%s\"  (%s)\n"), fileOrFolderPath.c_str(), com_errorText);
+                    return false;
+                }
+                delBuf[length]     = 0; // terminate with two null characters
+                delBuf[length + 1] = 0; // terminate with two null characters
+                // Skip \\?\ part
+                fop.pFrom          = delBuf.get() + 4;
+                // wmemmove_s(delBuf.get(), buffer_size, delBuf.get() + 4, (length + 2 - 4));
+            }
+        }
+    }
+//    else
+    {
+        wcscpy_s(delBuf.get(), fileOrFolderPath.size() + 2, fileOrFolderPath.c_str());
+        delBuf[fileOrFolderPath.size()]     = 0;
+        delBuf[fileOrFolderPath.size() + 1] = 0;
+    }
+
+    int ret   = SHFileOperation(&fop);
+    bResult = (ret == 0 || ret == ERROR_FILE_NOT_FOUND) && fop.fAnyOperationsAborted == FALSE;
+
+    return (bResult);
+
+#else
+    HRESULT hr;
+    bool    bDoCoUninitialize;
+
+    hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    bDoCoUninitialize = (hr == S_OK);
+    if (FAILED(hr)) {
+        //Couldn't initialize COM library - clean up and return
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Couldn't initialize COM library hr=%d fileOrFolderPath=%s.\n"), hr, fileOrFolderPath.c_str());
+        return FALSE;
+    }
+    // Initialize the file operation
+    IFileOperation* fileOperation;
+    hr = CoCreateInstance(CLSID_FileOperation, NULL, /*BAD:CLSCTX_INPROC_HANDLER*/ CLSCTX_LOCAL_SERVER /*CLSCTX_ALL*/, IID_PPV_ARGS(&fileOperation));
+    if (FAILED(hr))
+    {
+        // Couldn't CoCreateInstance - clean up and return
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Couldn't CoCreateInstance hr=%d fileOrFolderPath=%s.\n"), hr, fileOrFolderPath.c_str());
+        if (bDoCoUninitialize)
+            CoUninitialize();
+        return FALSE;
+    }
+    // DLEM:hr = fileOperation->SetOperationFlags(FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI);
+    hr = fileOperation->SetOperationFlags(FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION);
+    // DLEM: Ne fonctionne pas en mode interactif - hr = fileOperation->SetOperationFlags(FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NO_CONNECTED_ELEMENTS | FOF_NORECURSION);
+    if (FAILED(hr))
+    {
+        // Couldn't add flags - clean up and return
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Couldn't add flags hr=%d fileOrFolderPath=%s.\n"), hr, fileOrFolderPath.c_str());
+        fileOperation->Release();
+        if (bDoCoUninitialize)
+            CoUninitialize();
+        return FALSE;
+    }
+    IShellFolder *pshf;
+    hr = SHGetDesktopFolder(&pshf);
+    if (FAILED(hr))
+    {
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Couldn't get SHGetDesktopFolder=%d fileOrFolderPath=%s.\n"), hr, fileOrFolderPath.c_str());
+    }
+    LPITEMIDLIST pidl;
+    hr                           = pshf->ParseDisplayName(NULL, NULL, /*L"C:\\bla"*/ (LPWSTR)fileOrFolderPath.c_str() + 4, NULL, &pidl, NULL);
+    if (FAILED(hr))
+    {
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Couldn't get ParseDisplayName=%d fileOrFolderPath=%s.\n"), hr, fileOrFolderPath.c_str());
+    }
+    IShellItem* fileOrFolderItem = NULL;
+    hr                           = SHCreateItemFromParsingName(fileOrFolderPath.c_str() + 4, NULL, IID_PPV_ARGS(&fileOrFolderItem));
+    if (FAILED(hr))
+    {
+        // Couldn't get file into an item - clean up and return (maybe the file doesn't exist?)
+        fileOperation->Release();
+        if (bDoCoUninitialize)
+            CoUninitialize();
+        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+            return true;
+
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Couldn't get file into an item hr=%d fileOrFolderPath=%s.\n"), hr, fileOrFolderPath.c_str());
+        //fileOrFolderItem->Release();
+        return FALSE;
+    }
+    hr = fileOperation->DeleteItem(fileOrFolderItem, NULL); // The second parameter is if you want to keep track of progress
+    fileOrFolderItem->Release();
+    if (FAILED(hr))
+    {
+        // Failed to mark file/folder item for deletion - clean up and return
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Failed to mark file/folder item for deletion hr=%d fileOrFolderPath=%s.\n"), hr, fileOrFolderPath.c_str());
+        fileOperation->Release();
+        if (bDoCoUninitialize)
+            CoUninitialize();
+        return FALSE;
+    }
+    hr = fileOperation->PerformOperations();
+    BOOL fAnyOperationsAborted = FALSE;
+
+    if (!FAILED(hr) || hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+        hr = fileOperation->GetAnyOperationsAborted(&fAnyOperationsAborted);
+
+    fileOperation->Release();
+    if (bDoCoUninitialize)
+        CoUninitialize();
+    if (FAILED(hr) && hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+    {
+        // failed to carry out delete - return
+        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": failed to carry out delete hr=%d fileOrFolderPath=%s.\n"), hr, fileOrFolderPath.c_str());
+        return FALSE;
+    }
+
+    return (fAnyOperationsAborted == FALSE);
+#endif
 }
 
 std::map<std::wstring, SyncOp> CFolderSync::GetFailures()
