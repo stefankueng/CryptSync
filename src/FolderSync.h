@@ -93,7 +93,7 @@ private:
     bool                                       RunGPG(LPWSTR cmdline, const std::wstring& cwd) const;
     // Would AdjustFileAttributes be a candidate for sktools?
     void                                       AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet) const;
-    bool                                       DeleteFileOrFolder(const std::wstring& fileOrFolderPath);
+    bool                                       MoveToRecycleBin(const std::wstring& fileOrFolderPath);
 
     CReaderWriterLock              m_guard;
     CReaderWriterLock              m_failureGuard;

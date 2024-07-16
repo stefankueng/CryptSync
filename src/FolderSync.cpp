@@ -308,7 +308,7 @@ void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), orig.c_str(), crypt.c_str());
             CCircularLog::Instance()(_T("INFO:    file %s does not exist, delete file %s"), orig.c_str(), crypt.c_str());
 
-            if (! DeleteFileOrFolder(crypt))
+            if (! MoveToRecycleBin(crypt))
             {
                 auto delBuf = std::make_unique<wchar_t[]>(crypt.size() + 2);
                 size_t iLastPeriod;
@@ -321,7 +321,7 @@ void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
                 wcscpy_s(delBuf.get(), crypt.size() + 2, crypt.c_str());
                 delBuf[iLastPeriod]     = 0;
                 delBuf[iLastPeriod + 1] = 0;
-                if (! DeleteFileOrFolder(delBuf.get()))
+                if (! MoveToRecycleBin(delBuf.get()))
                 {
                     // could not delete file to the trashbin, so delete it directly
                     DeleteFile(crypt.c_str());
@@ -368,7 +368,7 @@ void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
                 CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), crypt.c_str(), orig.c_str());
                 CCircularLog::Instance()(_T("INFO:    file %s does not exist, delete file %s"), crypt.c_str(), orig.c_str());
 
-                if (!DeleteFileOrFolder(orig))
+                if (!MoveToRecycleBin(orig))
                 {
                     // could not delete file to the trashbin, so delete it directly
                     DeleteFile(orig.c_str());
@@ -645,7 +645,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         m_notifyIgnores.insert(orig);
                     }
                     orig = CPathUtils::AdjustForMaxPath(orig);
-                    if (!DeleteFileOrFolder(orig))
+                    if (!MoveToRecycleBin(orig))
                     {
                         // could not delete file to the trashbin, so delete it directly
                         DeleteFile(orig.c_str());
@@ -842,7 +842,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                         m_notifyIgnores.insert(crypt);
                     }
                     crypt = CPathUtils::AdjustForMaxPath(crypt);
-                    if (!DeleteFileOrFolder(crypt))
+                    if (!MoveToRecycleBin(crypt))
                     {
                         // could not delete file to the trashbin, so delete it directly
                         DeleteFile(crypt.c_str());
@@ -1646,7 +1646,7 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
     }
 }
 
-bool CFolderSync::DeleteFileOrFolder(const std::wstring& fileOrFolderPath)
+bool CFolderSync::MoveToRecycleBin(const std::wstring& fileOrFolderPath)
 {
 #if 1
     bool           bResult = false;
@@ -1659,19 +1659,23 @@ bool CFolderSync::DeleteFileOrFolder(const std::wstring& fileOrFolderPath)
     size_t buffer_size = fileOrFolderPath.size() + 2;   // +2: two null characters
     auto   delBuf      = std::make_unique<wchar_t[]>(buffer_size);
 
-    fop.pFrom          = delBuf.get();
-    fop.fAnyOperationsAborted = FALSE;
-    fop.hwnd                  = NULL; 
+    wcscpy_s(delBuf.get(), buffer_size, fileOrFolderPath.c_str());
+    delBuf[fileOrFolderPath.size()]     = 0;
+    delBuf[fileOrFolderPath.size() + 1] = 0;
+    fop.pFrom                           = delBuf.get();
+    fop.fAnyOperationsAborted           = FALSE;
+    fop.hwnd                            = NULL;
 
     if (fileOrFolderPath.substr(0, 4).compare(L"\\\\?\\") == 0)
     {
         // A path name beginning wuth \\?\ is not supported by SHFileOperation.
         // Convert path name to supported format.
+        // SHFileOperation does support long pathnames (up to 32k)
         fop.pFrom = delBuf.get() + 4;
         if (false)
         {
             HRESULT hResult;
-            if ((hResult = PathCchCanonicalizeEx(delBuf.get(), fileOrFolderPath.size() + 2, fileOrFolderPath.c_str(), PATHCCH_NONE)) != S_OK)
+            if ((hResult = PathCchCanonicalizeEx(delBuf.get(), buffer_size, fileOrFolderPath.c_str(), PATHCCH_NONE)) != S_OK)
             {
                 _com_error com_error(hResult);
                 LPCTSTR    com_errorText = com_error.ErrorMessage();
@@ -1682,10 +1686,13 @@ bool CFolderSync::DeleteFileOrFolder(const std::wstring& fileOrFolderPath)
                 // the Recycle Bin
                 length = GetShortPathName(fileOrFolderPath.c_str(), NULL, 0);
                 // length is the buffer size required, including the null character
+                // buffer_size is the size of the current buffer, including two null characters,
+                // length is the size required for the short pathname and ONE null character,
+                // this we use buffer_size - 1 to compare and to reallocate
                 if (length > buffer_size - 1)
                 {
-                    delBuf      = std::make_unique<wchar_t[]>(length + 1); // +1: second null character
-                    buffer_size = length + 2;
+                    buffer_size = length + 1; // +1: second null character
+                    delBuf      = std::make_unique<wchar_t[]>(buffer_size); 
                 }
                 length = GetShortPathName(fileOrFolderPath.c_str(), delBuf.get(), length);
 
@@ -1705,11 +1712,8 @@ bool CFolderSync::DeleteFileOrFolder(const std::wstring& fileOrFolderPath)
             }
         }
     }
-//    else
+    else
     {
-        wcscpy_s(delBuf.get(), fileOrFolderPath.size() + 2, fileOrFolderPath.c_str());
-        delBuf[fileOrFolderPath.size()]     = 0;
-        delBuf[fileOrFolderPath.size() + 1] = 0;
     }
 
     int ret   = SHFileOperation(&fop);
