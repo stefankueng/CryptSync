@@ -78,8 +78,8 @@ public:
     void                           DecryptOnly(bool b) { m_decryptOnly = b; }
 
     // puclic only for tests
-    static std::wstring GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptName, bool newEncryption, bool use7Z, bool useGpg);
-    static std::wstring GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptName, bool newEncryption, bool use7Z, bool useGpg);
+    static std::wstring            GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptName, bool newEncryption, bool use7Z, bool useGpg);
+    static std::wstring            GetEncryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptName, bool newEncryption, bool use7Z, bool useGpg);
 
 private:
     static unsigned int __stdcall SyncFolderThreadEntry(void* pContext);
@@ -93,21 +93,22 @@ private:
     bool                                       RunGPG(LPWSTR cmdline, const std::wstring& cwd) const;
     // Would AdjustFileAttributes be a candidate for sktools?
     void                                       AdjustFileAttributes(const std::wstring& orig, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet) const;
+    static bool                                DeletePathToTrash(const std::wstring& path);
 
-    CReaderWriterLock              m_guard;
-    CReaderWriterLock              m_failureGuard;
-    CReaderWriterLock              m_notingGuard;
-    PairVector                     m_pairs;
-    std::wstring                   m_gnuPg;
-    HWND                           m_parentWnd;
-    HWND                           m_trayWnd;
-    CProgressDlg*                  m_pProgDlg;
-    DWORD                          m_progress;
-    DWORD                          m_progressTotal;
-    volatile LONG                  m_bRunning;
-    CAutoGeneralHandle             m_hThread;
-    PairData                       m_currentPath;
-    std::map<std::wstring, SyncOp> m_failures;
-    std::set<std::wstring>         m_notifyIgnores;
-    bool                           m_decryptOnly;
+    CReaderWriterLock                          m_guard;
+    CReaderWriterLock                          m_failureGuard;
+    CReaderWriterLock                          m_notingGuard;
+    PairVector                                 m_pairs;
+    std::wstring                               m_gnuPg;
+    HWND                                       m_parentWnd;
+    HWND                                       m_trayWnd;
+    CProgressDlg*                              m_pProgDlg;
+    DWORD                                      m_progress;
+    DWORD                                      m_progressTotal;
+    volatile LONG                              m_bRunning;
+    CAutoGeneralHandle                         m_hThread;
+    PairData                                   m_currentPath;
+    std::map<std::wstring, SyncOp>             m_failures;
+    std::set<std::wstring>                     m_notifyIgnores;
+    bool                                       m_decryptOnly;
 };
