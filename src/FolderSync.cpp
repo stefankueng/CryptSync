@@ -47,7 +47,7 @@ CFolderSync::CFolderSync()
     , m_bRunning(FALSE)
     , m_decryptOnly(false)
 {
-    wchar_t buf[1024] = {0};
+    wchar_t buf[1024] = {};
     GetModuleFileName(nullptr, buf, 1024);
     std::wstring dir = buf;
     dir              = dir.substr(0, dir.find_last_of('\\'));
@@ -272,8 +272,8 @@ void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
     orig                                    = CPathUtils::AdjustForMaxPath(orig);
     path                                    = CPathUtils::AdjustForMaxPath(plainPath);
 
-    WIN32_FILE_ATTRIBUTE_DATA fDataOrig     = {0};
-    WIN32_FILE_ATTRIBUTE_DATA fDdataCrypt   = {0};
+    WIN32_FILE_ATTRIBUTE_DATA fDataOrig     = {};
+    WIN32_FILE_ATTRIBUTE_DATA fDdataCrypt   = {};
     bool                      bOrigMissing  = false;
     bool                      bCryptMissing = false;
     if (!GetFileAttributesEx(orig.c_str(), GetFileExInfoStandard, &fDataOrig))
@@ -305,7 +305,6 @@ void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
             CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": file %s does not exist, delete file %s\n"), orig.c_str(), crypt.c_str());
             CCircularLog::Instance()(_T("INFO:    file %s does not exist, delete file %s"), orig.c_str(), crypt.c_str());
 
-            ;
             if (!DeletePathToTrash(crypt))
             {
                 // in case the notification was for a folder that got removed,
@@ -333,7 +332,7 @@ void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
     {
         if (pt.m_syncDeleted)
         {
-            // encrypted file got deleted
+            // encrypted file got deleted.
             // delete the original file as well
             {
                 CAutoWriteLock nLocker(m_notingGuard);
@@ -638,7 +637,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     if (!DeletePathToTrash(orig))
                     {
                         // could not delete file to the trashbin, so delete it directly
-                        DeleteFile(it->first.c_str());
+                        DeleteFile(orig.c_str());
                     }
                 }
                 else
@@ -833,10 +832,9 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     if (!DeletePathToTrash(crypt))
                     {
                         // could not delete file to the trashbin, so delete it directly
-                        DeleteFile(it->first.c_str());
+                        DeleteFile(crypt.c_str());
                     }
                 }
-
                 else
                 {
                     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": counterpart of file %s does not exist in src folder and sync deleted not set, skipping delete file\n"), it->first.c_str());
@@ -1002,7 +1000,7 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
         CAutoFile hFile = CreateFile(orig.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, 0, nullptr);
         if (!hFile.IsValid())
             return false;
-        LARGE_INTEGER fileSize = {0};
+        LARGE_INTEGER fileSize = {};
         GetFileSizeEx(hFile, &fileSize);
         hFile.CloseHandle();
 
@@ -1170,7 +1168,7 @@ bool CFolderSync::DecryptFile(const std::wstring& orig, const std::wstring& cryp
             // Setting the file last write time is usually not required: 7zip will have set it based on archive content, even
             // for files with read-only attributes (code below logs error msg for those files).
             //
-            // but it is possible that the encrypted file has the last-write-time changed (i.e. different than the source file).
+            // but it is possible that the encrypted file has the last-write-time changed (i.e. different from the source file).
             // so we check here if the file time is correct and if not, try to adjust it.
             int  retry = 5;
             bool bRet  = true;
@@ -1558,7 +1556,7 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
 void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAttributesToClear, DWORD dwFileAttributesToSet) const
 {
     // Adjust file attributes on file without impacting file times
-    WIN32_FILE_ATTRIBUTE_DATA fData = {0};
+    WIN32_FILE_ATTRIBUTE_DATA fData = {};
     DWORD                     error = 0;
 
     int                       retry = 5;
