@@ -35,8 +35,9 @@
 #include <algorithm>
 #include <Commdlg.h>
 
-COptionsDlg::COptionsDlg(HWND hParent)
+COptionsDlg::COptionsDlg(HWND hParent, CFolderSync& folderSync)
     : m_hParent(hParent)
+    , m_folderSync(folderSync)
     , m_bNewerVersionAvailable(false)
     , m_exitAfterSync(false)
     , m_listInit(false)

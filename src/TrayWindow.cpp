@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016, 2021-2023 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2021-2024 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -424,7 +424,7 @@ LRESULT CTrayWindow::DoCommand(int id)
             if (m_bOptionsDialogShown)
                 break;
             m_bOptionsDialogShown = true;
-            COptionsDlg dlg(nullptr);
+            COptionsDlg dlg(nullptr, m_folderSyncer);
             dlg.SetUpdateAvailable(m_bNewerVersionAvailable);
             dlg.SetFailures(m_folderSyncer.GetFailures());
             INT_PTR ret           = dlg.DoModal(hResource, IDD_OPTIONS, nullptr);

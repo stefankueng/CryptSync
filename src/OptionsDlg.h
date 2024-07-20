@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012, 2014, 2016, 2021 - Stefan Kueng
+// Copyright (C) 2012, 2014, 2016, 2021, 2024 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,8 +31,8 @@
 class COptionsDlg : public CDialog
 {
 public:
-    COptionsDlg(HWND hParent);
-    ~COptionsDlg();
+    COptionsDlg(HWND hParent, CFolderSync& folderSync);
+    ~COptionsDlg() override;
 
     void SetUpdateAvailable(bool bUpdate) { m_bNewerVersionAvailable = bUpdate; }
     void SetFailures(const std::map<std::wstring, SyncOp>& failures) { m_failures = failures; }
@@ -43,14 +43,14 @@ protected:
     void             InitPairList();
     void             DoListNotify(LPNMITEMACTIVATE lpNMItemActivate);
 
-    int  GetFailuresFor(const std::wstring& path) const;
-    void SaveSettings();
+    int              GetFailuresFor(const std::wstring& path) const;
+    void             SaveSettings();
 
 private:
     HWND                           m_hParent;
     AeroControlBase                m_aeroControls;
     CHyperLink                     m_link;
-    CFolderSync                    m_folderSync;
+    CFolderSync&                   m_folderSync;
     bool                           m_bNewerVersionAvailable;
     bool                           m_exitAfterSync;
     std::map<std::wstring, SyncOp> m_failures;
