@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2016, 2021 - Stefan Kueng
+// Copyright (C) 2012-2016, 2021, 2024 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,8 +23,8 @@
 
 #include <Dbt.h>
 #include <process.h>
-#ifdef _DEBUG 
-#include < comdef.h>
+#ifdef _DEBUG
+#    include <comdef.h>
 #endif
 
 CPathWatcher::CPathWatcher()
@@ -136,9 +136,9 @@ void CPathWatcher::WorkerThread()
 #ifdef _DEBUG
                 if (m_hCompPort)
                 {
-                    _com_error com_error(lasterr);
-                    LPCTSTR    com_errorText = com_error.ErrorMessage();
-                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": GetQueuedCompletionStatus (%s) \n"), com_errorText);
+                    _com_error comError(lasterr);
+                    LPCTSTR    comErrorText = comError.ErrorMessage();
+                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": GetQueuedCompletionStatus (%s) \n"), comErrorText);
                 }
 #endif
                 if ((m_hCompPort) && (lasterr != ERROR_SUCCESS) && (lasterr != ERROR_INVALID_HANDLE))
@@ -151,9 +151,9 @@ void CPathWatcher::WorkerThread()
                     CAutoFile hDir = CreateFile(CPathUtils::AdjustForMaxPath(p->c_str()).c_str(),
                                                 FILE_LIST_DIRECTORY,
                                                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                                                nullptr, //security attributes
+                                                nullptr, // security attributes
                                                 OPEN_EXISTING,
-                                                FILE_FLAG_BACKUP_SEMANTICS | //required privileges: SE_BACKUP_NAME and SE_RESTORE_NAME.
+                                                FILE_FLAG_BACKUP_SEMANTICS | // required privileges: SE_BACKUP_NAME and SE_RESTORE_NAME.
                                                     FILE_FLAG_OVERLAPPED,
                                                 nullptr);
                     if (!hDir)
@@ -181,7 +181,7 @@ void CPathWatcher::WorkerThread()
                                                FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE,
                                                &numBytes, // not used
                                                &pDirInfo->m_overlapped,
-                                               nullptr)) //no completion routine!
+                                               nullptr)) // no completion routine!
                     {
                         CAutoWriteLock lockerW(m_guard);
                         ClearInfoMap();
@@ -203,60 +203,61 @@ void CPathWatcher::WorkerThread()
                 // changes in the file system!
                 if (pdi)
                 {
-                    if (numBytes == 0)
+                    if (numBytes != 0)
+                    {
+                        PFILE_NOTIFY_INFORMATION pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(pdi->m_buffer);
+                        DWORD                    nOffset;
+                        do
+                        {
+                            size_t bufferSize = pdi->m_dirPath.size() + (pnotify->FileNameLength / sizeof(pnotify->FileName[0])) + 1;
+                            auto   buf        = std::make_unique<wchar_t[]>(bufferSize);
+                            nOffset           = pnotify->NextEntryOffset;
+                            auto action       = pnotify->Action;
+
+                            if (reinterpret_cast<ULONG_PTR>(pnotify) - reinterpret_cast<ULONG_PTR>(pdi->m_buffer) > READ_DIR_CHANGE_BUFFER_SIZE)
+                                break;
+
+                            wcscpy_s(buf.get(), bufferSize, pdi->m_dirPath.c_str());
+
+                            // pnotify->FileName is not null terminated, the second argument to wcsncat_s limits the number of characters
+                            // concatenated and the last parameter forces truncation; STRUNCATE, the expected return value since buf is allocated
+                            // accordingly, is a valid return value.
+                            // errno_t err     = wcsncat_s(buf.get() + pdi->m_dirPath.size(), min(pnotify->FileNameLength / sizeof(pnotify->FileName[0]) + 1, bufferSize - pdi->m_dirPath.size()), pnotify->FileName, _TRUNCATE);
+                            // Above code may do a one-wchar_t source buffer read overrun on m_buffer, we can either declare m_buffer as "READ_DIR_CHANGE_BUFFER_SIZE + sizeof(wchar_t)" bytes
+                            // or use memmove_s() to prevent source buffer overrun
+
+                            errno_t err         = wmemmove_s(buf.get() + pdi->m_dirPath.size(),
+                                                             min(pnotify->FileNameLength / sizeof(pnotify->FileName[0]), bufferSize - pdi->m_dirPath.size()),
+                                                             pnotify->FileName,
+                                                             pnotify->FileNameLength / sizeof(pnotify->FileName[0]));
+
+                            buf[bufferSize - 1] = 0;
+                            if (err == STRUNCATE) // Validate if STRUNCATE is valid or not (should always be since we allocated a sufficiently large buf).
+                                err = pnotify->FileNameLength / sizeof(pnotify->FileName[0]) + pdi->m_dirPath.size() < bufferSize ? 0 : STRUNCATE;
+                            pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
+                            if (err != 0)
+                            {
+                                continue;
+                            }
+                            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": change notification for %s (Action:%d)\n"), buf.get(), action);
+                            {
+                                CAutoWriteLock locker(m_guard);
+                                m_changedPaths.insert(std::wstring(buf.get()));
+                            }
+                        } while (nOffset);
+                    }
+                    else
                     {
 #ifdef _DEBUG
                         if (m_hCompPort)
                         {
                             lasterr = GetLastError();
-                            _com_error com_error(lasterr);
-                            LPCTSTR    com_errorText = com_error.ErrorMessage();
-                            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": GetQueuedCompletionStatus returned zero numBytes (%s) for watched folder \"%s\"\n"), com_errorText, pdi->m_dirPath.c_str());
+                            _com_error comError(lasterr);
+                            LPCTSTR    comErrorText = comError.ErrorMessage();
+                            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": GetQueuedCompletionStatus returned zero numBytes (%s) for watched folder \"%s\"\n"), comErrorText, pdi->m_dirPath.c_str());
                         }
 #endif
-                        goto continuewatching;
                     }
-                    PFILE_NOTIFY_INFORMATION pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(pdi->m_buffer);
-                    DWORD nOffset;
-                    do
-                    {
-                        size_t bufferSize = pdi->m_dirPath.size() + (pnotify->FileNameLength / sizeof(pnotify->FileName[0])) + 1;
-                        auto   buf        = std::make_unique<wchar_t[]>(bufferSize);
-                        nOffset           = pnotify->NextEntryOffset;
-                        auto Action       = pnotify->Action;
-
-                        if (reinterpret_cast<ULONG_PTR>(pnotify) - reinterpret_cast<ULONG_PTR>(pdi->m_buffer) > READ_DIR_CHANGE_BUFFER_SIZE)
-                            break;
- 
-                        wcscpy_s(buf.get(), bufferSize, pdi->m_dirPath.c_str());
-
-                        // pnotify->FileName is not null terminated, the second argument to wcsncat_s limits the number of characters
-                        // concatenated and the last parameter forces truncation; STRUNCATE, the expected return value since buf is allocated
-                        // accordingly, is a valid return value.
-                        //errno_t err     = wcsncat_s(buf.get() + pdi->m_dirPath.size(), min(pnotify->FileNameLength / sizeof(pnotify->FileName[0]) + 1, bufferSize - pdi->m_dirPath.size()), pnotify->FileName, _TRUNCATE);
-                        // Above code may do a one-wchar_t source buffer read overrun on m_buffer, we can either declare m_buffer as "READ_DIR_CHANGE_BUFFER_SIZE + sizeof(wchar_t)" bytes
-                        // or use memmove_s() to prevent source buffer overrun
-
-                        errno_t err = wmemmove_s(buf.get() + pdi->m_dirPath.size(), 
-                            min(pnotify->FileNameLength / sizeof(pnotify->FileName[0]), bufferSize - pdi->m_dirPath.size()),
-                            pnotify->FileName, 
-                            pnotify->FileNameLength / sizeof(pnotify->FileName[0]));
-
-                        buf[bufferSize - 1] = 0;
-                        if (err == STRUNCATE) // Validate if STRUNCATE is valid or not (should always be since we allocated a sufficiently large buf).
-                            err = pnotify->FileNameLength / sizeof(pnotify->FileName[0]) + pdi->m_dirPath.size() < bufferSize ? 0 : STRUNCATE;
-                        pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
-                        if (err != 0)
-                        {
-                            continue;
-                        }
-                        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": change notification for %s (Action:%d)\n"), buf.get(), Action);
-                        {
-                            CAutoWriteLock locker(m_guard);
-                            m_changedPaths.insert(std::wstring(buf.get()));
-                        }
-                    } while (nOffset);
-                continuewatching:
                     SecureZeroMemory(pdi->m_buffer, sizeof(pdi->m_buffer));
                     SecureZeroMemory(&pdi->m_overlapped, sizeof(pdi->m_overlapped));
                     if (!ReadDirectoryChangesW(pdi->m_hDir,
@@ -266,7 +267,7 @@ void CPathWatcher::WorkerThread()
                                                FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE,
                                                &numBytes, // not used
                                                &pdi->m_overlapped,
-                                               nullptr)) //no completion routine!
+                                               nullptr)) // no completion routine!
                     {
                         // Since the call to ReadDirectoryChangesW failed, just
                         // wait a while. We don't want to have this thread
