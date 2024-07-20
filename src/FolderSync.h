@@ -76,6 +76,7 @@ public:
     size_t                         GetFailureCount();
     void                           SetTrayWnd(HWND hTray) { m_trayWnd = hTray; }
     void                           DecryptOnly(bool b) { m_decryptOnly = b; }
+    bool                           IsRunning() const { return m_bRunning != 0; }
 
     // puclic only for tests
     static std::wstring            GetDecryptedFilename(const std::wstring& filename, const std::wstring& password, bool encryptName, bool newEncryption, bool use7Z, bool useGpg);
