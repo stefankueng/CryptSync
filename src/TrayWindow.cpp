@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016, 2021-2023 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2021-2024 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -334,47 +334,50 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                 break;
                 case TIMER_FULLSCAN:
                 {
-                    // first handle the notifications
-                    for (int i = 0; i < 2; ++i)
+                    if (!m_folderSyncer.IsRunning())
                     {
-                        if (!m_lastChangedPaths.empty())
+                        // first handle the notifications
+                        for (int i = 0; i < 2; ++i)
                         {
-                            for (const auto& lastChangedPath : m_lastChangedPaths)
+                            if (!m_lastChangedPaths.empty())
                             {
-                                if (CIgnores::Instance().IsIgnored(lastChangedPath))
-                                    continue;
-
-                                m_folderSyncer.SyncFile(lastChangedPath);
-                            }
-                        }
-                        m_lastChangedPaths = m_watcher.GetChangedPaths();
-                        auto ignores       = m_folderSyncer.GetNotifyIgnores();
-                        if (!m_lastChangedPaths.empty() && !ignores.empty())
-                        {
-                            for (const auto& ign : ignores)
-                            {
-                                auto foundIt = m_lastChangedPaths.find(ign);
-                                if (foundIt != m_lastChangedPaths.end())
+                                for (const auto& lastChangedPath : m_lastChangedPaths)
                                 {
-                                    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": remove notification for file %s\n"), foundIt->c_str());
-                                    m_lastChangedPaths.erase(foundIt);
+                                    if (CIgnores::Instance().IsIgnored(lastChangedPath))
+                                        continue;
+
+                                    m_folderSyncer.SyncFile(lastChangedPath);
+                                }
+                            }
+                            m_lastChangedPaths = m_watcher.GetChangedPaths();
+                            auto ignores       = m_folderSyncer.GetNotifyIgnores();
+                            if (!m_lastChangedPaths.empty() && !ignores.empty())
+                            {
+                                for (const auto& ign : ignores)
+                                {
+                                    auto foundIt = m_lastChangedPaths.find(ign);
+                                    if (foundIt != m_lastChangedPaths.end())
+                                    {
+                                        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": remove notification for file %s\n"), foundIt->c_str());
+                                        m_lastChangedPaths.erase(foundIt);
+                                    }
                                 }
                             }
                         }
-                    }
-                    // now start the full scan
-                    m_folderSyncer.SyncFolders(g_pairs);
-                    m_watcher.ClearPaths();
-                    for (const auto& pair : g_pairs)
-                    {
-                        if (!pair.m_enabled)
-                            continue;
-                        std::wstring origPath  = pair.m_origPath;
-                        std::wstring cryptPath = pair.m_cryptPath;
-                        if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == SrcToDst))
-                            m_watcher.AddPath(origPath);
-                        if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == DstToSrc))
-                            m_watcher.AddPath(cryptPath);
+                        // now start the full scan
+                        m_folderSyncer.SyncFolders(g_pairs);
+                        m_watcher.ClearPaths();
+                        for (const auto& pair : g_pairs)
+                        {
+                            if (!pair.m_enabled)
+                                continue;
+                            std::wstring origPath  = pair.m_origPath;
+                            std::wstring cryptPath = pair.m_cryptPath;
+                            if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == SrcToDst))
+                                m_watcher.AddPath(origPath);
+                            if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == DstToSrc))
+                                m_watcher.AddPath(cryptPath);
+                        }
                     }
                     if (g_timer_fullScanInterval > 0)
                         SetTimer(*this, TIMER_FULLSCAN, g_timer_fullScanInterval, nullptr);
@@ -424,7 +427,7 @@ LRESULT CTrayWindow::DoCommand(int id)
             if (m_bOptionsDialogShown)
                 break;
             m_bOptionsDialogShown = true;
-            COptionsDlg dlg(nullptr);
+            COptionsDlg dlg(nullptr, m_folderSyncer);
             dlg.SetUpdateAvailable(m_bNewerVersionAvailable);
             dlg.SetFailures(m_folderSyncer.GetFailures());
             INT_PTR ret           = dlg.DoModal(hResource, IDD_OPTIONS, nullptr);

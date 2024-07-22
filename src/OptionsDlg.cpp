@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016, 2019, 2021 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2019, 2021, 2024 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,8 +35,9 @@
 #include <algorithm>
 #include <Commdlg.h>
 
-COptionsDlg::COptionsDlg(HWND hParent)
+COptionsDlg::COptionsDlg(HWND hParent, CFolderSync& folderSync)
     : m_hParent(hParent)
+    , m_folderSync(folderSync)
     , m_bNewerVersionAvailable(false)
     , m_exitAfterSync(false)
     , m_listInit(false)
@@ -323,15 +324,17 @@ void COptionsDlg::InitPairList()
         ListView_DeleteColumn(hListControl, c--);
 
     ListView_SetExtendedListViewStyle(hListControl, exStyle);
+    wchar_t buf[256];
     LVCOLUMN lvc = {0};
     lvc.mask     = LVCF_TEXT;
     lvc.fmt      = LVCFMT_LEFT;
     lvc.cx       = -1;
-    lvc.pszText  = _T("Original");
+    lvc.pszText  = buf;
+    wcscpy_s(buf, L"Original");
     ListView_InsertColumn(hListControl, 0, &lvc);
-    lvc.pszText = _T("Encrypted");
+    wcscpy_s(buf, L"Encrypted");
     ListView_InsertColumn(hListControl, 1, &lvc);
-    lvc.pszText = _T("Sync failures");
+    wcscpy_s(buf, L"Sync failures");
     ListView_InsertColumn(hListControl, 2, &lvc);
 
     for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
@@ -355,7 +358,6 @@ void COptionsDlg::InitPairList()
             ListView_SetItem(hListControl, &lv);
 
             lv.iSubItem   = 2;
-            WCHAR buf[10] = {0};
             lv.pszText    = buf;
             int failures  = GetFailuresFor(origPath);
             if (failures)

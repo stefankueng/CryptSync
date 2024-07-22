@@ -100,7 +100,7 @@
       <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;MY7Z_EXPORTS;NO_REGISTRY;EXTERNAL_CODECS;_7ZIP_LARGE_PAGES;_7ZIP_ST_9;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>StdAfx.h</PrecompiledHeaderFile>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <LanguageStandard>Default</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -127,7 +127,7 @@
       <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;MY7Z_EXPORTS;NO_REGISTRY;EXTERNAL_CODECS;_7ZIP_LARGE_PAGES;_7ZIP_ST_9;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>StdAfx.h</PrecompiledHeaderFile>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <LanguageStandard>Default</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -152,7 +152,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;MY7Z_EXPORTS;NO_REGISTRY;EXTERNAL_CODECS;_7ZIP_LARGE_PAGES;_7ZIP_ST_9;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>StdAfx.h</PrecompiledHeaderFile>
-      <LanguageStandard>Default</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -177,7 +177,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;MY7Z_EXPORTS;NO_REGISTRY;EXTERNAL_CODECS;_7ZIP_LARGE_PAGES;_7ZIP_ST_9;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>StdAfx.h</PrecompiledHeaderFile>
-      <LanguageStandard>Default</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
