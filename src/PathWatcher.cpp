@@ -24,7 +24,7 @@
 #include <Dbt.h>
 #include <process.h>
 #ifdef _DEBUG
-#    include <comdef.h>
+#include <comdef.h>
 #endif
 
 CPathWatcher::CPathWatcher()
@@ -232,8 +232,6 @@ void CPathWatcher::WorkerThread()
                                                              pnotify->FileNameLength / sizeof(pnotify->FileName[0]));
 
                             buf[bufferSize - 1] = 0;
-                            if (err == STRUNCATE) // Validate if STRUNCATE is valid or not (should always be since we allocated a sufficiently large buf).
-                                err = pnotify->FileNameLength / sizeof(pnotify->FileName[0]) + pdi->m_dirPath.size() < bufferSize ? 0 : STRUNCATE;
                             pnotify = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<LPBYTE>(pnotify) + nOffset);
                             if (err != 0)
                             {
