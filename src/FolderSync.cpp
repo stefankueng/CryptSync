@@ -33,6 +33,7 @@
 #include <shlobj.h>
 #include <cctype>
 #include <algorithm>
+#include <comdef.h>
 
 #include "../base4k/base4k.h"
 #include "../lzma/Wrapper-CPP/C7Zip.h"
@@ -310,7 +311,7 @@ void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
                 // in case the notification was for a folder that got removed,
                 // the GetDecryptedFilename() call above added the .cryptsync extension which
                 // folders don't have. Remove that extension and try deleting again.
-                auto crypt2 = crypt.substr(0, crypt.find_last_of('.'));
+                auto crypt2 = crypt.substr(0, crypt.find_last_of('.')-1);
                 if (!DeletePathToTrash(crypt2))
                 {
                     // could not delete file to the trashbin, so delete it directly
@@ -763,8 +764,9 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     }
                     else
                     {
-                        std::wstring cryptPath = CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg));
-                        std::wstring origPath  = CPathUtils::Append(pt.m_origPath, it->first);
+//DLEM: Confirm if EncryptFile() does CPathUtils::AdjustForMaxPath()
+                        std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg)));
+                        std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                         if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize, pt.m_ResetOriginalArchAttr))
                             retVal |= ErrorCrypt;
                     }
@@ -1064,6 +1066,10 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
                 m_failures.erase(orig);
                 return true;
             }
+            _com_error comError(::GetLastError());
+            LPCTSTR    comErrorText = comError.ErrorMessage();
+
+            CCircularLog::Instance()(L"ERROR:   error moving temporary encrypted file \"%s\" to \"%s\" (%s)", encryptTmpFile.c_str(), crypt.c_str(), comErrorText);
             DeleteFile(encryptTmpFile.c_str());
             return false;
         }
@@ -1570,7 +1576,7 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
             if (((fData.dwFileAttributes & dwFileAttributesToSet) == dwFileAttributesToSet) && ((fData.dwFileAttributes & dwFileAttributesToClear) == 0))
             {
                 // Attribute already set / cleared as requested
-                CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Attribute %d already set correctly on file %s \n"), dwFileAttributesToSet, fName.c_str());
+                // Commented out (noisy log enty) CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Attribute %d already set correctly on file %s \n"), dwFileAttributesToSet, fName.c_str());
                 return;
             }
 
@@ -1589,7 +1595,10 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
 
     if (!bRet)
     {
-        CCircularLog::Instance()(_T("INFO:    failed to adjust attributes on %s (error %d)"), fName.c_str(), error);
+        _com_error comError(error);
+        LPCTSTR    comErrorText = comError.ErrorMessage();
+
+        CCircularLog::Instance()(_T("INFO:    failed to adjust attributes on %s (%s)"), fName.c_str(), comErrorText);
         CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to adjust file attributes on %s, dwFileAttributesToClear=%d, dwFileAttributesToSet=%d \n"), fName.c_str(), dwFileAttributesToClear, dwFileAttributesToSet);
     }
     else
@@ -1615,8 +1624,10 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
         }
         if (!bRet)
         {
-            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (error %d)"), fName.c_str(), error);
-            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to set file time on %s\n"), fName.c_str());
+            _com_error comError(error);
+            LPCTSTR    comErrorText = comError.ErrorMessage();
+            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (%s)"), fName.c_str(), comErrorText);
+            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to set file time on %s (%s)\n"), fName.c_str(), comErrorText);
         }
         else
             CCircularLog::Instance()(_T("INFO:    successfully adjusted attribute on %s"), fName.c_str());
