@@ -311,7 +311,7 @@ void CFolderSync::SyncFile(const std::wstring& plainPath, const PairData& pt)
                 // in case the notification was for a folder that got removed,
                 // the GetDecryptedFilename() call above added the .cryptsync extension which
                 // folders don't have. Remove that extension and try deleting again.
-                auto crypt2 = crypt.substr(0, crypt.find_last_of('.')-1);
+                auto crypt2 = crypt.substr(0, crypt.find_last_of('.'));
                 if (!DeletePathToTrash(crypt2))
                 {
                     // could not delete file to the trashbin, so delete it directly
@@ -764,7 +764,6 @@ int CFolderSync::SyncFolder(const PairData& pt)
                     }
                     else
                     {
-//DLEM: Confirm if EncryptFile() does CPathUtils::AdjustForMaxPath()
                         std::wstring cryptPath = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_cryptPath, GetEncryptedFilename(it->first, pt.m_password, pt.m_encNames, pt.m_encNamesNew, pt.m_use7Z, pt.m_useGpg)));
                         std::wstring origPath  = CPathUtils::AdjustForMaxPath(CPathUtils::Append(pt.m_origPath, it->first));
                         if (!EncryptFile(origPath, cryptPath, pt.m_password, it->second, pt.m_useGpg, bCryptOnly, pt.m_compressSize, pt.m_ResetOriginalArchAttr))
@@ -1637,7 +1636,7 @@ bool CFolderSync::DeletePathToTrash(const std::wstring& path)
 {
     if (path.starts_with(L"\\\\?\\UNC"))
     {
-        std::wstring newPath = path.substr(7);
+        std::wstring newPath = L"\\" + path.substr(7);
         return DeletePathToTrash(newPath);
     }
     if (path.starts_with(L"\\\\?\\"))
@@ -1653,21 +1652,37 @@ bool CFolderSync::DeletePathToTrash(const std::wstring& path)
         pfo->SetOperationFlags(flags);
         IShellItem* psiFrom = nullptr;
         hr                  = SHCreateItemFromParsingName(path.c_str(), nullptr, IID_PPV_ARGS(&psiFrom));
+        if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) || (hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)))
+        {
+            pfo->Release();
+            return true;
+        }
         if (SUCCEEDED(hr))
         {
+            // Why do "if (SUCCEEDED(hr))" twice in a row?
             if (SUCCEEDED(hr))
             {
                 hr = pfo->DeleteItem(psiFrom, nullptr);
             }
-            psiFrom->Release();
         }
+        psiFrom->Release();
 
         if (SUCCEEDED(hr))
         {
             hr = pfo->PerformOperations();
-            return SUCCEEDED(hr);
+            if (SUCCEEDED(hr))
+            {
+                BOOL fAnyOperationsAborted = false;
+                pfo->GetAnyOperationsAborted(&fAnyOperationsAborted);
+                pfo->Release();
+                if (!fAnyOperationsAborted)
+                    return true;
+            }
         }
-        pfo->Release();
+        else
+        {
+            pfo->Release();
+        }
     }
     // try the SHFileOperation
     FILEOP_FLAGS   flags = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION;
