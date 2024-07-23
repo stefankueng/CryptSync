@@ -1659,11 +1659,7 @@ bool CFolderSync::DeletePathToTrash(const std::wstring& path)
         }
         if (SUCCEEDED(hr))
         {
-            // Why do "if (SUCCEEDED(hr))" twice in a row?
-            if (SUCCEEDED(hr))
-            {
-                hr = pfo->DeleteItem(psiFrom, nullptr);
-            }
+            hr = pfo->DeleteItem(psiFrom, nullptr);
         }
         psiFrom->Release();
 
