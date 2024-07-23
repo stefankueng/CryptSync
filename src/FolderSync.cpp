@@ -1694,7 +1694,7 @@ bool CFolderSync::DeletePathToTrash(const std::wstring& path)
     delBuf[path.size()]     = 0;
     delBuf[path.size() + 1] = 0;
     fop.pFrom               = delBuf.get();
-    return SHFileOperation(&fop) == 0;
+    return ((SHFileOperation(&fop) == 0) && (fop.fAnyOperationsAborted == FALSE));
 }
 
 std::map<std::wstring, SyncOp> CFolderSync::GetFailures()
