@@ -28,6 +28,7 @@
 #include "DebugOutput.h"
 #include "CircularLog.h"
 #include "OnOutOfScope.h"
+#include "COMPtrs.h"
 
 #include <process.h>
 #include <shlobj.h>
@@ -1632,6 +1633,7 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
             CCircularLog::Instance()(_T("INFO:    successfully adjusted attribute on %s"), fName.c_str());
     }
 }
+
 bool CFolderSync::DeletePathToTrash(const std::wstring& path)
 {
     if (path.starts_with(L"\\\\?\\UNC"))
@@ -1644,24 +1646,19 @@ bool CFolderSync::DeletePathToTrash(const std::wstring& path)
         std::wstring newPath = path.substr(4);
         return DeletePathToTrash(newPath);
     }
-    IFileOperation* pfo = nullptr;
-    auto            hr  = CoCreateInstance(CLSID_FileOperation, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&pfo));
+    IFileOperationPtr pfo = nullptr;
+    auto              hr  = pfo.CreateInstance(CLSID_FileOperation, nullptr, CLSCTX_ALL);
     if (SUCCEEDED(hr))
     {
         DWORD flags = FOF_ALLOWUNDO | FOF_FILESONLY | FOF_NOCONFIRMATION | FOF_NO_CONNECTED_ELEMENTS | FOF_NOERRORUI | FOF_SILENT | FOF_NORECURSION | FOFX_RECYCLEONDELETE;
         pfo->SetOperationFlags(flags);
-        IShellItem* psiFrom = nullptr;
-        hr                  = SHCreateItemFromParsingName(path.c_str(), nullptr, IID_PPV_ARGS(&psiFrom));
+        IShellItemPtr psiFrom = nullptr;
+        hr                    = SHCreateItemFromParsingName(path.c_str(), nullptr, IID_PPV_ARGS(&psiFrom));
         if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) || (hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)))
-        {
-            pfo->Release();
             return true;
-        }
+
         if (SUCCEEDED(hr))
-        {
             hr = pfo->DeleteItem(psiFrom, nullptr);
-        }
-        psiFrom->Release();
 
         if (SUCCEEDED(hr))
         {
@@ -1670,14 +1667,9 @@ bool CFolderSync::DeletePathToTrash(const std::wstring& path)
             {
                 BOOL fAnyOperationsAborted = false;
                 pfo->GetAnyOperationsAborted(&fAnyOperationsAborted);
-                pfo->Release();
                 if (!fAnyOperationsAborted)
                     return true;
             }
-        }
-        else
-        {
-            pfo->Release();
         }
     }
     // try the SHFileOperation

@@ -236,6 +236,7 @@
     <ClInclude Include="..\sktoolslib\StringUtils.h" />
     <ClInclude Include="..\sktoolslib\UnicodeUtils.h" />
     <ClInclude Include="AboutDlg.h" />
+    <ClInclude Include="COMPtrs.h" />
     <ClInclude Include="FolderSync.h" />
     <ClInclude Include="Ignores.h" />
     <ClInclude Include="OptionsDlg.h" />

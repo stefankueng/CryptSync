@@ -201,6 +201,9 @@
     <ClInclude Include="..\base4k\base4k.h">
       <Filter>base4k</Filter>
     </ClInclude>
+    <ClInclude Include="COMPtrs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\default.build">
