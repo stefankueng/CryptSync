@@ -68,7 +68,7 @@ public:
 
     void                           SyncFolders(const PairVector& pv, HWND hWnd = nullptr);
     int                            SyncFoldersWait(const PairVector& pv, HWND hWnd = nullptr);
-    void                           SyncFile(const std::wstring& path);
+    bool                           SyncFile(const std::wstring& path);
     void                           SetPairs(const PairVector& pv);
     void                           Stop();
     std::map<std::wstring, SyncOp> GetFailures();
