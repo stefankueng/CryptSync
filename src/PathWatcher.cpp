@@ -128,11 +128,13 @@ void CPathWatcher::WorkerThread()
                 // Clear the list of watched objects and recreate that list
                 if (!m_bRunning)
                     return;
+
+                lasterr = GetLastError();
+
                 {
                     CAutoWriteLock locker(m_guard);
                     ClearInfoMap();
                 }
-                lasterr = GetLastError();
 #ifdef _DEBUG
                 if (m_hCompPort)
                 {
@@ -174,6 +176,8 @@ void CPathWatcher::WorkerThread()
                         watchedPaths.erase(p);
                         break;
                     }
+                    SecureZeroMemory(pDirInfo->m_buffer, sizeof(pDirInfo->m_buffer));
+                    SecureZeroMemory(&pDirInfo->m_overlapped, sizeof(pDirInfo->m_overlapped));
                     if (!ReadDirectoryChangesW(pDirInfo->m_hDir,
                                                pDirInfo->m_buffer,
                                                READ_DIR_CHANGE_BUFFER_SIZE,
@@ -263,6 +267,11 @@ void CPathWatcher::WorkerThread()
                                                READ_DIR_CHANGE_BUFFER_SIZE,
                                                TRUE,
                                                FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE,
+                                               /*
+                                                    Warning: including FILE_NOTIFY_CHANGE_ATTRIBUTES below would
+                                                             result in notifications when we change the "index"
+                                                             on target file or "archive" on source
+                                               */
                                                &numBytes, // not used
                                                &pdi->m_overlapped,
                                                nullptr)) // no completion routine!
@@ -309,7 +318,7 @@ CPathWatcher::CDirWatchInfo::CDirWatchInfo(CAutoFile&& hDir, const std::wstring&
     : m_hDir(std::move(hDir))
     , m_dirName(directoryName)
 {
-    m_buffer[0] = 0;
+    reinterpret_cast<PFILE_NOTIFY_INFORMATION>(m_buffer)->NextEntryOffset = 0;
     SecureZeroMemory(&m_overlapped, sizeof(m_overlapped));
     m_dirPath = m_dirName;
     if (m_dirPath.at(m_dirPath.size() - 1) != '\\')
