@@ -83,14 +83,22 @@ public:
 
     friend bool operator<(const PairData& mk1, const PairData& mk2)
     {
-        if (mk1.m_origPath != mk2.m_origPath)
-            return mk1.m_origPath < mk2.m_origPath;
+        // Ignoring cases such as C:\Somepath and \\?\C:\Somepath being equal.
+        // Could use CPathUtils::PathCompare() instead of _wcsicmp().
+        int iRet;
+        iRet = _wcsicmp(mk1.m_origPath.c_str(), mk2.m_origPath.c_str());
+        if (iRet != 0)
+            return (iRet < 0);
 
-        return mk1.m_cryptPath < mk2.m_cryptPath;
+        return (_wcsicmp(mk1.m_cryptPath.c_str(), mk2.m_cryptPath.c_str()) < 0);
     }
     friend bool operator==(const PairData& mk1, const PairData& mk2)
     {
-        return ((mk1.m_origPath == mk2.m_origPath) && (mk1.m_cryptPath == mk2.m_cryptPath));
+        // Ignoring cases such as C:\Somepath and \\?\C:\Somepath (are equal 
+        // but not according to operator==).
+        // Could use CPathUtils::PathCompare() instead of _wcsicmp().
+        return ((_wcsicmp(mk1.m_origPath.c_str(),  mk2.m_origPath.c_str())  == 0) && 
+                (_wcsicmp(mk1.m_cryptPath.c_str(), mk2.m_cryptPath.c_str()) == 0));
     }
 
 private:

@@ -291,6 +291,14 @@ void CPairs::SavePairs()
         CRegStdDWORD encNamesReg(key);
         encNamesReg.removeValue();
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnamesNew%d", p);
+        CRegStdDWORD encNamesNewReg(key);
+        encNamesNewReg.removeValue();
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairDir%d", p);
+        CRegStdDWORD syncDirReg(key);
+        syncDirReg.removeValue();
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
         CRegStdDWORD oneWayReg(key);
         oneWayReg.removeValue();
@@ -315,6 +323,13 @@ void CPairs::SavePairs()
         CRegStdDWORD compressSizeReg(key);
         compressSizeReg.removeValue();
 
+        swprintf_s(key, L"Software\\CryptSync\\ResetOriginalArchiveAttribute%d", p);
+        CRegStdDWORD resetOriginalArchiveAttrReg(key);
+        resetOriginalArchiveAttrReg.removeValue();
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEnabled%d", p);
+        CRegStdDWORD enabledReg(key);
+        enabledReg.removeValue();
         ++p;
     }
 }

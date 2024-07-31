@@ -109,10 +109,14 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             return FALSE;
         case WM_CONTEXTMENU:
         {
+            HWND  hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
             POINT pt;
             GetCursorPos(&pt);
             HMENU hMenu    = LoadMenu(hResource, MAKEINTRESOURCE(IDR_PAIRMENU));
             HMENU hPopMenu = GetSubMenu(hMenu, 0);
+            // Enable/disable menu (similar to what is done in DoListNotify() method)
+            EnableMenuItem(hMenu, ID_DELETE, (ListView_GetSelectedCount(hListControl)) > 0 ? MF_ENABLED : MF_GRAYED);
+            EnableMenuItem(hMenu, ID_EDIT, (ListView_GetSelectedCount(hListControl)) == 1 ? MF_ENABLED : MF_GRAYED);
             TrackPopupMenu(hPopMenu, TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, 0, *this, nullptr);
             DestroyMenu(hMenu);
         }
