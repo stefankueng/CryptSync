@@ -126,6 +126,84 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
     }
 }
 
+void COptionsDlg::DoPairEdit(int iItem)
+{
+    HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
+    int  nCount       = ListView_GetItemCount(hListControl);
+    if (nCount == 0)
+        return;
+    LVITEM lv         = {};
+    lv.iItem          = iItem;
+    lv.iSubItem       = 0;
+    lv.mask           = LVIF_PARAM;
+    ListView_GetItem(hListControl, &lv);
+
+    if ((lv.lParam < 0) || (lv.lParam >= static_cast<int>(g_pairs.size())))
+        return;
+
+    auto& t = g_pairs[lv.lParam];
+
+    CPairAddDlg dlg(*this);
+    dlg.m_origPath              = t.m_origPath;
+    dlg.m_cryptPath             = t.m_cryptPath;
+    dlg.m_password              = t.m_password;
+    dlg.m_cryptOnly             = t.cryptOnly();
+    dlg.m_copyOnly              = t.copyOnly();
+    dlg.m_noSync                = t.noSync();
+    dlg.m_encNames              = t.m_encNames;
+    dlg.m_encNamesNew           = t.m_encNamesNew;
+    dlg.m_syncDir               = t.m_syncDir;
+    dlg.m_7ZExt                 = t.m_use7Z;
+    dlg.m_useGpg                = t.m_useGpg;
+    dlg.m_fat                   = t.m_fat;
+    dlg.m_compressSize          = t.m_compressSize;
+    dlg.m_syncDeleted           = t.m_syncDeleted;
+    dlg.m_ResetOriginalArchAttr = t.m_ResetOriginalArchAttr;
+    if (dlg.DoModal(hResource, IDD_PAIRADD, *this) == IDOK)
+    {
+        if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
+        {
+            bool bEnabled = ListView_GetCheckState(hListControl, iItem);
+            auto pd       = PairData(bEnabled, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted, dlg.m_ResetOriginalArchAttr);
+
+            // Check if new pd uses same paths as another pair
+            auto foundIt = std::find(g_pairs.begin(), g_pairs.end(), pd);
+            if (foundIt != g_pairs.end())
+            {
+                if (lv.lParam == distance(g_pairs.begin(), foundIt))
+                {
+                    // found pair user was editing
+                    *foundIt = pd;
+                }
+                else
+                {
+                    // found another pair (ie, user changed paths)
+                    if (foundIt->m_syncDir == ToBeDeleted)
+                    { // Pair is empty, re-use it.
+                        t.m_syncDir = ToBeDeleted;
+                        *foundIt    = pd;
+                    }
+                    else
+                    {
+                        // User edited paths and new paths
+                        // are same as another enabled pair. Ignore edits.
+                        MessageBox(*this, L"A pair with same paths already exists. Edits ignored.", L"CryptSync", MB_OK | MB_ICONERROR);
+                    }
+                }
+            }
+            else
+            {
+                // pd is for new paths, PairData that got edited
+                // is no longer needed.
+                t.m_syncDir = ToBeDeleted;
+                g_pairs.push_back(pd); // Edition resulted in new pd
+            }
+            InitPairList();
+            g_pairs.SavePairs();
+        }
+    }
+}
+
 LRESULT COptionsDlg::DoCommand(int id)
 {
     switch (id)
@@ -194,38 +272,15 @@ LRESULT COptionsDlg::DoCommand(int id)
             int  nCount       = ListView_GetItemCount(hListControl);
             if (nCount == 0)
                 break;
-            int iItem = -1;
-            while ((iItem = ListView_GetNextItem(hListControl, iItem, LVNI_SELECTED)) != (-1))
+            LVITEM lv   = {};
+            lv.iItem    = -1;
+            lv.iSubItem = 0;
+            lv.mask     = LVIF_PARAM;
+            while ((lv.iItem = ListView_GetNextItem(hListControl, lv.iItem, LVNI_SELECTED)) != (-1))
             {
-                if ((iItem < 0) || (iItem >= static_cast<int>(g_pairs.size())))
+                if ((lv.iItem < 0) || (lv.iItem >= static_cast<int>(ListView_GetItemCount(hListControl))))
                     continue;
-                auto        t = g_pairs[iItem];
-                CPairAddDlg dlg(*this);
-                dlg.m_origPath     = t.m_origPath;
-                dlg.m_cryptPath    = t.m_cryptPath;
-                dlg.m_password     = t.m_password;
-                dlg.m_cryptOnly    = t.cryptOnly();
-                dlg.m_copyOnly     = t.copyOnly();
-                dlg.m_noSync       = t.noSync();
-                dlg.m_encNames     = t.m_encNames;
-                dlg.m_encNamesNew  = t.m_encNamesNew;
-                dlg.m_syncDir      = t.m_syncDir;
-                dlg.m_7ZExt        = t.m_use7Z;
-                dlg.m_useGpg       = t.m_useGpg;
-                dlg.m_fat          = t.m_fat;
-                dlg.m_compressSize = t.m_compressSize;
-                dlg.m_syncDeleted  = t.m_syncDeleted;
-                dlg.m_ResetOriginalArchAttr = t.m_ResetOriginalArchAttr;
-                if (dlg.DoModal(hResource, IDD_PAIRADD, *this) == IDOK)
-                {
-                    if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
-                    {
-                        g_pairs.erase(g_pairs.begin() + iItem);
-                        if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted, dlg.m_ResetOriginalArchAttr))
-                            InitPairList();
-                        g_pairs.SavePairs();
-                    }
-                }
+                DoPairEdit(lv.iItem);
                 break;
             }
         }
@@ -238,13 +293,19 @@ LRESULT COptionsDlg::DoCommand(int id)
             if (nCount == 0)
                 break;
 
-            int        iItem = -1;
+            LVITEM lv        = {};
+            lv.iItem         = -1;
+            lv.iSubItem      = 0;
+            lv.mask          = LVIF_PARAM;
             PairVector sels;
-            while ((iItem = ListView_GetNextItem(hListControl, iItem, LVNI_SELECTED)) != (-1))
+            while ((lv.iItem = ListView_GetNextItem(hListControl, lv.iItem, LVNI_SELECTED)) != (-1))
             {
-                if ((iItem < 0) || (iItem >= static_cast<int>(g_pairs.size())))
+                if ((lv.iItem < 0) || (lv.iItem >= static_cast<int>(ListView_GetItemCount(hListControl))))
                     continue;
-                sels.push_back(g_pairs[iItem]);
+                ListView_GetItem(hListControl, &lv);
+                if ((lv.lParam < 0) || (lv.lParam >= static_cast<int>(g_pairs.size())))
+                    continue;
+                sels.push_back(g_pairs[lv.lParam]);
             }
 
             if (!sels.empty())
@@ -298,13 +359,19 @@ LRESULT COptionsDlg::DoCommand(int id)
             int  nCount       = ListView_GetItemCount(hListControl);
             if (nCount == 0)
                 break;
-            int        iItem = -1;
+            LVITEM lv   = {};
+            lv.iItem    = -1;
+            lv.iSubItem = 0;
+            lv.mask     = LVIF_PARAM;
             PairVector sels;
-            while ((iItem = ListView_GetNextItem(hListControl, iItem, LVNI_SELECTED)) != (-1))
+            while ((lv.iItem = ListView_GetNextItem(hListControl, lv.iItem, LVNI_SELECTED)) != (-1))
             {
-                if ((iItem < 0) || (iItem >= static_cast<int>(g_pairs.size())))
+                if ((lv.iItem < 0) || (lv.iItem >= static_cast<int>(ListView_GetItemCount(hListControl))))
                     continue;
-                sels.push_back(g_pairs[iItem]);
+                ListView_GetItem(hListControl, &lv);
+                if ((lv.lParam < 0) || (lv.lParam >= static_cast<int>(g_pairs.size())))
+                    continue;
+                sels.push_back(g_pairs[lv.lParam]);
             }
             m_exitAfterSync = (id == ID_SYNCNOWANDEXIT);
             m_folderSync.SyncFolders(sels, *this);
@@ -346,7 +413,8 @@ void COptionsDlg::InitPairList()
         std::wstring origPath  = it->m_origPath;
         std::wstring cryptPath = it->m_cryptPath;
         LVITEM       lv        = {0};
-        lv.mask                = LVIF_TEXT;
+        lv.mask                = LVIF_TEXT | LVIF_PARAM;
+        lv.lParam              = distance(g_pairs.begin(), it);
         auto varBuf            = std::make_unique<WCHAR[]>(origPath.size() + 1);
         _tcscpy_s(varBuf.get(), origPath.size() + 1, origPath.c_str());
         lv.pszText = varBuf.get();
@@ -354,6 +422,7 @@ void COptionsDlg::InitPairList()
         int ret    = ListView_InsertItem(hListControl, &lv);
         if (ret >= 0)
         {
+            lv.mask     = LVIF_TEXT;
             lv.iItem    = ret;
             lv.iSubItem = 1;
             varBuf      = std::make_unique<WCHAR[]>(cryptPath.size() + 1);
@@ -384,34 +453,7 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
     {
         if ((lpNMItemActivate->iItem >= 0) && (lpNMItemActivate->iItem < static_cast<int>(g_pairs.size())))
         {
-            auto t = g_pairs[lpNMItemActivate->iItem];
-
-            CPairAddDlg dlg(*this);
-            dlg.m_origPath     = t.m_origPath;
-            dlg.m_cryptPath    = t.m_cryptPath;
-            dlg.m_password     = t.m_password;
-            dlg.m_cryptOnly    = t.cryptOnly();
-            dlg.m_copyOnly     = t.copyOnly();
-            dlg.m_noSync       = t.noSync();
-            dlg.m_encNames     = t.m_encNames;
-            dlg.m_encNamesNew  = t.m_encNamesNew;
-            dlg.m_syncDir      = t.m_syncDir;
-            dlg.m_7ZExt        = t.m_use7Z;
-            dlg.m_useGpg       = t.m_useGpg;
-            dlg.m_fat          = t.m_fat;
-            dlg.m_compressSize = t.m_compressSize;
-            dlg.m_syncDeleted  = t.m_syncDeleted;
-            dlg.m_ResetOriginalArchAttr = t.m_ResetOriginalArchAttr;
-            if (dlg.DoModal(hResource, IDD_PAIRADD, *this) == IDOK)
-            {
-                if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
-                {
-                    g_pairs.erase(g_pairs.begin() + lpNMItemActivate->iItem);
-                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted, dlg.m_ResetOriginalArchAttr))
-                        InitPairList();
-                    g_pairs.SavePairs();
-                }
-            }
+            DoPairEdit(lpNMItemActivate->iItem);
         }
     }
     else if (lpNMItemActivate->hdr.code == LVN_ITEMCHANGED)
@@ -419,11 +461,25 @@ void COptionsDlg::DoListNotify(LPNMITEMACTIVATE lpNMItemActivate)
         HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
         DialogEnableWindow(IDC_DELETEPAIR, (ListView_GetSelectedCount(hListControl)) > 0);
         DialogEnableWindow(IDC_EDITPAIR, (ListView_GetSelectedCount(hListControl)) == 1);
-        if (!m_listInit && (lpNMItemActivate->uNewState & LVIS_STATEIMAGEMASK) != 0 && (lpNMItemActivate->iItem >= 0) && (lpNMItemActivate->iItem < static_cast<int>(g_pairs.size())))
+
+        // No need to do following while initializing the list
+        if (!m_listInit)
         {
-            auto& t     = g_pairs[lpNMItemActivate->iItem];
-            t.m_enabled = ListView_GetCheckState(hListControl, lpNMItemActivate->iItem);
-            g_pairs.SavePairs();
+            // process activate/deactvate
+            if ((lpNMItemActivate->uNewState & LVIS_STATEIMAGEMASK) != 0)
+            {
+                LVITEM lv   = {};
+                lv.iItem    = lpNMItemActivate->iItem;
+                lv.iSubItem = 0;
+                lv.mask     = LVIF_PARAM;
+                ListView_GetItem(hListControl, &lv);
+                if ((lv.lParam >= 0) && (lv.lParam < static_cast<int>(g_pairs.size())))
+                {
+                    auto& t     = g_pairs[lv.lParam];
+                    t.m_enabled = ListView_GetCheckState(hListControl, lpNMItemActivate->iItem);
+                    g_pairs.SavePairs();
+                }
+            }
         }
     }
 }
@@ -475,11 +531,15 @@ void COptionsDlg::SaveSettings()
         regInterval = intVal * 60000;
 
     HWND hListControl = GetDlgItem(*this, IDC_SYNCPAIRS);
-    int  listIndex    = 0;
-    for (auto& pair : g_pairs)
+    LVITEM lv           = {};
+    lv.iSubItem         = 0;
+    lv.mask             = LVIF_PARAM;
+
+    for (auto iItem = 0; iItem < ListView_GetItemCount(hListControl); iItem++)
     {
-        pair.m_enabled = ListView_GetCheckState(hListControl, listIndex);
-        ++listIndex;
+        lv.iItem = iItem;
+        ListView_GetItem(hListControl, &lv);
+        g_pairs[lv.lParam].m_enabled = ListView_GetCheckState(hListControl, iItem);
     }
 
     g_pairs.SavePairs();
