@@ -45,6 +45,7 @@ public:
         , m_syncDeleted(true)
     {
     }
+    PairData(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, bool encryptNamesNew, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat, bool syncDeleted, bool ResetOriginalArchAttr);
 
     bool         m_enabled;
     bool         m_ResetOriginalArchAttr;
@@ -146,6 +147,7 @@ protected:
     void InitPairList();
 
 private:
+    bool                AddPair(PairData& pd);
     std::wstring        Decrypt(const std::wstring& pw) const;
     static std::wstring Encrypt(const std::wstring& pw);
 

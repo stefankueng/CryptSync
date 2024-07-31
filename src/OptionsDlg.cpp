@@ -258,9 +258,23 @@ LRESULT COptionsDlg::DoCommand(int id)
             {
                 if (!dlg.m_origPath.empty() && !dlg.m_cryptPath.empty())
                 {
-                    if (g_pairs.AddPair(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted, dlg.m_ResetOriginalArchAttr))
+                    auto pd       = PairData(true, dlg.m_origPath, dlg.m_cryptPath, dlg.m_password, dlg.m_cryptOnly, dlg.m_copyOnly, dlg.m_noSync, dlg.m_compressSize, dlg.m_encNames, dlg.m_encNamesNew, dlg.m_syncDir, dlg.m_7ZExt, dlg.m_useGpg, dlg.m_fat, dlg.m_syncDeleted, dlg.m_ResetOriginalArchAttr);
+                    // Ignore new pd if it is on same paths as another pair
+                    auto foundIt = std::find(g_pairs.begin(), g_pairs.end(), pd);
+                    if (foundIt == g_pairs.end() || foundIt->m_syncDir == ToBeDeleted)
+                    {
+                        // Append new PairData to g_pairs
+                        if (foundIt == g_pairs.end())
+                            g_pairs.push_back(pd);
+                        else // Re-use "ToBeDeleted" PairData, otherwise ignore new item
+                            *foundIt = pd;
                         InitPairList();
-                    g_pairs.SavePairs();
+                        g_pairs.SavePairs();
+                    }
+                    else
+                    {
+                        MessageBox(*this, L"A pair with same paths already exists. New pair not created.", L"CryptSync", MB_OK | MB_ICONERROR);
+                    }
                 }
             }
         }
