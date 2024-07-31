@@ -181,13 +181,10 @@ void CPairs::InitPairList()
             push_back(pd);
         ++p;
     }
-    std::sort(begin(), end());
-    //std::sort(begin(), end());
 }
 
 void CPairs::SavePairs()
 {
-    //std::sort(begin(), end());
     int p = 0;
     for (auto it = cbegin(); (it != cend()) && (p < 200); ++it)
     {
@@ -365,7 +362,6 @@ bool CPairs::AddPair(PairData& pd)
     if (std::find(cbegin(), cend(), pd) == cend())
     {
         push_back(pd);
-        // std::sort(begin(), end());
         return true;
     }
 
