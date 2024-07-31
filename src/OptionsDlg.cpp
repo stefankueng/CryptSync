@@ -184,8 +184,9 @@ void COptionsDlg::DoPairEdit(int iItem)
             {
                 // pd is for new paths, PairData that got edited will be disabled and
                 // new pair created.
-                MessageBox(*this, L"A new pair will be created with paths specified. Pair that was edited is disabled.", L"CryptSync", MB_OK | MB_ICONERROR);
-                t.m_enabled = false;
+                MessageBox(*this, L"A new pair will be created with paths specified, replacing the pair you edited.", L"CryptSync", MB_OK | MB_ICONERROR);
+                g_pairs.erase(g_pairs.begin() + lv.lParam);     // .erase must be done before .push_back to ensure lParam is valid.
+                // t.m_enabled = false; // Disable instead of deletion is another option.
                 g_pairs.push_back(pd); // Edition resulted in new pd
             }
             InitPairList();
@@ -253,11 +254,7 @@ LRESULT COptionsDlg::DoCommand(int id)
                     auto foundIt = std::find(g_pairs.begin(), g_pairs.end(), pd);
                     if (foundIt == g_pairs.end())
                     {
-                        // Append new PairData to g_pairs
-                        if (foundIt == g_pairs.end())
-                            g_pairs.push_back(pd);
-                        else // Re-use "ToBeDeleted" PairData, otherwise ignore new item
-                            *foundIt = pd;
+                        g_pairs.push_back(pd);
                         InitPairList();
                         g_pairs.SavePairs();
                     }
