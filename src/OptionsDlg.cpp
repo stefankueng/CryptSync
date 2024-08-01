@@ -184,7 +184,7 @@ void COptionsDlg::DoPairEdit(int iItem)
             {
                 // pd is for new paths, PairData that got edited will be disabled and
                 // new pair created.
-                MessageBox(*this, L"A new pair will be created with paths specified, replacing the pair you edited.", L"CryptSync", MB_OK | MB_ICONERROR);
+                MessageBox(*this, L"A new pair will be created with specified paths, replacing the pair you edited.", L"CryptSync", MB_OK | MB_ICONWARNING);
                 g_pairs.erase(g_pairs.begin() + lv.lParam);     // .erase must be done before .push_back to ensure lParam is valid.
                 // t.m_enabled = false; // Disable instead of deletion is another option.
                 g_pairs.push_back(pd); // Edition resulted in new pd
