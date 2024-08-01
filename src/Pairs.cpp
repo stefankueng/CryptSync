@@ -181,12 +181,10 @@ void CPairs::InitPairList()
             push_back(pd);
         ++p;
     }
-    std::sort(begin(), end());
 }
 
 void CPairs::SavePairs()
 {
-    std::sort(begin(), end());
     int p = 0;
     for (auto it = cbegin(); (it != cend()) && (p < 200); ++it)
     {
@@ -291,6 +289,14 @@ void CPairs::SavePairs()
         CRegStdDWORD encNamesReg(key);
         encNamesReg.removeValue();
 
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEncnamesNew%d", p);
+        CRegStdDWORD encNamesNewReg(key);
+        encNamesNewReg.removeValue();
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairDir%d", p);
+        CRegStdDWORD syncDirReg(key);
+        syncDirReg.removeValue();
+
         swprintf_s(key, L"Software\\CryptSync\\SyncPairOneWay%d", p);
         CRegStdDWORD oneWayReg(key);
         oneWayReg.removeValue();
@@ -315,44 +321,58 @@ void CPairs::SavePairs()
         CRegStdDWORD compressSizeReg(key);
         compressSizeReg.removeValue();
 
+        swprintf_s(key, L"Software\\CryptSync\\ResetOriginalArchiveAttribute%d", p);
+        CRegStdDWORD resetOriginalArchiveAttrReg(key);
+        resetOriginalArchiveAttrReg.removeValue();
+
+        swprintf_s(key, L"Software\\CryptSync\\SyncPairEnabled%d", p);
+        CRegStdDWORD enabledReg(key);
+        enabledReg.removeValue();
         ++p;
     }
 }
 
-bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, bool encryptNamesNew, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat, bool syncDeleted, bool ResetOriginalArchAttr)
+PairData::PairData(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, bool encryptNamesNew, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat, bool syncDeleted, bool ResetOriginalArchAttr)
 {
-    PairData pd;
-    pd.m_enabled   = enabled;
-    pd.m_origPath  = orig;
-    pd.m_cryptPath = crypt;
-    pd.m_password  = password;
-    pd.cryptOnly(cryptOnly);
-    pd.copyOnly(copyOnly);
-    pd.noSync(noSync);
-    pd.m_encNames     = encryptNames;
-    pd.m_encNamesNew  = encryptNamesNew;
-    pd.m_syncDir      = syncDir;
-    pd.m_use7Z        = use7ZExt;
-    pd.m_useGpg       = useGpg;
-    pd.m_fat          = fat;
-    pd.m_compressSize = compressSize;
-    pd.m_syncDeleted  = syncDeleted;
-    pd.m_ResetOriginalArchAttr = ResetOriginalArchAttr;
+    m_enabled   = enabled;
+    m_origPath  = orig;
+    m_cryptPath = crypt;
+    m_password  = password;
+    this->cryptOnly(cryptOnly);
+    this->copyOnly(copyOnly);
+    this->noSync(noSync);
+    m_encNames              = encryptNames;
+    m_encNamesNew           = encryptNamesNew;
+    m_syncDir               = syncDir;
+    m_use7Z                 = use7ZExt;
+    m_useGpg                = useGpg;
+    m_fat                   = fat;
+    m_compressSize          = compressSize;
+    m_syncDeleted           = syncDeleted;
+    m_ResetOriginalArchAttr = ResetOriginalArchAttr;
 
     // make sure the paths are not root names but if root then root paths (i.e., ends with a backslash)
-    if (*pd.m_origPath.rbegin() == ':')
-        pd.m_origPath += '\\';
-    if (*pd.m_cryptPath.rbegin() == ':')
-        pd.m_cryptPath += '\\';
-
+    if (*m_origPath.rbegin() == ':')
+        m_origPath += '\\';
+    if (*m_cryptPath.rbegin() == ':')
+        m_cryptPath += '\\';
+}
+bool CPairs::AddPair(PairData& pd)
+{
     if (std::find(cbegin(), cend(), pd) == cend())
     {
         push_back(pd);
-        std::sort(begin(), end());
         return true;
     }
 
     return false;
+}
+
+bool CPairs::AddPair(bool enabled, const std::wstring& orig, const std::wstring& crypt, const std::wstring& password, const std::wstring& cryptOnly, const std::wstring& copyOnly, const std::wstring& noSync, int compressSize, bool encryptNames, bool encryptNamesNew, SyncDir syncDir, bool use7ZExt, bool useGpg, bool fat, bool syncDeleted, bool ResetOriginalArchAttr)
+{
+    auto pd = PairData(enabled, orig, crypt, password, cryptOnly, copyOnly, noSync, compressSize, encryptNames, encryptNamesNew, syncDir, use7ZExt, useGpg, fat, syncDeleted, ResetOriginalArchAttr);
+
+    return (AddPair(pd));
 }
 
 std::wstring CPairs::Decrypt(const std::wstring& pw) const

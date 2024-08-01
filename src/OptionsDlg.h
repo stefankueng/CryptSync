@@ -39,6 +39,7 @@ public:
 
 protected:
     LRESULT CALLBACK DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+    void             DoPairEdit(int);
     LRESULT          DoCommand(int id);
     void             InitPairList();
     void             DoListNotify(LPNMITEMACTIVATE lpNMItemActivate);
