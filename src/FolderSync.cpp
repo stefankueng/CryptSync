@@ -1120,8 +1120,6 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
 
     size_t bufLen     = orig.size() + crypt.size() + password.size() + 1000;
     auto   cmdlineBuf = std::make_unique<wchar_t[]>(bufLen);
-    if ((!cryptName.empty()) && (cryptName[0] == '-'))
-        cryptName = L".\\" + cryptName;
 
     swprintf_s(cmdlineBuf.get(), bufLen, L"\"%s\" --batch --yes -c -a --passphrase \"%s\" -o \"%s\" \"%s\" ", m_gnuPg.c_str(), password.c_str(), crypt.c_str(), orig.c_str());
 
