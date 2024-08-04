@@ -25,7 +25,7 @@
 #include <set>
 #include <map>
 
-constexpr auto READ_DIR_CHANGE_BUFFER_SIZE = 65536;
+constexpr auto READ_DIR_CHANGE_BUFFER_SIZE = 4096;
 constexpr auto MAX_CHANGED_PATHS           = 4000;
 
 /**
