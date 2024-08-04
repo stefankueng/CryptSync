@@ -40,8 +40,7 @@
 #include "../lzma/Wrapper-CPP/C7Zip.h"
 
 CFolderSync::CFolderSync()
-    : m_gnuPg(L"%ProgramFiles%\\GNU\\GnuPG\\Pub\\gpg.exe")
-    , m_parentWnd(nullptr)
+    : m_parentWnd(nullptr)
     , m_trayWnd(nullptr)
     , m_pProgDlg(nullptr)
     , m_progress(0)
@@ -49,36 +48,40 @@ CFolderSync::CFolderSync()
     , m_bRunning(FALSE)
     , m_decryptOnly(false)
 {
-    wchar_t buf[1024] = {};
-    GetModuleFileName(nullptr, buf, 1024);
-    std::wstring dir = buf;
-    dir              = dir.substr(0, dir.find_last_of('\\'));
-    m_gnuPg          = CStringUtils::ExpandEnvironmentStrings(m_gnuPg);
-    if (!PathFileExists(m_gnuPg.c_str()))
+    static const wchar_t *gnuPGInstallPaths[] = {
+        L"%ProgramFiles%\\GNU\\GnuPG\\Pub\\gpg.exe",
+#ifdef _WIN64
+        L"%ProgramFiles(x86)%\\GNU\\GnuPG\\Pub\\gpg.exe",
+        L"%ProgramFiles(x86)%\\GnuPG\\bin\\gpg.exe", // gpg (GnuPG) 2.4.5
+#else
+        L"%ProgramW6432%\\GNU\\GnuPG\\Pub\\gpg.exe",
+#endif
+        L"%ProgramFiles%\\GNU\\GnuPG\\gpg.exe", // try the old version 1 of gpg
+#ifdef _WIN64
+        L"%ProgramW6432%\\GNU\\GnuPG\\gpg.exe"
+#else
+        L"%ProgramW6432%\\GNU\\GnuPG\\gpg.exe"
+#endif
+    };
+
+    bool bgnuPGFound = false;
+    for (const auto gnuPGInstallPath : gnuPGInstallPaths)
     {
-#ifdef _WIN64
-        m_gnuPg = L"%ProgramFiles(x86)%\\GNU\\GnuPG\\Pub\\gpg.exe";
-#else
-        m_gnuPg = L"%ProgramW6432%\\GNU\\GnuPG\\Pub\\gpg.exe";
-#endif
-        m_gnuPg = CStringUtils::ExpandEnvironmentStrings(m_gnuPg);
-        if (!PathFileExists(m_gnuPg.c_str()))
+        m_gnuPg = CStringUtils::ExpandEnvironmentStrings(gnuPGInstallPath);
+        if (PathFileExists(m_gnuPg.c_str()))
         {
-            // try the old version 1 of gpg
-            m_gnuPg = L"%ProgramFiles%\\GNU\\GnuPG\\gpg.exe";
-            m_gnuPg = CStringUtils::ExpandEnvironmentStrings(m_gnuPg);
-            if (!PathFileExists(m_gnuPg.c_str()))
-            {
-#ifdef _WIN64
-                m_gnuPg = L"%ProgramW6432%\\GNU\\GnuPG\\gpg.exe";
-#else
-                m_gnuPg = L"%ProgramW6432%\\GNU\\GnuPG\\gpg.exe";
-#endif
-                m_gnuPg = CStringUtils::ExpandEnvironmentStrings(m_gnuPg);
-                if (!PathFileExists(m_gnuPg.c_str()))
-                    m_gnuPg = dir + L"\\gpg.exe";
-            }
+            bgnuPGFound = true;
+            break;
         }
+    }
+    if (!bgnuPGFound)
+    {
+        wchar_t buf[1024] = {};
+        GetModuleFileName(nullptr, buf, 1024);
+        std::wstring dir = buf;
+        dir              = dir.substr(0, dir.find_last_of('\\'));
+
+        m_gnuPg          = dir + L"\\gpg.exe";
     }
 }
 
@@ -554,7 +557,7 @@ int CFolderSync::SyncFolder(const PairData& pt)
         CAutoFile hTest = CreateFile(CPathUtils::AdjustForMaxPath(pt.m_cryptPath).c_str(), GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
         if (!hTest)
         {
-            CCircularLog::Instance()(L"ERROR:   error accessing path \"%s\", skipped", pt.m_origPath.c_str());
+            CCircularLog::Instance()(L"ERROR:   error accessing path \"%s\", skipped", pt.m_cryptPath.c_str());
             return ErrorAccess;
         }
     }
@@ -1120,18 +1123,13 @@ bool CFolderSync::EncryptFile(const std::wstring& orig, const std::wstring& cryp
     if ((!cryptName.empty()) && (cryptName[0] == '-'))
         cryptName = L".\\" + cryptName;
 
-    swprintf_s(cmdlineBuf.get(), bufLen, L"\"%s\" --batch --yes -c -a --passphrase \"%s\" -o \"%s\" \"%s\" ", m_gnuPg.c_str(), password.c_str(), cryptName.c_str(), orig.c_str());
+    swprintf_s(cmdlineBuf.get(), bufLen, L"\"%s\" --batch --yes -c -a --passphrase \"%s\" -o \"%s\" \"%s\" ", m_gnuPg.c_str(), password.c_str(), crypt.c_str(), orig.c_str());
 
-    bool bRet = RunGPG(cmdlineBuf.get(), targetFolder);
-    if (!bRet)
     {
-        CPathUtils::CreateRecursiveDirectory(targetFolder);
-        {
-            CAutoWriteLock nLocker(m_notingGuard);
-            m_notifyIgnores.insert(crypt);
-        }
-        bRet = RunGPG(cmdlineBuf.get(), targetFolder);
+        CAutoWriteLock nLocker(m_notingGuard);
+        m_notifyIgnores.insert(crypt);
     }
+    bool bRet = RunGPG(cmdlineBuf.get(), targetFolder);
     if (bRet)
     {
         if (resetArchAttr)
@@ -1252,16 +1250,11 @@ bool CFolderSync::DecryptFile(const std::wstring& orig, const std::wstring& cryp
     }
 
     swprintf_s(cmdlineBuf.get(), bufLen, L"\"%s\" --yes --batch --passphrase \"%s\" -o \"%s\" \"%s\" ", m_gnuPg.c_str(), password.c_str(), orig.c_str(), crypt.c_str());
-    bool bRet = RunGPG(cmdlineBuf.get(), targetFolder);
-    if (!bRet)
     {
-        CPathUtils::CreateRecursiveDirectory(targetFolder);
-        {
-            CAutoWriteLock nLocker(m_notingGuard);
-            m_notifyIgnores.insert(orig);
-        }
-        bRet = RunGPG(cmdlineBuf.get(), targetFolder);
+        CAutoWriteLock nLocker(m_notingGuard);
+        m_notifyIgnores.insert(orig);
     }
+    bool bRet = RunGPG(cmdlineBuf.get(), targetFolder);
     if (bRet)
     {
         // set the file timestamp
@@ -1565,7 +1558,8 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
         return false;
     PROCESS_INFORMATION pi = {nullptr};
 
-    if (CCreateProcessHelper::CreateProcess(m_gnuPg.c_str(), cmdline, cwd.c_str(), &pi, true, BELOW_NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT))
+    CPathUtils::CreateRecursiveDirectory(cwd);
+    if (CCreateProcessHelper::CreateProcess(m_gnuPg.c_str(), cmdline, NULL, &pi, true, BELOW_NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT))
     {
         // wait until the process terminates
         DWORD waitRet = 0;
