@@ -88,7 +88,7 @@ bool CPathWatcher::RemovePath(const std::wstring& path)
     CAutoWriteLock locker(m_guard);
 
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": RemovePath for %s\n"), path.c_str());
-    bool bRet = (watchedPaths.erase(path) != 0);
+    bool bRet = (watchedPaths.erase(CPathUtils::AdjustForMaxPath(path)) != 0);
     m_hCompPort.CloseHandle();
     return bRet;
 }
@@ -97,7 +97,7 @@ bool CPathWatcher::AddPath(const std::wstring& path)
 {
     CAutoWriteLock locker(m_guard);
     CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": AddPath for %s\n"), path.c_str());
-    watchedPaths.insert(path);
+    watchedPaths.insert(CPathUtils::AdjustForMaxPath(path));
     m_hCompPort.CloseHandle();
     return true;
 }
@@ -150,7 +150,7 @@ void CPathWatcher::WorkerThread()
                 CAutoReadLock locker(m_guard);
                 for (auto p = watchedPaths.cbegin(); p != watchedPaths.cend(); ++p)
                 {
-                    CAutoFile hDir = CreateFile(CPathUtils::AdjustForMaxPath(p->c_str()).c_str(),
+                    CAutoFile hDir = CreateFile(p->c_str(),
                                                 FILE_LIST_DIRECTORY,
                                                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                                                 nullptr, // security attributes
