@@ -1634,34 +1634,7 @@ void CFolderSync::AdjustFileAttributes(const std::wstring& fName, DWORD dwFileAt
     }
     else
     {
-        bRet            = false;
-        // Use FILE_WRITE_ATTRIBUTES below to prevent sharing violation if working on
-        // file open by another application
-        CAutoFile hFile = CreateFile(fName.c_str(), FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
-        error           = ::GetLastError();
-        if (hFile.IsValid())
-        {
-            retry = 5;
-            do
-            {
-                if (m_pProgDlg && m_pProgDlg->HasUserCancelled())
-                    break;
-                bRet  = !!SetFileTime(hFile, &fData.ftCreationTime, &fData.ftLastAccessTime, &fData.ftLastWriteTime);
-                error = ::GetLastError();
-                if (!bRet)
-                    Sleep(200);
-            } while (!bRet && (retry-- > 0));
-            hFile.CloseHandle();
-        }
-        if (!bRet)
-        {
-            _com_error comError(error);
-            LPCTSTR    comErrorText = comError.ErrorMessage();
-            CCircularLog::Instance()(_T("INFO:    failed to set file time on %s while adjusting its attributes (%s)"), fName.c_str(), comErrorText);
-            CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": Unable to set file time on %s (%s)\n"), fName.c_str(), comErrorText);
-        }
-        else
-            CCircularLog::Instance()(_T("INFO:    successfully adjusted attribute on %s"), fName.c_str());
+        CCircularLog::Instance()(_T("INFO:    successfully adjusted attribute on %s"), fName.c_str());
     }
 }
 
