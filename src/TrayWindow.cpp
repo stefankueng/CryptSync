@@ -189,12 +189,10 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
             {
                 if (!pair.m_enabled)
                     continue;
-                std::wstring origPath  = pair.m_origPath;
-                std::wstring cryptPath = pair.m_cryptPath;
                 if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == SrcToDst))
-                    m_watcher.AddPath(origPath);
+                    m_watcher.AddPath(pair.m_origPath);
                 if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == DstToSrc))
-                    m_watcher.AddPath(cryptPath);
+                    m_watcher.AddPath(pair.m_cryptPath);
             }
             SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, nullptr);
             if (g_timer_fullScanInterval > 0)
@@ -274,12 +272,25 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                 case TIMER_DETECTCHANGES:
                 {
                     SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, nullptr);
+                    /*
+                    * if Options dialog is open, it will become unresponsive until all SyncFile()
+                    * below are done (same thing for TrayWindow icon).
+                    * Options?
+                    * Perhaps temporarily set TIMER_DETECTCHANGES to a small (200 ms?) value
+                    * and keep coming back here until m_lastChangedPaths.empty() is true.
+                    * The "for (auto lastChangedPath" loop below would be obsolete and
+                    * path re-insertion should be postponed until m_lastChangedPaths.empty,
+                    * to avoid doing very 200 ms.
+                    */
                     if (!m_lastChangedPaths.empty())
                     {
                         for (auto lastChangedPath = m_lastChangedPaths.begin(); lastChangedPath != m_lastChangedPaths.end();)
                         {
                             if (CIgnores::Instance().IsIgnored(*lastChangedPath))
+                            {
+                                lastChangedPath = m_lastChangedPaths.erase(lastChangedPath);
                                 continue;
+                            }
 
                             if (m_folderSyncer.SyncFile(*lastChangedPath))
                             {
@@ -356,14 +367,19 @@ LRESULT CALLBACK CTrayWindow::WinMsgHandler(HWND hwnd, UINT uMsg, WPARAM wParam,
                                 for (auto lastChangedPath = m_lastChangedPaths.begin(); lastChangedPath != m_lastChangedPaths.end();)
                                 {
                                     if (CIgnores::Instance().IsIgnored(*lastChangedPath))
+                                    {
+                                        lastChangedPath = m_lastChangedPaths.erase(lastChangedPath);
                                         continue;
+                                    }
 
                                     if (m_folderSyncer.SyncFile(*lastChangedPath))
                                     {
+                                        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": successfully synced %s (TIMER_FULLSCAN)\n"), lastChangedPath->c_str());
                                         lastChangedPath = m_lastChangedPaths.erase(lastChangedPath);
                                     }
                                     else
                                     {
+                                        CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(": postponing synced %s (TIMER_FULLSCAN)\n"), lastChangedPath->c_str());
                                         lastChangedPath++;
                                     }
                                 }
@@ -452,6 +468,10 @@ LRESULT CTrayWindow::DoCommand(int id)
             dlg.SetFailures(m_folderSyncer.GetFailures());
             INT_PTR ret           = dlg.DoModal(hResource, IDD_OPTIONS, nullptr);
             m_bOptionsDialogShown = false;
+            // SyncFolders() no longer stops a background task when another.
+            // background task is requested by SyncFolders(). We stop it
+            // directly so next run uses new parameters.
+            m_folderSyncer.Stop();
             if ((ret == IDOK) || (ret == IDCANCEL))
             {
                 g_timer_fullScanInterval = CRegStdDWORD(L"Software\\CryptSync\\FullScanInterval", 60000 * 30);
@@ -460,16 +480,18 @@ LRESULT CTrayWindow::DoCommand(int id)
                 else
                     m_folderSyncer.SetPairs(g_pairs);
                 m_watcher.ClearPaths();
-                for (auto it = g_pairs.cbegin(); it != g_pairs.cend(); ++it)
+                for (const auto& pair : g_pairs)
                 {
-                    std::wstring origPath  = it->m_origPath;
-                    std::wstring cryptPath = it->m_cryptPath;
-                    if (it->m_enabled)
+                    if (pair.m_enabled)
                     {
-                        if ((it->m_syncDir == BothWays) || (it->m_syncDir == SrcToDst))
-                            m_watcher.AddPath(origPath);
-                        if ((it->m_syncDir == BothWays) || (it->m_syncDir == DstToSrc))
-                            m_watcher.AddPath(cryptPath);
+                        if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == SrcToDst))
+                        {
+                            m_watcher.AddPath(pair.m_origPath);
+                        }
+                        if ((pair.m_syncDir == BothWays) || (pair.m_syncDir == DstToSrc))
+                        {
+                            m_watcher.AddPath(pair.m_cryptPath);
+                        }
                     }
                 }
                 SetTimer(*this, TIMER_DETECTCHANGES, TIMER_DETECTCHANGESINTERVAL, nullptr);
