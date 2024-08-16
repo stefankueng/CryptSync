@@ -48,7 +48,7 @@ CFolderSync::CFolderSync()
     , m_bRunning(FALSE)
     , m_decryptOnly(false)
 {
-    static const wchar_t *gnuPGInstallPaths[] = {
+    static const wchar_t *gnuPgInstallPaths[] = {
         L"%ProgramFiles%\\GNU\\GnuPG\\Pub\\gpg.exe",
 #ifdef _WIN64
         L"%ProgramFiles(x86)%\\GNU\\GnuPG\\Pub\\gpg.exe",
@@ -64,17 +64,17 @@ CFolderSync::CFolderSync()
 #endif
     };
 
-    bool bgnuPGFound = false;
-    for (const auto gnuPGInstallPath : gnuPGInstallPaths)
+    bool bgnuPgFound = false;
+    for (const auto gnuPgInstallPath : gnuPgInstallPaths)
     {
-        m_gnuPg = CStringUtils::ExpandEnvironmentStrings(gnuPGInstallPath);
+        m_gnuPg = CStringUtils::ExpandEnvironmentStrings(gnuPgInstallPath);
         if (PathFileExists(m_gnuPg.c_str()))
         {
-            bgnuPGFound = true;
+            bgnuPgFound = true;
             break;
         }
     }
-    if (!bgnuPGFound)
+    if (!bgnuPgFound)
     {
         wchar_t buf[1024] = {};
         GetModuleFileName(nullptr, buf, 1024);
@@ -1307,7 +1307,7 @@ std::wstring CFolderSync::GetDecryptedFilename(const std::wstring& filename, con
     if (!encryptName)
     {
         std::wstring f = filename;
-        std::transform(f.begin(), f.end(), f.begin(), ::towlower);
+        std::ranges::transform(f, f.begin(), ::towlower);
         if (useGpg)
         {
             size_t pos = f.rfind(L".gpg");
@@ -1434,7 +1434,7 @@ std::wstring CFolderSync::GetEncryptedFilename(const std::wstring& filename, con
     if (!encryptName)
     {
         std::wstring f = filename;
-        std::transform(f.begin(), f.end(), f.begin(), ::towlower);
+        std::ranges::transform(f, f.begin(), ::towlower);
 
         if (useGpg)
         {
@@ -1565,7 +1565,7 @@ bool CFolderSync::RunGPG(LPWSTR cmdline, const std::wstring& cwd) const
     PROCESS_INFORMATION pi = {nullptr};
 
     CPathUtils::CreateRecursiveDirectory(cwd);
-    if (CCreateProcessHelper::CreateProcess(m_gnuPg.c_str(), cmdline, NULL, &pi, true, BELOW_NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT))
+    if (CCreateProcessHelper::CreateProcess(m_gnuPg.c_str(), cmdline, nullptr, &pi, true, BELOW_NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT))
     {
         // wait until the process terminates
         DWORD waitRet = 0;
