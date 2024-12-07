@@ -274,8 +274,12 @@
     <ClCompile Include="CPP\7zip\Compress\ZstdDecoder.cpp" />
     <ClCompile Include="CPP\Common\CksumReg.cpp" />
     <ClCompile Include="CPP\Common\LzFindPrepare.cpp" />
+    <ClCompile Include="CPP\Common\Md5Reg.cpp" />
     <ClCompile Include="CPP\Common\Sha1Prepare.cpp" />
     <ClCompile Include="CPP\Common\Sha256Prepare.cpp" />
+    <ClCompile Include="CPP\Common\Sha3Reg.cpp" />
+    <ClCompile Include="CPP\Common\Sha512Prepare.cpp" />
+    <ClCompile Include="CPP\Common\Sha512Reg.cpp" />
     <ClCompile Include="CPP\Common\Xxh64Reg.cpp" />
     <ClCompile Include="CPP\Windows\PropVariantConv.cpp" />
     <ClCompile Include="C\7zBuf2.c" />
@@ -356,6 +360,7 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MaxSpeed</Optimization>
     </ClCompile>
+    <ClCompile Include="C\Md5.c" />
     <ClCompile Include="C\MtCoder.c">
     </ClCompile>
     <ClCompile Include="C\MtDec.c">
@@ -398,6 +403,9 @@
     </ClCompile>
     <ClCompile Include="C\Sha256Opt.c">
     </ClCompile>
+    <ClCompile Include="C\Sha3.c" />
+    <ClCompile Include="C\Sha512.c" />
+    <ClCompile Include="C\Sha512Opt.c" />
     <ClCompile Include="C\Sort.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MaxSpeed</Optimization>
@@ -812,6 +820,7 @@
     <ClInclude Include="C\Lzma2Enc.h" />
     <ClInclude Include="C\LzmaDec.h" />
     <ClInclude Include="C\LzmaEnc.h" />
+    <ClInclude Include="C\Md5.h" />
     <ClInclude Include="C\MtCoder.h" />
     <ClInclude Include="C\MtDec.h" />
     <ClInclude Include="C\Ppmd.h" />
@@ -821,6 +830,8 @@
     <ClInclude Include="C\RotateDefs.h" />
     <ClInclude Include="C\Sha1.h" />
     <ClInclude Include="C\Sha256.h" />
+    <ClInclude Include="C\Sha3.h" />
+    <ClInclude Include="C\Sha512.h" />
     <ClInclude Include="C\Sort.h" />
     <ClInclude Include="CPP\7zip\Bundles\Format7zF\StdAfx.h" />
     <ClInclude Include="C\SwapBytes.h" />

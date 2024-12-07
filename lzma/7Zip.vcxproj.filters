@@ -1041,6 +1041,30 @@
     <ClCompile Include="CPP\7zip\Common\FileStreams.cpp">
       <Filter>7zip Common</Filter>
     </ClCompile>
+    <ClCompile Include="C\Sha3.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="C\Sha512.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="C\Sha512Opt.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="C\Md5.c">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\Common\Md5Reg.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\Common\Sha3Reg.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\Common\Sha512Prepare.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="CPP\Common\Sha512Reg.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CPP\7zip\Bundles\Format7zF\resource.rc" />
@@ -1754,6 +1778,15 @@
     </ClInclude>
     <ClInclude Include="CPP\7zip\Common\FileStreams.h">
       <Filter>7zip Common</Filter>
+    </ClInclude>
+    <ClInclude Include="C\Sha3.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="C\Sha512.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="C\Md5.h">
+      <Filter>C</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
