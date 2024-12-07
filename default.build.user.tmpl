@@ -18,9 +18,9 @@
   <!-- These two targets have to exist in doc.build.user                      -->
   <!-- ====================================================================== -->
 
-  <target name="VSNET" description="Checks if the env variables for VS2015 are set">
+  <target name="VSNET" description="Checks if the env variables for VS2013 are set">
     <if test="${not environment::variable-exists('VCINSTALLDIR')}">
-      <fail>You must first call "%VS140COMNTOOLS%\vsvars32.bat"</fail>
+      <fail>You must first call "%VS120COMNTOOLS%\vsvars32.bat"</fail>
     </if>
     <!-- Uncomment the line below to allow limited building using VC Express instead of VS.NET. -->
     <!-- <property name="buildtool" value="vcexpress.exe" /> -->
@@ -47,12 +47,18 @@
         <variable name="WIX" value="%WIX%\bin" />
       </setenv>
     </if>
+    <!--
+      specifies the tool to use for signing the binaries.
+      change to "scsigntool.exe" in case you're using a smart card and have scsigntool set up
+    -->
+    <property name="signtool" value="scsigntool.exe" />
 
     <!--
       Update environment & we are good to go.
     -->
 
     <setenv>
+      <variable name="PATH" value="D:\smartcardtools\x64;%PATH%" />
       <variable name="PATH" value="%WIX%;%PATH%" />
       <variable name="WIXUI" value="%WIX%" />
     </setenv>

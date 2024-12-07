@@ -3,6 +3,7 @@
 
   <include buildfile="default.build.user" />
 
+  <property name="signtool" value="signtool.exe" />
   <property name="configuration" value="release" />
 
   <!-- the signinfo.txt file has to contain one line with parameters for signtool.exe,
@@ -41,6 +42,14 @@
       <arg value="/t:Clean" />
       <arg value="/p:Configuration=${configuration}" />
       <arg value="/p:Platform=x64" />
+      <arg value="/verbosity:quiet" />
+      <arg value="/maxcpucount" />
+    </exec>
+    <exec program="msbuild.exe" >
+      <arg value="CryptSync.sln" />
+      <arg value="/t:Clean" />
+      <arg value="/p:Configuration=${configuration}" />
+      <arg value="/p:Platform=ARM64" />
       <arg value="/verbosity:quiet" />
       <arg value="/maxcpucount" />
     </exec>
@@ -94,16 +103,29 @@
       <arg value="/verbosity:minimal" />
       <arg value="/maxcpucount" />
     </exec>
+    <exec program="msbuild.exe" >
+      <arg value="CryptSync.sln" />
+      <arg value="/t:rebuild" />
+      <arg value="/p:Configuration=${configuration}" />
+      <arg value="/p:Platform=ARM64" />
+      <arg value="/verbosity:minimal" />
+      <arg value="/maxcpucount" />
+    </exec>
     <if test="${file::exists('signinfo.txt')}">
-      <exec program="signtool">
+      <exec program="${signtool}">
         <arg value="sign" />
         <arg value="${signinfo}" />
         <arg value="bin\${configuration}\Win32\CryptSync.exe" />
       </exec>
-      <exec program="signtool">
+      <exec program="${signtool}">
         <arg value="sign" />
         <arg value="${signinfo}" />
         <arg value="bin\${configuration}\x64\CryptSync64.exe" />
+      </exec>
+      <exec program="${signtool}">
+        <arg value="sign" />
+        <arg value="${signinfo}" />
+        <arg value="bin\${configuration}\ARM64\CryptSyncARM64.exe" />
       </exec>
     </if>
   </target>

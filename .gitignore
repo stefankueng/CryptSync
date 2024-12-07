@@ -27,3 +27,4 @@
 /Debug/Tests.exe
 /buildlog.txt
 *.aps
+/Tests/ARM64

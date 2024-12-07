@@ -233,6 +233,9 @@
     <None Include="version.in">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="Setup\SetupARM64.wxs">
+      <Filter>build</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="build">

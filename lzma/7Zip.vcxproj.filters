@@ -1065,6 +1065,12 @@
     <ClCompile Include="CPP\Common\Sha512Reg.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="Asm\arm64\7zAsm.S">
+      <Filter>Asm</Filter>
+    </ClCompile>
+    <ClCompile Include="Asm\arm64\LzmaDecOpt.S">
+      <Filter>Asm</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CPP\7zip\Bundles\Format7zF\resource.rc" />

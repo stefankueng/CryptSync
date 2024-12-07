@@ -51,7 +51,7 @@
       </fileset>
     </delete>
     <if test="${file::exists('..\..\signinfo.txt')}">
-      <exec program="signtool">
+      <exec program="${signtool}">
         <arg value="sign" />
         <arg value="${signinfo}" />
         <arg value="..\..\bin\${msifilename}.msi" />
@@ -83,10 +83,42 @@
       </fileset>
     </delete>
     <if test="${file::exists('..\..\signinfo.txt')}">
-      <exec program="signtool">
+      <exec program="${signtool}">
         <arg value="sign" />
         <arg value="${signinfo}" />
         <arg value="..\..\bin\${msifilename64}.msi" />
+      </exec>
+    </if>
+    <!-- ARM64 -->
+    <property name="msifilenameARM64" value="CryptSyncARM64-${verstring}" />
+    <exec program="candle">
+      <arg value="-nologo" />
+      <arg value="-out" />
+      <arg value="..\..\bin\" />
+      <arg value="SetupARM64.wxs" />
+    </exec>
+    <exec program="light">
+      <arg value="-nologo" />
+      <arg value="-ext" />
+      <arg value="WixUIExtension" />
+      <arg value="-ext" />
+      <arg value="WixUtilExtension" />
+      <arg value="-cultures:en-us" />
+      <arg value="-out" />
+      <arg value="..\..\bin\${msifilenameARM64}.msi" />
+      <arg value="..\..\bin\SetupARM64.wixobj" />
+    </exec>
+    <delete>
+      <fileset>
+        <include name="..\..\bin\*.wixobj" />
+        <include name="..\..\bin\*.wixpdb" />
+      </fileset>
+    </delete>
+    <if test="${file::exists('..\..\signinfo.txt')}">
+      <exec program="${signtool}">
+        <arg value="sign" />
+        <arg value="${signinfo}" />
+        <arg value="..\..\bin\${msifilenameARM64}.msi" />
       </exec>
     </if>
   </target>
