@@ -236,6 +236,12 @@
     <None Include="Setup\SetupARM64.wxs">
       <Filter>build</Filter>
     </None>
+    <None Include="..\.github\workflows\msbuild.yml">
+      <Filter>.github\workflows</Filter>
+    </None>
+    <None Include="..\.github\workflows\codeql-analysis.yml">
+      <Filter>.github\workflows</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="build">
@@ -255,6 +261,12 @@
     </Filter>
     <Filter Include="base4k">
       <UniqueIdentifier>{3087506c-2ba6-4633-b7b0-62dc91ad625e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".github">
+      <UniqueIdentifier>{b36e8d5c-51ea-43f5-98b8-81784fc70a85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".github\workflows">
+      <UniqueIdentifier>{3ef68088-8404-471d-954f-c415ac9917ba}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

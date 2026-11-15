@@ -296,6 +296,8 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="..\.github\workflows\codeql-analysis.yml" />
+    <None Include="..\.github\workflows\msbuild.yml" />
     <None Include="..\default.build" />
     <None Include="..\version.build.in" />
     <None Include="..\versioninfo.build" />
