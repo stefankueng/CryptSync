@@ -30,7 +30,7 @@
       Cleans every subproject.
     </description>
     <exec program="msbuild.exe" >
-      <arg value="CryptSync.sln" />
+      <arg value="CryptSync.slnx" />
       <arg value="/t:Clean" />
       <arg value="/p:Configuration=${configuration}" />
       <arg value="/p:Platform=Win32" />
@@ -38,7 +38,7 @@
       <arg value="/maxcpucount" />
     </exec>
     <exec program="msbuild.exe" >
-      <arg value="CryptSync.sln" />
+      <arg value="CryptSync.slnx" />
       <arg value="/t:Clean" />
       <arg value="/p:Configuration=${configuration}" />
       <arg value="/p:Platform=x64" />
@@ -46,7 +46,7 @@
       <arg value="/maxcpucount" />
     </exec>
     <exec program="msbuild.exe" >
-      <arg value="CryptSync.sln" />
+      <arg value="CryptSync.slnx" />
       <arg value="/t:Clean" />
       <arg value="/p:Configuration=${configuration}" />
       <arg value="/p:Platform=ARM64" />
@@ -88,7 +88,7 @@
       Builds CryptSync.
     </description>
     <exec program="msbuild.exe" >
-      <arg value="CryptSync.sln" />
+      <arg value="CryptSync.slnx" />
       <arg value="/t:rebuild" />
       <arg value="/p:Configuration=${configuration}" />
       <arg value="/p:Platform=Win32" />
@@ -96,7 +96,7 @@
       <arg value="/maxcpucount" />
     </exec>
     <exec program="msbuild.exe" >
-      <arg value="CryptSync.sln" />
+      <arg value="CryptSync.slnx" />
       <arg value="/t:rebuild" />
       <arg value="/p:Configuration=${configuration}" />
       <arg value="/p:Platform=x64" />
@@ -104,7 +104,7 @@
       <arg value="/maxcpucount" />
     </exec>
     <exec program="msbuild.exe" >
-      <arg value="CryptSync.sln" />
+      <arg value="CryptSync.slnx" />
       <arg value="/t:rebuild" />
       <arg value="/p:Configuration=${configuration}" />
       <arg value="/p:Platform=ARM64" />

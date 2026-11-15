@@ -7,7 +7,7 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  solution: 'CryptSync.sln'
+  solution: 'CryptSync.slnx'
   buildPlatform: 'x64'
   buildConfiguration: 'Release'
 
