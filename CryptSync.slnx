@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM64" />
+    <Platform Name="Win32" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="lzma/7Zip.vcxproj" />
+  <Project Path="src/CryptSync.vcxproj" />
+  <Project Path="Tests/Tests.vcxproj">
+    <Platform Solution="Debug|ARM64" Project="Win32" />
+    <Platform Solution="Release|ARM64" Project="x64" />
+    <Build Solution="*|ARM64" Project="false" />
+  </Project>
+</Solution>

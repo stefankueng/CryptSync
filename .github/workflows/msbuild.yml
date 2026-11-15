@@ -21,16 +21,18 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2026
 
     steps:
-    - uses: actions/checkout@v4.1.7
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 2
         submodules: recursive
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
+      with:
+        vs-version: '[18.0,19.0)'
 
     - name: Restore NuGet packages
       working-directory: ${{env.GITHUB_WORKSPACE}}
@@ -40,7 +42,7 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=x64 ${{env.SOLUTION_FILE_PATH}}
     - name: Upload artifacts for x64
-      uses: actions/upload-artifact@v4.3.6
+      uses: actions/upload-artifact@v4
       with:
           name: CryptSync64
           path: bin/Release/x64/CryptSync64.exe
