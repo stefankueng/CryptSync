@@ -1,6 +1,6 @@
 // CryptSync - A folder sync tool with encryption
 
-// Copyright (C) 2012-2014, 2016, 2021-2024 - Stefan Kueng
+// Copyright (C) 2012-2014, 2016, 2021-2024, 2026 - Stefan Kueng
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -158,7 +158,6 @@ void CTrayWindow::ShowTrayIcon()
     Shell_NotifyIcon(NIM_DELETE, &m_niData);
     Shell_NotifyIcon(NIM_ADD, &m_niData);
     Shell_NotifyIcon(NIM_SETVERSION, &m_niData);
-    DestroyIcon(m_niData.hIcon);
 }
 
 LRESULT CTrayWindow::HandleCustomMessages(HWND /*hwnd*/, UINT uMsg, WPARAM /*wParam*/, LPARAM /*lParam*/)
