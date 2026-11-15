@@ -63,23 +63,24 @@ COMPL_ASM = $(MY_ML) $** $O/$(*B).obj
 COMPL_ASM = $(MY_ML) -c -Fo$O/ $**
 !ENDIF
 
+CFLAGS_c_switch = -c -Fo$O/
+
 !IFDEF OLD_COMPILER
 CFLAGS_WARN_LEVEL = -W4
 !ELSE
+!IF "$(CC)" != "clang-cl"
+CFLAGS_WARN_LEVEL = -Wall -analyze
+!ELSE
+CFLAGS_WARN_LEVEL = -Wall --analyze -Xclang -analyzer-output=text
+# CFLAGS_c_switch =
+!ENDIF
 CFLAGS_WARN_LEVEL = -Wall
 !ENDIF
 
-CFLAGS = $(CFLAGS) -nologo -c -Fo$O/ $(CFLAGS_WARN_LEVEL) -WX -EHsc -Gy -GR- -GF
+CFLAGS = $(CFLAGS) -nologo $(CFLAGS_c_switch) $(CFLAGS_WARN_LEVEL) -WX -EHsc -Gy -GR- -GF
 
 !IF "$(CC)" == "clang-cl"
-
-CFLAGS = $(CFLAGS) \
-  -Werror \
-  -Wall \
-  -Wextra \
-  -Weverything \
-  -Wfatal-errors \
-
+CFLAGS = $(CFLAGS) -Werror -Wall -Wextra -Weverything -Wfatal-errors
 !ENDIF
 
 # !IFDEF MY_DYNAMIC_LINK
@@ -111,7 +112,13 @@ CFLAGS = $(CFLAGS) -Zc:forScope
 
 !IFNDEF UNDER_CE
 !IF "$(CC)" != "clang-cl"
-CFLAGS = $(CFLAGS) -MP4
+MP_NPROC = 16
+!IFDEF NUMBER_OF_PROCESSORS
+!IF $(NUMBER_OF_PROCESSORS) < $(MP_NPROC)
+MP_NPROC = $(NUMBER_OF_PROCESSORS)
+!ENDIF
+!ENDIF
+CFLAGS = $(CFLAGS) -MP$(MP_NPROC)
 !ENDIF
 !IFNDEF PLATFORM
 # CFLAGS = $(CFLAGS) -arch:IA32
@@ -160,7 +167,13 @@ LFLAGS = $(LFLAGS) /FIXED:NO
 # LFLAGS = $(LFLAGS) /FILEALIGN:4096
 !ENDIF
 
-
+!IFNDEF DEF_FILE
+!IF "$(PLATFORM)" == "x86" || "$(PLATFORM)" == "arm"
+LFLAGS = $(LFLAGS) /STACK:2097152
+!ELSE IF "$(PLATFORM)" == "x64" || "$(PLATFORM)" == "arm64" || "$(PLATFORM)" == "ia64"
+LFLAGS = $(LFLAGS) /STACK:8388608
+!ENDIF
+!ENDIF
 
 # !IF "$(PLATFORM)" == "x64"
 

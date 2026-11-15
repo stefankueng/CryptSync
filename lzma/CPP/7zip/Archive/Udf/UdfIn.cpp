@@ -114,7 +114,10 @@ static UString ParseDString(const Byte *data, unsigned size)
       }
     }
     else
-      return UString("[unknown]");
+    {
+      res = "[unknown]";
+      return res;
+    }
     *p = 0;
     res.ReleaseBuf_SetLen((unsigned)(p - (const wchar_t *)res));
   }
@@ -478,8 +481,8 @@ struct CFileId
 
 size_t CFileId::Parse(const Byte *p, size_t size)
 {
-  size_t processed = 0;
-  if (size < 38)
+  const unsigned k_FileId_FixedSize = 38;
+  if (size < k_FileId_FixedSize)
     return 0;
   CTag tag;
   if (tag.Parse(p, size) != S_OK)
@@ -493,18 +496,23 @@ size_t CFileId::Parse(const Byte *p, size_t size)
   const unsigned idLen = p[19];
   Icb.Parse(p + 20);
   const unsigned impLen = Get16(p + 36);
-  if (size < 38 + idLen + impLen)
+  if (size < k_FileId_FixedSize + idLen + impLen)
     return 0;
-  processed = 38;
+  size_t processed = k_FileId_FixedSize;
   // ImplUse.CopyFrom(p + processed, impLen);
   processed += impLen;
   Id.Parse(p + processed, idLen);
   processed += idLen;
-  for (;(processed & 3) != 0; processed++)
-    if (p[processed] != 0)
+  // const size_t processed2 = processed;
+  for (; processed & 3; processed++)
+    if (processed >= size || p[processed])
       return 0;
-  if ((size_t)tag.CrcLen + 16 != processed) return 0;
-  return (processed <= size) ? processed : 0;
+  // some program can create non-standard UDF file where CrcLen doesn't include Padding data
+  if ((size_t)tag.CrcLen + 16 != processed
+      // && (size_t)tag.CrcLen + 16 != processed2 // we can enable this check to support non-standard UDF
+      )
+    return 0;
+  return processed;
 }
 
 
@@ -577,15 +585,20 @@ HRESULT CInArchive::ReadItem(unsigned volIndex, int fsIndex, const CLongAllocDes
 
   item.IcbTag.Parse(p + 16);
 
+  // maybe another FileType values are possible in rare cases.
+  // Shoud we ignore FileType here?
   if (fsIndex < 0)
   {
+    // if (item.IcbTag.FileType == ICB_FILE_TYPE_DIR) return S_FALSE;
     if (item.IcbTag.FileType != ICB_FILE_TYPE_METADATA &&
-        item.IcbTag.FileType != ICB_FILE_TYPE_METADATA_MIRROR)
+        item.IcbTag.FileType != ICB_FILE_TYPE_METADATA_MIRROR &&
+        item.IcbTag.FileType != ICB_FILE_TYPE_METADATA_BITMAP)
       return S_FALSE;
   }
   else if (
       item.IcbTag.FileType != ICB_FILE_TYPE_DIR &&
-      item.IcbTag.FileType != ICB_FILE_TYPE_FILE)
+      item.IcbTag.FileType != ICB_FILE_TYPE_FILE &&
+      item.IcbTag.FileType != ICB_FILE_TYPE_REAL_TIME_FILE) // M2TS files in /BDMV/STREAM/ in Blu-ray movie
     return S_FALSE;
 
   item.Parse(p);
@@ -846,8 +859,10 @@ HRESULT CInArchive::Open2()
         }
     }
   }
-  
-  PhySize = (UInt32)(256 + 1) << SecLogSize;
+  {
+    const UInt32 temp = (UInt32)(256 + 1) << SecLogSize;
+    PhySize = temp;
+  }
   IsArc = true;
 
   // UDF 2.2.3  AnchorVolumeDescriptorPointer
@@ -1210,7 +1225,7 @@ HRESULT CInArchive::Open2()
       if (tag.Id != DESC_TYPE_FileSet)
         return S_FALSE;
       
-      PRF(printf("\n FileSet", volIndex));
+      PRF(printf("\n FileSet"));
       CFileSet fs;
       fs.RecordingTime.Parse(p + 16);
       // fs.InterchangeLevel = Get16(p + 18);

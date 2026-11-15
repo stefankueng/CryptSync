@@ -4,8 +4,6 @@
 
 #include "../../../Common/StringToInt.h"
 
-#include "../Common/ParseProperties.h"
-
 #include "HandlerOut.h"
 
 namespace NArchive {
@@ -82,6 +80,7 @@ bool ParseSizeString(const wchar_t *s, const PROPVARIANT &prop, UInt64 percentsB
   return true;
 }
 
+
 bool CCommonMethodProps::SetCommonProperty(const UString &name, const PROPVARIANT &value, HRESULT &hres)
 {
   hres = S_OK;
@@ -99,7 +98,7 @@ bool CCommonMethodProps::SetCommonProperty(const UString &name, const PROPVARIAN
   
   if (name.IsPrefixedBy_Ascii_NoCase("memuse"))
   {
-    UInt64 v;
+    UInt64 v = 0;
     if (!ParseSizeString(name.Ptr(6), value, _memAvail, v))
       hres = E_INVALIDARG;
     _memUsage_Decompress = v;
@@ -149,6 +148,11 @@ void CMultiMethodProps::SetMethodThreadsTo_IfNotFinded(CMethodProps &oneMethodIn
 void CMultiMethodProps::SetMethodThreadsTo_Replace(CMethodProps &oneMethodInfo, UInt32 numThreads)
 {
   SetMethodProp32_Replace(oneMethodInfo, NCoderPropID::kNumThreads, numThreads);
+}
+
+void CMultiMethodProps::Set_Method_NumThreadGroups_IfNotFinded(CMethodProps &oneMethodInfo, UInt32 numThreadGroups)
+{
+  SetMethodProp32(oneMethodInfo, NCoderPropID::kNumThreadGroups, numThreadGroups);
 }
 
 #endif // Z7_ST

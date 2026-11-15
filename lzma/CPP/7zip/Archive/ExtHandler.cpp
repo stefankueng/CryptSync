@@ -628,6 +628,8 @@ struct CNode
   UInt32 Gid; // fixed 21.02
   // UInt16 Checksum;
   
+  UInt32 NumLinksCalced;
+
   UInt64 FileSize;
   CExtTime MTime;
   CExtTime ATime;
@@ -639,17 +641,16 @@ struct CNode
   UInt32 NumLinks;
   UInt32 Flags;
 
-  UInt32 NumLinksCalced;
-
   Byte Block[kNodeBlockFieldSize];
   
-  CNode():
-      ParentNode(-1),
-      ItemIndex(-1),
-      SymLinkIndex(-1),
-      DirIndex(-1),
-      NumLinksCalced(0)
-        {}
+  void Construct()
+  {
+    ParentNode = -1;
+    ItemIndex = -1;
+    SymLinkIndex = -1;
+    DirIndex = -1;
+    NumLinksCalced = 0;
+  }
 
   bool IsFlags_HUGE()    const { return (Flags & k_NodeFlags_HUGE) != 0; }
   bool IsFlags_EXTENTS() const { return (Flags & k_NodeFlags_EXTENTS) != 0; }
@@ -1172,21 +1173,19 @@ HRESULT CHandler::Open2(IInStream *inStream)
     {
       // ---------- Read groups ----------
 
-      CByteBuffer gdBuf;
       const size_t gdBufSize = (size_t)numGroups << gdBits;
       if ((gdBufSize >> gdBits) != numGroups)
         return S_FALSE;
+      CByteBuffer gdBuf;
       gdBuf.Alloc(gdBufSize);
       RINOK(SeekAndRead(inStream, (_h.BlockBits <= 10 ? 2 : 1), gdBuf, gdBufSize))
 
-      for (unsigned i = 0; i < numGroups; i++)
+      const unsigned gd_Size = (unsigned)1 << gdBits;
+      const Byte *p = gdBuf;
+      for (unsigned i = 0; i < numGroups; i++, p += gd_Size)
       {
         CGroupDescriptor gd;
-        
-        const Byte *p = gdBuf + ((size_t)i << gdBits);
-        const unsigned gd_Size = (unsigned)1 << gdBits;
         gd.Parse(p, gd_Size);
-        
         if (_h.UseMetadataChecksum())
         {
           // use CRC32c
@@ -1228,7 +1227,10 @@ HRESULT CHandler::Open2(IInStream *inStream)
         if (numNodes > (1 << 24))
           return S_FALSE;
       }
-      
+
+      const size_t blockSize = (size_t)1 << _h.BlockBits;
+      if (numNodes > blockSize * 8)
+        return S_FALSE;
       const UInt32 numReserveInodes = _h.NumInodes - _h.NumFreeInodes + 1;
       // numReserveInodes = _h.NumInodes + 1;
       if (numReserveInodes != 0)
@@ -1241,7 +1243,6 @@ HRESULT CHandler::Open2(IInStream *inStream)
       nodesData.Alloc(nodesDataSize);
       
       CByteBuffer nodesMap;
-      const size_t blockSize = (size_t)1 << _h.BlockBits;
       nodesMap.Alloc(blockSize);
       
       unsigned globalNodeIndex = 0;
@@ -1282,6 +1283,7 @@ HRESULT CHandler::Open2(IInStream *inStream)
           }
 
           CNode node;
+          node.Construct();
               
           PRF(printf("\nnode = %5d ", (unsigned)n));
 
@@ -1827,7 +1829,7 @@ Z7_COM7F_IMF(CHandler::GetArchiveProperty(PROPID propID, PROPVARIANT *value))
     */
     
     case kpidIsTree: prop = true; break;
-    case kpidIsAux: prop = true; break;
+    // case kpidIsAux: prop = true; break;
     case kpidINode: prop = true; break;
 
     case kpidClusterSize: prop = (UInt32)1 << _h.BlockBits; break;
@@ -2043,7 +2045,7 @@ Z7_COM7F_IMF(CHandler::GetProperty(UInt32 index, PROPID propID, PROPVARIANT *val
         break;
       }
       case kpidIsDir: prop = true; break;
-      case kpidIsAux: prop = true; break;
+      // case kpidIsAux: prop = true; break;
     }
   }
   else
@@ -2165,9 +2167,9 @@ public:
     _curRem = 0;
     _virtPos = 0;
     _physPos = 0;
-    if (Vector.Size() > 0)
+    if (Vector.Size())
     {
-      _physPos = (Vector[0] << BlockBits);
+      _physPos = (UInt64)Vector[0] << BlockBits;
       return SeekToPhys();
     }
     return S_OK;
@@ -2704,10 +2706,8 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     numItems = _items.Size() + _auxItems.Size();
   if (numItems == 0)
     return S_OK;
-  
   UInt64 totalSize = 0;
   UInt32 i;
-
   for (i = 0; i < numItems; i++)
   {
     const UInt32 index = allFilesMode ? i : indices[i];
@@ -2718,21 +2718,21 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     if (!node.IsDir())
       totalSize += node.FileSize;
   }
-  
   RINOK(extractCallback->SetTotal(totalSize))
+
+  NCompress::CCopyCoderBase copyCoder;
+  CMyComPtr2_Create<ICompressProgressInfo, CLocalProgress> lps;
+  lps->Init(extractCallback, false);
 
   UInt64 totalPackSize;
   totalSize = totalPackSize = 0;
   
-  CMyComPtr2_Create<ICompressProgressInfo, CLocalProgress> lps;
-  lps->Init(extractCallback, false);
-  CMyComPtr2_Create<ICompressCoder, NCompress::CCopyCoder> copyCoder;
-
   for (i = 0;; i++)
   {
-    lps->InSize = totalPackSize;
-    lps->OutSize = totalSize;
-    RINOK(lps->SetCur())
+    CLocalProgress *lps2 = lps.ClsPtr();
+    lps2->InSize = totalPackSize;
+    lps2->OutSize = totalSize;
+    RINOK(lps2->SetCur())
     if (i >= numItems)
       break;
 
@@ -2788,10 +2788,10 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
       {
         RINOK(hres)
         {
-          hres = copyCoder.Interface()->Code(inSeqStream, outStream, NULL, NULL, lps);
+          hres = copyCoder.Code(inSeqStream, outStream, NULL, lps);
           if (hres == S_OK)
           {
-            if (copyCoder->TotalSize == unpackSize)
+            if (copyCoder.TotalSize == unpackSize)
               opRes = NExtract::NOperationResult::kOK;
           }
           else if (hres == E_NOTIMPL)

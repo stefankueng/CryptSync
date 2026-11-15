@@ -64,10 +64,10 @@ inline unsigned MyStringLen(const char *s)
 
 inline void MyStringCopy(char *dest, const char *src)
 {
-  while ((*dest++ = *src++) != 0);
+  do {} while ((*dest++ = *src++) != 0);
 }
 
-inline char *MyStpCpy(char *dest, const char *src)
+inline char *MyStpCpy(char *dest Z7_lifetimebound, const char *src)
 {
   for (;;)
   {
@@ -96,7 +96,7 @@ inline unsigned MyStringLen(const wchar_t *s)
 
 inline void MyStringCopy(wchar_t *dest, const wchar_t *src)
 {
-  while ((*dest++ = *src++) != 0);
+  do {} while ((*dest++ = *src++) != 0);
 }
 
 inline void MyStringCat(wchar_t *dest, const wchar_t *src)
@@ -429,11 +429,11 @@ public:
   // int CompareNoCase(const char *s) const { return MyStringCompareNoCase(_chars, s); }
   // int CompareNoCase(const AString &s) const { return MyStringCompareNoCase(_chars, s._chars); }
   bool IsPrefixedBy(const char *s) const { return IsString1PrefixedByString2(_chars, s); }
-  bool IsPrefixedBy_Ascii_NoCase(const char *s) const throw();
+  bool IsPrefixedBy_Ascii_NoCase(const char *s) const { return IsString1PrefixedByString2_NoCase_Ascii(_chars, s); }
  
   bool IsAscii() const
   {
-    unsigned len = Len();
+    const unsigned len = Len();
     const char *s = _chars;
     for (unsigned i = 0; i < len; i++)
       if ((unsigned char)s[i] >= 0x80)
@@ -727,22 +727,23 @@ public:
   // int CompareNoCase(const wchar_t *s) const { return MyStringCompareNoCase(_chars, s); }
   // int CompareNoCase(const UString &s) const { return MyStringCompareNoCase(_chars, s._chars); }
   bool IsPrefixedBy(const wchar_t *s) const { return IsString1PrefixedByString2(_chars, s); }
+  bool IsPrefixedBy(const char *s) const { return IsString1PrefixedByString2(_chars, s); }
   bool IsPrefixedBy_NoCase(const wchar_t *s) const { return IsString1PrefixedByString2_NoCase(_chars, s); }
-  bool IsPrefixedBy_Ascii_NoCase(const char *s) const throw();
+  bool IsPrefixedBy_Ascii_NoCase(const char *s) const { return IsString1PrefixedByString2_NoCase_Ascii(_chars, s); }
 
   bool IsAscii() const
   {
-    unsigned len = Len();
+    const unsigned len = Len();
     const wchar_t *s = _chars;
     for (unsigned i = 0; i < len; i++)
-      if (s[i] >= 0x80)
+      if ((unsigned)(int)s[i] >= 0x80)
         return false;
     return true;
   }
   int Find(wchar_t c) const { return FindCharPosInString(_chars, c); }
   int Find(wchar_t c, unsigned startIndex) const
   {
-    int pos = FindCharPosInString(_chars + startIndex, c);
+    const int pos = FindCharPosInString(_chars + startIndex, c);
     return pos < 0 ? -1 : (int)startIndex + pos;
   }
 

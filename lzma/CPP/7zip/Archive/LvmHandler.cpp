@@ -755,6 +755,8 @@ HRESULT CHandler::Open2(IInStream *stream)
     const size_t sizeT = (size_t)size;
     if (sizeT != size)
       return S_FALSE;
+    if (sizeT < kSectorSize)
+      return S_FALSE;
     meta.Alloc(sizeT);
     RINOK(InStream_SeekSet(stream, offset))
     RINOK(ReadStream_FALSE(stream, meta, sizeT))
@@ -1048,8 +1050,6 @@ Z7_COM7F_IMF(CHandler::GetProperty(UInt32 index, PROPID propID, PROPVARIANT *val
   COM_TRY_BEGIN
   NCOM::CPropVariant prop;
 
-  const CItem &item = _items[index];
-
   // const CLogVol &item = _items[index];
 
   if (index >= _items.Size())
@@ -1068,6 +1068,7 @@ Z7_COM7F_IMF(CHandler::GetProperty(UInt32 index, PROPID propID, PROPVARIANT *val
   }
   else
   {
+    const CItem &item = _items[index];
     switch (propID)
     {
     case kpidPath:

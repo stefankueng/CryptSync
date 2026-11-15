@@ -887,6 +887,7 @@
     <ClInclude Include="CPP\7zip\Common\MultiOutStream.h" />
     <ClInclude Include="CPP\7zip\Compress\ZstdDecoder.h" />
     <ClInclude Include="CPP\Windows\PropVariantConv.h" />
+    <ClInclude Include="CPP\Windows\WinDefs.h" />
     <ClInclude Include="C\7zBuf.h" />
     <ClInclude Include="C\7zCrc.h" />
     <ClInclude Include="C\7zTypes.h" />
@@ -952,7 +953,6 @@
     <ClInclude Include="CPP\Common\StringToInt.h" />
     <ClInclude Include="CPP\Common\UTFConvert.h" />
     <ClInclude Include="CPP\Common\Wildcard.h" />
-    <ClInclude Include="CPP\Windows\Defs.h" />
     <ClInclude Include="CPP\Windows\FileDir.h" />
     <ClInclude Include="CPP\Windows\FileFind.h" />
     <ClInclude Include="CPP\Windows\FileIO.h" />

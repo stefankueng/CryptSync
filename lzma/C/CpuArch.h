@@ -31,7 +31,12 @@ MY_CPU_64BIT means that processor can work with 64-bit registers.
     #define MY_CPU_NAME "x32"
     #define MY_CPU_SIZEOF_POINTER 4
   #else
-    #define MY_CPU_NAME "x64"
+    #if defined(__APX_EGPR__) || defined(__EGPR__)
+      #define MY_CPU_NAME "x64-apx"
+      #define MY_CPU_AMD64_APX
+    #else
+      #define MY_CPU_NAME "x64"
+    #endif
     #define MY_CPU_SIZEOF_POINTER 8
   #endif
   #define MY_CPU_64BIT
@@ -45,6 +50,12 @@ MY_CPU_64BIT means that processor can work with 64-bit registers.
   #define MY_CPU_NAME "x86"
   /* #define MY_CPU_32BIT */
   #define MY_CPU_SIZEOF_POINTER 4
+#endif
+
+#if defined(__SSE2__) \
+    || defined(MY_CPU_AMD64) \
+    || defined(_M_IX86_FP) && (_M_IX86_FP >= 2)
+#define MY_CPU_SSE2
 #endif
 
 
@@ -198,6 +209,17 @@ MY_CPU_64BIT means that processor can work with 64-bit registers.
 #endif
 
 
+#if  defined(__s390__)
+#if  defined(__s390x__) || defined(__LP64__) || (defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8)
+  #define MY_CPU_NAME "s390x"
+  #define MY_CPU_SIZEOF_POINTER 8
+#else
+  #define MY_CPU_NAME "s390"
+  #define MY_CPU_SIZEOF_POINTER 4
+#endif
+#endif
+
+
 // #undef MY_CPU_NAME
 // #undef MY_CPU_SIZEOF_POINTER
 // #define __e2k__
@@ -243,11 +265,12 @@ MY_CPU_64BIT means that processor can work with 64-bit registers.
 #endif
 
 
+// _LITTLE_ENDIAN macro can be defined for big-endian platform with some compilers
+ 
 #if defined(MY_CPU_X86_OR_AMD64) \
     || defined(MY_CPU_ARM_LE) \
     || defined(MY_CPU_ARM64_LE) \
     || defined(MY_CPU_IA64_LE) \
-    || defined(_LITTLE_ENDIAN) \
     || defined(__LITTLE_ENDIAN__) \
     || defined(__ARMEL__) \
     || defined(__THUMBEL__) \
@@ -353,6 +376,16 @@ MY_CPU_64BIT means that processor can work with 64-bit registers.
        | (((UInt32)(v) >>  8) & (UInt32)0xff00  ) \
        | (((UInt32)(v) >> 24)                   ))
 
+#define Z7_BSWAP64_CONST(v) \
+       ( ( ( (UInt64)(v)                           ) << 8 * 7 ) \
+       | ( ( (UInt64)(v) & ((UInt32)0xff << 8 * 1) ) << 8 * 5 ) \
+       | ( ( (UInt64)(v) & ((UInt32)0xff << 8 * 2) ) << 8 * 3 ) \
+       | ( ( (UInt64)(v) & ((UInt32)0xff << 8 * 3) ) << 8 * 1 ) \
+       | ( ( (UInt64)(v) >> 8 * 1 ) & ((UInt32)0xff << 8 * 3) ) \
+       | ( ( (UInt64)(v) >> 8 * 3 ) & ((UInt32)0xff << 8 * 2) ) \
+       | ( ( (UInt64)(v) >> 8 * 5 ) & ((UInt32)0xff << 8 * 1) ) \
+       | ( ( (UInt64)(v) >> 8 * 7 )                           ) \
+       )
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1300)
 
@@ -395,17 +428,7 @@ MY_CPU_64BIT means that processor can work with 64-bit registers.
        ))
 
 #define Z7_BSWAP32(v) Z7_BSWAP32_CONST(v)
-
-#define Z7_BSWAP64(v) \
-       ( ( ( (UInt64)(v)                           ) << 8 * 7 ) \
-       | ( ( (UInt64)(v) & ((UInt32)0xff << 8 * 1) ) << 8 * 5 ) \
-       | ( ( (UInt64)(v) & ((UInt32)0xff << 8 * 2) ) << 8 * 3 ) \
-       | ( ( (UInt64)(v) & ((UInt32)0xff << 8 * 3) ) << 8 * 1 ) \
-       | ( ( (UInt64)(v) >> 8 * 1 ) & ((UInt32)0xff << 8 * 3) ) \
-       | ( ( (UInt64)(v) >> 8 * 3 ) & ((UInt32)0xff << 8 * 2) ) \
-       | ( ( (UInt64)(v) >> 8 * 5 ) & ((UInt32)0xff << 8 * 1) ) \
-       | ( ( (UInt64)(v) >> 8 * 7 )                           ) \
-       )
+#define Z7_BSWAP64(v) Z7_BSWAP64_CONST(v)
 
 #endif
 
@@ -570,11 +593,17 @@ problem-4 : performace:
 #if defined(MY_CPU_BE)
 #define Z7_CONV_BE_TO_NATIVE_CONST32(v)  (v)
 #define Z7_CONV_LE_TO_NATIVE_CONST32(v)  Z7_BSWAP32_CONST(v)
+#define Z7_CONV_BE_TO_NATIVE_CONST64(v)  (v)
+#define Z7_CONV_LE_TO_NATIVE_CONST64(v)  Z7_BSWAP64_CONST(v)
 #define Z7_CONV_NATIVE_TO_BE_32(v)       (v)
+// #define Z7_GET_NATIVE16_FROM_2_BYTES(b0, b1)  ((b1) | ((b0) << 8))
 #elif defined(MY_CPU_LE)
 #define Z7_CONV_BE_TO_NATIVE_CONST32(v)  Z7_BSWAP32_CONST(v)
 #define Z7_CONV_LE_TO_NATIVE_CONST32(v)  (v)
+#define Z7_CONV_BE_TO_NATIVE_CONST64(v)  Z7_BSWAP64_CONST(v)
+#define Z7_CONV_LE_TO_NATIVE_CONST64(v)  (v)
 #define Z7_CONV_NATIVE_TO_BE_32(v)       Z7_BSWAP32(v)
+// #define Z7_GET_NATIVE16_FROM_2_BYTES(b0, b1)  ((b0) | ((b1) << 8))
 #else
 #error Stop_Compiling_Unknown_Endian_CONV
 #endif
@@ -588,8 +617,20 @@ problem-4 : performace:
 #define SetBe32a(p, v)   { *(UInt32 *)(void *)(p) = (v); }
 #define SetBe16a(p, v)   { *(UInt16 *)(void *)(p) = (v); }
 
+// gcc and clang for powerpc can transform load byte access to load reverse word access.
+// sp we can use byte access instead of word access. Z7_BSWAP64 cab be slow
+#if 1 && defined(Z7_CPU_FAST_BSWAP_SUPPORTED) && defined(MY_CPU_64BIT)
+#define GetUi64a(p)   Z7_BSWAP64 (*(const UInt64 *)(const void *)(p))
+#else
 #define GetUi64a(p)      GetUi64(p)
+#endif
+
+#if 1 && defined(Z7_CPU_FAST_BSWAP_SUPPORTED)
+#define GetUi32a(p)   Z7_BSWAP32 (*(const UInt32 *)(const void *)(p))
+#else
 #define GetUi32a(p)      GetUi32(p)
+#endif
+
 #define GetUi16a(p)      GetUi16(p)
 #define SetUi32a(p, v)   SetUi32(p, v)
 #define SetUi16a(p, v)   SetUi16(p, v)

@@ -43,7 +43,7 @@ CEncoder::~CEncoder()
 
 static inline wchar_t GetLowCharFast(wchar_t c)
 {
-  return c |= 0x20;
+  return (wchar_t)(c | 0x20);
 }
 
 static int ParseMatchFinder(const wchar_t *s, int *btMode, int *numHashBytes)
@@ -96,6 +96,24 @@ HRESULT SetLzmaProp(PROPID propID, const PROPVARIANT &prop, CLzmaEncProps &ep)
   {
     if (prop.vt == VT_UI8)
       ep.affinity = prop.uhVal.QuadPart;
+    else
+      return E_INVALIDARG;
+    return S_OK;
+  }
+
+  if (propID == NCoderPropID::kAffinityInGroup)
+  {
+    if (prop.vt == VT_UI8)
+      ep.affinityInGroup = prop.uhVal.QuadPart;
+    else
+      return E_INVALIDARG;
+    return S_OK;
+  }
+
+  if (propID == NCoderPropID::kThreadGroup)
+  {
+    if (prop.vt == VT_UI4)
+      ep.affinityGroup = (Int32)(UInt32)prop.ulVal;
     else
       return E_INVALIDARG;
     return S_OK;

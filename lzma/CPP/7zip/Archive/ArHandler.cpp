@@ -249,7 +249,7 @@ HRESULT CInArchive::GetNextItem(CItem &item, bool &filled)
   RIF(DecimalToNumber32(cur, kUserSize, item.User)) cur += kUserSize;
   RIF(DecimalToNumber32(cur, kUserSize, item.Group)) cur += kUserSize;
   RIF(OctalToNumber32(cur, kModeSize, item.Mode)) cur += kModeSize;
-  RIF(DecimalToNumber(cur, kSizeSize, item.Size)) cur += kSizeSize;
+  RIF(DecimalToNumber(cur, kSizeSize, item.Size)) // cur += kSizeSize;
 
   if (longNameLen != 0 && longNameLen <= item.Size)
   {
@@ -325,7 +325,7 @@ HRESULT CHandler::ParseLongNames(IInStream *stream)
 {
   unsigned i;
   for (i = 0; i < _items.Size(); i++)
-    if (_items[i].Name == "//")
+    if (_items[i].Name.IsEqualTo("//"))
       break;
   if (i == _items.Size())
     return S_OK;
@@ -378,7 +378,7 @@ void CHandler::ChangeDuplicateNames()
     if (item.Name[0] == '/')
       continue;
     CItem &prev = _items[i - 1];
-    if (item.Name == prev.Name)
+    if (item.Name.IsEqualTo(prev.Name))
     {
       if (prev.SameNameIndex < 0)
         prev.SameNameIndex = 0;
@@ -448,9 +448,9 @@ static UInt32 Get32(const Byte *p, unsigned be) { if (be) return GetBe32(p); ret
 HRESULT CHandler::ParseLibSymbols(IInStream *stream, unsigned fileIndex)
 {
   CItem &item = _items[fileIndex];
-  if (item.Name != "/" &&
-      item.Name != "__.SYMDEF"  &&
-      item.Name != "__.SYMDEF SORTED")
+  if (!item.Name.IsEqualTo("/") &&
+      !item.Name.IsEqualTo("__.SYMDEF")  &&
+      !item.Name.IsEqualTo("__.SYMDEF SORTED"))
     return S_OK;
   if (item.Size > ((UInt32)1 << 30) ||
       item.Size < 4)
@@ -462,7 +462,7 @@ HRESULT CHandler::ParseLibSymbols(IInStream *stream, unsigned fileIndex)
  
   size_t pos = 0;
 
-  if (item.Name != "/")
+  if (!item.Name.IsEqualTo("/"))
   {
     // "__.SYMDEF" parsing (BSD)
     unsigned be;
@@ -473,9 +473,11 @@ HRESULT CHandler::ParseLibSymbols(IInStream *stream, unsigned fileIndex)
       if (size - pos < tableSize || (tableSize & 7) != 0)
         continue;
       size_t namesStart = pos + tableSize;
+      if (size - namesStart < 4)
+        continue;
       const UInt32 namesSize = Get32(p.ConstData() + namesStart, be);
       namesStart += 4;
-      if (namesStart > size || namesStart + namesSize != size)
+      if (namesStart + namesSize != size)
         continue;
       
       const UInt32 numSymbols = tableSize >> 3;
@@ -509,7 +511,7 @@ HRESULT CHandler::ParseLibSymbols(IInStream *stream, unsigned fileIndex)
     
     for (UInt32 i = 0; i < numSymbols; i++)
     {
-      const UInt32 offset = GetBe32(p + 4 + i * 4);
+      const UInt32 offset = GetBe32(p + 4 + (size_t)i * 4);
       RINOK(AddFunc(offset, p, size, pos))
     }
     _type = kType_ALib;
@@ -534,11 +536,11 @@ HRESULT CHandler::ParseLibSymbols(IInStream *stream, unsigned fileIndex)
     
     for (UInt32 i = 0; i < numSymbols; i++)
     {
-      // index is 1-based. So 32-bit numSymbols field works as item[0]
-      const UInt32 index = GetUi16(p + indexStart + i * 2);
+      // index is 1-based. So 32-bit numMembers field works as item[0]
+      const UInt32 index = GetUi16(p + indexStart + (size_t)i * 2);
       if (index == 0 || index > numMembers)
         return S_FALSE;
-      const UInt32 offset = GetUi32(p + index * 4);
+      const UInt32 offset = GetUi32(p + (size_t)index * 4);
       RINOK(AddFunc(offset, p, size, pos))
     }
     _type = kType_Lib;
@@ -603,7 +605,7 @@ Z7_COM7F_IMF(CHandler::Open(IInStream *stream,
     if (_longNames_FileIndex >= 0)
       _items.Delete((unsigned)_longNames_FileIndex);
 
-    if (!_items.IsEmpty() && _items[0].Name == "debian-binary")
+    if (!_items.IsEmpty() && _items[0].Name.IsEqualTo("debian-binary"))
     {
       _type = kType_Deb;
       _items.DeleteFrontal(1);
@@ -758,21 +760,18 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
       (item.TextFileIndex >= 0) ?
         (UInt64)_libFiles[(unsigned)item.TextFileIndex].Len() : item.Size;
   }
-  extractCallback->SetTotal(totalSize);
+  RINOK(extractCallback->SetTotal(totalSize))
 
-  UInt64 currentTotalSize = 0;
-  
-  CMyComPtr2_Create<ICompressCoder, NCompress::CCopyCoder> copyCoder;
+  NCompress::CCopyCoderBase copyCoder;
   CMyComPtr2_Create<ICompressProgressInfo, CLocalProgress> lps;
   lps->Init(extractCallback, false);
 
-  CMyComPtr2_Create<ISequentialInStream, CLimitedSequentialInStream> inStream;
-  inStream->SetStream(_stream);
-
+  UInt64 currentTotalSize = 0;
   for (i = 0;; i++)
   {
-    lps->InSize = lps->OutSize = currentTotalSize;
-    RINOK(lps->SetCur())
+    CLocalProgress *lps2 = lps.ClsPtr();
+    lps2->InSize = lps2->OutSize = currentTotalSize;
+    RINOK(lps2->SetCur())
     if (i >= numItems)
       break;
     Int32 opRes;
@@ -805,9 +804,8 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     else
     {
       RINOK(InStream_SeekSet(_stream, item.GetDataPos()))
-      inStream->Init(item.Size);
-      RINOK(copyCoder.Interface()->Code(inStream, realOutStream, NULL, NULL, lps))
-      if (copyCoder->TotalSize != item.Size)
+      RINOK(copyCoder.Code(_stream, realOutStream, &item.Size, lps))
+      if (copyCoder.TotalSize != item.Size)
         opRes = NExtract::NOperationResult::kDataError;
     }
    }

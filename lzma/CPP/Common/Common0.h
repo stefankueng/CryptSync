@@ -94,6 +94,17 @@ predefined macros defined in "Common.h".
 #endif
 */
 
+#if defined(__has_cpp_attribute)
+  #if __has_cpp_attribute(msvc::lifetimebound)
+    #define Z7_lifetimebound [[msvc::lifetimebound]]
+  #elif __has_cpp_attribute(clang::lifetimebound)
+    #define Z7_lifetimebound [[clang::lifetimebound]]
+  #else
+    #define Z7_lifetimebound
+  #endif
+#else
+  #define Z7_lifetimebound
+#endif
 
 #if defined(__clang__)
 
@@ -126,8 +137,9 @@ if compiled with new GCC libstdc++, GCC libstdc++ can use:
 #pragma GCC diagnostic ignored "-Wglobal-constructors"
 #pragma GCC diagnostic ignored "-Wexit-time-destructors"
 
-#if defined(Z7_LLVM_CLANG_VERSION) && __clang_major__ >= 18 // 18.1.0RC
-#pragma GCC diagnostic ignored "-Wswitch-default"
+#if defined(Z7_LLVM_CLANG_VERSION) && __clang_major__ >= 18 /* 18.1.0RC */ \
+  || defined(Z7_APPLE_CLANG_VERSION) && __clang_major__ >= 16 // for APPLE=17 (LLVM=19)
+  #pragma GCC diagnostic ignored "-Wswitch-default"
 #endif
 // #pragma GCC diagnostic ignored "-Wunused-private-field"
 // #pragma GCC diagnostic ignored "-Wnonportable-system-include-path"
@@ -161,7 +173,7 @@ if compiled with new GCC libstdc++, GCC libstdc++ can use:
    So we can use Z7_ARRAY_NEW macro instead of new[] operator. */
 
 #if defined(_MSC_VER) && (_MSC_VER == 1200) && !defined(_WIN64)
-  #define Z7_ARRAY_NEW(p, T, size)  p = new T[((size) > 0xFFFFFFFFu / sizeof(T)) ? 0xFFFFFFFFu / sizeof(T) : (size)];
+  #define Z7_ARRAY_NEW(p, T, size)  p = new T[((size) > (0xFFFFFFFFu - 0x7fu) / sizeof(T)) ? (0xFFFFFFFFu - 0x7fu) / sizeof(T) : (size)];
 #else
   #define Z7_ARRAY_NEW(p, T, size)  p = new T[size];
 #endif

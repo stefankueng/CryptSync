@@ -6,8 +6,7 @@
 #include "../../Common/MyString.h"
 #include "../../Common/Defs.h"
 
-#include "../../Windows/Defs.h"
-
+#include "../../Windows/WinDefs.h"
 #include "../../Windows/PropVariant.h"
 
 #include "../ICoder.h"
@@ -80,7 +79,11 @@ struct CProps
   }
 
   HRESULT SetCoderProps(ICompressSetCoderProperties *scp, const UInt64 *dataSizeReduce = NULL) const;
-  HRESULT SetCoderProps_DSReduce_Aff(ICompressSetCoderProperties *scp, const UInt64 *dataSizeReduce, const UInt64 *affinity) const;
+  HRESULT SetCoderProps_DSReduce_Aff(ICompressSetCoderProperties *scp,
+      const UInt64 *dataSizeReduce,
+      const UInt64 *affinity,
+      const UInt32 *affinityGroup,
+      const UInt64 *affinityInGroup) const;
 };
 
 class CMethodProps: public CProps

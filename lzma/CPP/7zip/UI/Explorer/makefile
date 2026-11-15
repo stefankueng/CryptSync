@@ -7,8 +7,6 @@ CFLAGS = $(CFLAGS) \
 LIBS = $(LIBS) Commctrl.lib
 !ELSE
 LIBS = $(LIBS) htmlhelp.lib comdlg32.lib Mpr.lib Gdi32.lib
-# CFLAGS = $(CFLAGS) -DZ7_LONG_PATH
-# -DZ7_NO_LARGE_PAGES
 !ENDIF
 
 EXPLORER_OBJS = \
@@ -72,7 +70,7 @@ FM_OBJS = \
 
 C_OBJS = \
   $O\CpuArch.obj \
-  $O\Sort.obj \
   $O\Threads.obj \
 
+!include "../../Sort.mak"
 !include "../../7zip.mak"

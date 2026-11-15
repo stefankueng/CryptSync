@@ -396,8 +396,8 @@ static bool ParseDepedencyExpression(const Byte *p, UInt32 size, AString &res)
   res.Empty();
   for (UInt32 i = 0; i < size;)
   {
-    unsigned command = p[i++];
-    if (command > Z7_ARRAY_SIZE(kExpressionCommands))
+    const unsigned command = p[i++];
+    if (command >= Z7_ARRAY_SIZE(kExpressionCommands))
       return false;
     res += kExpressionCommands[command];
     if (command < 3)
@@ -674,7 +674,7 @@ AString CItem::GetName(int numChildsInParent) const
   const int numZeros = (int)strlen(sz2) - (int)strlen(sz);
   AString res;
   for (int i = 0; i < numZeros; i++)
-    res += '0';
+    res.Add_Char('0');
   res += sz;
   res.Add_Dot();
   res += Name;
@@ -956,7 +956,7 @@ HRESULT CHandler::ParseSections(unsigned bufIndex, UInt32 posBase, UInt32 size, 
     pos = (pos + 3) & ~(UInt32)3;
     if (pos > size)
       return S_FALSE;
-    UInt32 rem = size - pos;
+    const UInt32 rem = size - pos;
     if (rem == 0)
       return S_OK;
     if (rem < 4)
@@ -983,7 +983,7 @@ HRESULT CHandler::ParseSections(unsigned bufIndex, UInt32 posBase, UInt32 size, 
     item.BufIndex = bufIndex;
     item.Parent = parent;
     item.Offset = posBase + pos + 4;
-    UInt32 sectDataSize = sectSize - 4;
+    const UInt32 sectDataSize = sectSize - 4;
     item.Size = sectDataSize;
     item.Name = TYPE_PAIR_TO_STRING(g_SECTION_TYPE, type);
 
@@ -1200,7 +1200,7 @@ HRESULT CHandler::ParseSections(unsigned bufIndex, UInt32 posBase, UInt32 size, 
             if (s.Len() < (1 << 9))
             {
               s.InsertAtFront('[');
-              s += ']';
+              s.Add_Char(']');
               AddSpaceAndString(_items[item.Parent].Characts, s);
               needAdd = false;
             }
@@ -1426,10 +1426,10 @@ HRESULT CHandler::ParseVolume(
     
     item.Characts = fh.GetCharacts();
     // PrintLevel(level);
-    PRF(printf(" : %s", item.Characts));
+    PRF(printf(" : %s", item.Characts.Ptr()));
 
     {
-      PRF(printf(" attrib = %2d State = %3d ", (unsigned)fh.Attrib, (unsigned)fh.State));
+      PRF(printf(" attrib = %2u State = %3u ", (unsigned)fh.Attrib, (unsigned)fh.State));
       PRF(char s[64]);
       PRF(RawLeGuidToString(fh.GuidName, s));
       PRF(printf(" : %s ", s));
@@ -1592,7 +1592,7 @@ HRESULT CHandler::OpenCapsule(IInStream *stream)
   const unsigned bufIndex = AddBuf(_h.CapsuleImageSize);
   CByteBuffer &buf0 = _bufs[bufIndex];
   memcpy(buf0, buf, kHeaderSize);
-  ReadStream_FALSE(stream, buf0 + kHeaderSize, _h.CapsuleImageSize - kHeaderSize);
+  RINOK(ReadStream_FALSE(stream, buf0 + kHeaderSize, _h.CapsuleImageSize - kHeaderSize))
 
   AddCommentString("Author", _h.OffsetToAuthorInformation);
   AddCommentString("Revision", _h.OffsetToRevisionInformation);
@@ -1774,16 +1774,17 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
   for (i = 0; i < numItems; i++)
     totalSize += _items[_items2[allFilesMode ? i : indices[i]].MainIndex].Size;
   RINOK(extractCallback->SetTotal(totalSize))
-  totalSize = 0;
   
+  NCompress::CCopyCoderBase copyCoder;
   CMyComPtr2_Create<ICompressProgressInfo, CLocalProgress> lps;
   lps->Init(extractCallback, false);
-  CMyComPtr2_Create<ICompressCoder, NCompress::CCopyCoder> copyCoder;
 
+  totalSize = 0;
   for (i = 0;; i++)
   {
-    lps->InSize = lps->OutSize = totalSize;
-    RINOK(lps->SetCur())
+    CLocalProgress *lps2 = lps.ClsPtr();
+    lps2->InSize = lps2->OutSize = totalSize;
+    RINOK(lps2->SetCur())
     if (i >= numItems)
       break;
     Int32 opRes;
@@ -1808,8 +1809,8 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
         GetStream(index, &inStream);
         if (inStream)
         {
-          RINOK(copyCoder.Interface()->Code(inStream, realOutStream, NULL, NULL, lps))
-          if (copyCoder->TotalSize == item.Size)
+          RINOK(copyCoder.Code(inStream, realOutStream, NULL, lps))
+          if (copyCoder.TotalSize == item.Size)
             opRes = NExtract::NOperationResult::kOK;
         }
       }

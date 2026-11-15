@@ -142,14 +142,13 @@ MY_MKDIR=mkdir
 DEL_OBJ_EXE = -$(RM) $(O)\*.o $(O)\$(PROG).exe $(O)\$(PROG).dll
 endif
 
-LIB2_GUI = -lOle32 -lGdi32 -lComctl32 -lComdlg32 -lShell32 $(LIB_HTMLHELP)
-LIB2 = -loleaut32 -luuid -ladvapi32 -lUser32 $(LIB2_GUI)
+LIB2_GUI = -lole32 -lgdi32 -lcomctl32 -lcomdlg32 -lshell32 $(LIB_HTMLHELP)
+LIB2 = -loleaut32 -luuid -ladvapi32 -luser32 $(LIB2_GUI)
 
 # v24.00: -DUNICODE and -D_UNICODE are defined in precompilation header files
 # CXXFLAGS_EXTRA = -DUNICODE -D_UNICODE
 # -Wno-delete-non-virtual-dtor
 
- 
 else
 
 RM = rm -f
@@ -250,8 +249,15 @@ endif
 
 endif
 
+ifdef MACOS_MODE
+VERSION_HDR = ../../../../C/7zVersion.h
+SRC_VER_MAJOR := $(shell awk '/\#define MY_VER_MAJOR/ {print $$3}' $(VERSION_HDR))
+SRC_VER_MINOR := $(shell awk '/\#define MY_VER_MINOR/ {print $$3}' $(VERSION_HDR))
+SRC_VER := $(SRC_VER_MAJOR).$(SRC_VER_MINOR)
+LFLAGS_SRC_VER := -Wl,-source_version,$(SRC_VER)
+endif
 
-LFLAGS_ALL = $(LFLAGS_STRIP) $(MY_ARCH_2) $(LDFLAGS) $(FLAGS_FLTO) $(LD_arch) $(LFLAGS_NOEXECSTACK) $(OBJS) $(MY_LIBS) $(LIB2)
+LFLAGS_ALL = $(LFLAGS_STRIP) $(MY_ARCH_2) $(LDFLAGS) $(FLAGS_FLTO) $(LD_arch) $(LFLAGS_NOEXECSTACK) $(LFLAGS_SRC_VER) $(OBJS) $(MY_LIBS) $(LIB2)
 
 # -s : GCC : Remove all symbol table and relocation information from the executable.
 # -s : CLANG : unsupported
@@ -1245,8 +1251,6 @@ $O/Sha512.o: ../../../../C/Sha512.c
 	$(CC) $(CFLAGS) $<
 $O/Sha512Opt.o: ../../../../C/Sha512Opt.c
 	$(CC) $(CFLAGS) $<
-$O/Sort.o: ../../../../C/Sort.c
-	$(CC) $(CFLAGS) $<
 $O/SwapBytes.o: ../../../../C/SwapBytes.c
 	$(CC) $(CFLAGS) $<
 $O/Xxh64.o: ../../../../C/Xxh64.c
@@ -1285,6 +1289,8 @@ $O/Sha1Opt.o: ../../../../Asm/x86/Sha1Opt.asm
 	$(MY_ASM) $(AFLAGS) $<
 $O/Sha256Opt.o: ../../../../Asm/x86/Sha256Opt.asm
 	$(MY_ASM) $(AFLAGS) $<
+$O/Sort.o: ../../../../Asm/x86/Sort.asm
+	$(MY_ASM) $(AFLAGS) $<
 
 ifndef USE_JWASM
 USE_X86_ASM_AES=1
@@ -1298,6 +1304,8 @@ $O/XzCrc64Opt.o: ../../../../C/XzCrc64Opt.c
 $O/Sha1Opt.o: ../../../../C/Sha1Opt.c
 	$(CC) $(CFLAGS) $<
 $O/Sha256Opt.o: ../../../../C/Sha256Opt.c
+	$(CC) $(CFLAGS) $<
+$O/Sort.o: ../../../../C/Sort.c
 	$(CC) $(CFLAGS) $<
 endif
 

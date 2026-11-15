@@ -1,5 +1,5 @@
 /* Lzma2Enc.c -- LZMA2 Encoder
-2023-04-13 : Igor Pavlov : Public domain */
+: Igor Pavlov : Public domain */
 
 #include "Precomp.h"
 
@@ -129,11 +129,10 @@ UInt32 LzmaEnc_GetNumAvailableBytes(CLzmaEncHandle p);
 static SRes Lzma2EncInt_EncodeSubblock(CLzma2EncInt *p, Byte *outBuf,
     size_t *packSizeRes, ISeqOutStreamPtr outStream)
 {
-  size_t packSizeLimit = *packSizeRes;
+  const size_t packSizeLimit = *packSizeRes;
   size_t packSize = packSizeLimit;
   UInt32 unpackSize = LZMA2_UNPACK_SIZE_MAX;
-  unsigned lzHeaderSize = 5 + (p->needInitProp ? 1 : 0);
-  BoolInt useCopyBlock;
+  const unsigned lzHeaderSize = 5 + (p->needInitProp ? 1 : 0);
   SRes res;
 
   *packSizeRes = 0;
@@ -150,22 +149,13 @@ static SRes Lzma2EncInt_EncodeSubblock(CLzma2EncInt *p, Byte *outBuf,
   if (unpackSize == 0)
     return res;
 
-  if (res == SZ_OK)
-    useCopyBlock = (packSize + 2 >= unpackSize || packSize > (1 << 16));
-  else
-  {
-    if (res != SZ_ERROR_OUTPUT_EOF)
-      return res;
-    res = SZ_OK;
-    useCopyBlock = True;
-  }
-
-  if (useCopyBlock)
+  if (res == SZ_ERROR_OUTPUT_EOF
+      || (res == SZ_OK && (packSize + 2 >= unpackSize || packSize > (1 << 16))))
   {
     size_t destPos = 0;
     PRF(printf("################# COPY           "));
 
-    while (unpackSize > 0)
+    while (unpackSize)
     {
       const UInt32 u = (unpackSize < LZMA2_COPY_CHUNK_SIZE) ? unpackSize : LZMA2_COPY_CHUNK_SIZE;
       if (packSizeLimit - destPos < u + 3)
@@ -194,6 +184,8 @@ static SRes Lzma2EncInt_EncodeSubblock(CLzma2EncInt *p, Byte *outBuf,
     return SZ_OK;
   }
 
+  if (res != SZ_OK)
+    return res;
   {
     size_t destPos = 0;
     const UInt32 u = unpackSize - 1;
@@ -235,6 +227,7 @@ void Lzma2EncProps_Init(CLzma2EncProps *p)
   p->numBlockThreads_Reduced = -1;
   p->numBlockThreads_Max = -1;
   p->numTotalThreads = -1;
+  p->numThreadGroups = 0;
 }
 
 void Lzma2EncProps_Normalize(CLzma2EncProps *p)
@@ -781,6 +774,7 @@ SRes Lzma2Enc_Encode2(CLzma2EncHandle p,
     }
 
     p->mtCoder.numThreadsMax = (unsigned)p->props.numBlockThreads_Max;
+    p->mtCoder.numThreadGroups = p->props.numThreadGroups;
     p->mtCoder.expectedDataSize = p->expectedDataSize;
     
     {

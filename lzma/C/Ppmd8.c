@@ -1,5 +1,5 @@
 /* Ppmd8.c -- PPMdI codec
-2023-09-07 : Igor Pavlov : Public domain
+: Igor Pavlov : Public domain
 This code is based on PPMd var.I (2002): Dmitry Shkarin : Public domain */
 
 #include "Precomp.h"
@@ -646,7 +646,7 @@ static CPpmd_Void_Ref CutOff(CPpmd8 *p, PPMD8_CTX_PTR ctx, unsigned order)
         Ppmd8_InsertNode(p, stats, indx);
       else
         p->UnitsStart += U2B(I2U(indx));
-      stats = ptr;
+      stats = (CPpmd_State *)ptr;
     }
   }
 
@@ -885,9 +885,9 @@ static PPMD8_CTX_PTR Ppmd8_CreateSuccessors(CPpmd8 *p, BoolInt skip, CPpmd_State
       if (s->Freq < MAX_FREQ - 9) { s->Freq++; c->Union2.SummFreq++; }
     }
     else
-    {
+    { const unsigned temp = !SUFFIX(c)->NumStats;
       s = ONE_STATE(c);
-      s->Freq = (Byte)(s->Freq + (!SUFFIX(c)->NumStats & (s->Freq < 24)));
+      s->Freq = (Byte)(s->Freq + (temp & (s->Freq < 24)));
     }
     successor = SUCCESSOR(s);
     if (successor != upBranch)

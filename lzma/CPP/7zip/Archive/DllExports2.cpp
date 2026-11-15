@@ -28,8 +28,7 @@
 #define NT_CHECK_FAIL_ACTION return FALSE;
 #endif
 
-static
-HINSTANCE g_hInstance;
+// static HINSTANCE g_hInstance;
 
 extern "C"
 BOOL WINAPI DllMain(
@@ -47,12 +46,12 @@ BOOL WINAPI DllMain(
   #else
   HINSTANCE
   #endif
-  hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
+  /* hInstance */, DWORD dwReason, LPVOID /*lpReserved*/)
 {
   if (dwReason == DLL_PROCESS_ATTACH)
   {
     // OutputDebugStringA("7z.dll DLL_PROCESS_ATTACH");
-    g_hInstance = (HINSTANCE)hInstance;
+    // g_hInstance = (HINSTANCE)hInstance;
     NT_CHECK
   }
   /*
@@ -105,15 +104,25 @@ STDAPI CreateObject(const GUID *clsid, const GUID *iid, void **outObject)
   // COM_TRY_END
 }
 
+STDAPI SetLargePageMode2(UInt32 flags, size_t pageSize, size_t threshold);
+STDAPI SetLargePageMode2(UInt32 flags, size_t pageSize, size_t threshold)
+{
+  #ifdef Z7_LARGE_PAGES
+  if (pageSize & (pageSize - 1))
+    return E_INVALIDARG;
+  z7_LargePage_Set(flags, pageSize, threshold);
+  #else
+  UNUSED_VAR(flags)
+  UNUSED_VAR(pageSize)
+  UNUSED_VAR(threshold)
+  #endif
+  return S_OK;
+}
+
 STDAPI SetLargePageMode();
 STDAPI SetLargePageMode()
 {
-  #if defined(Z7_LARGE_PAGES)
-  #ifdef _WIN32
-  SetLargePageSize();
-  #endif
-  #endif
-  return S_OK;
+  return SetLargePageMode2(0, 0, 0); // default values
 }
 
 extern bool g_CaseSensitive;

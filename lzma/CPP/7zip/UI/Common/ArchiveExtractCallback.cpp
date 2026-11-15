@@ -6,11 +6,9 @@
 #undef printf
 
 // #include <stdio.h>
-// #include "../../../../C/CpuTicks.h"
 
 #include "../../../../C/Alloc.h"
 #include "../../../../C/CpuArch.h"
-
 
 #include "../../../Common/ComTry.h"
 #include "../../../Common/IntToString.h"
@@ -33,6 +31,8 @@
 #include "../../Common/FilePathAutoRename.h"
 #include "../../Common/StreamUtils.h"
 
+#include "../../Archive/Common/ItemNameUtils.h"
+
 #include "../Common/ExtractingFilePath.h"
 #include "../Common/PropIDUtils.h"
 
@@ -54,6 +54,23 @@ static const char * const kCantSetFileLen = "Cannot set length for output file";
 #ifdef SUPPORT_LINKS
 static const char * const kCantCreateHardLink = "Cannot create hard link";
 static const char * const kCantCreateSymLink = "Cannot create symbolic link";
+static const char * const k_HardLink_to_SymLink_Ignored = "Hard link to symbolic link was ignored";
+static const char * const k_CantDelete_File_for_SymLink = "Cannot delete file for symbolic link creation";
+static const char * const k_CantDelete_Dir_for_SymLink = "Cannot delete directory for symbolic link creation";
+#endif
+
+static const unsigned k_LinkDataSize_LIMIT = 1 << 12;
+
+#ifdef SUPPORT_LINKS
+#if WCHAR_PATH_SEPARATOR != L'/'
+  // we convert linux slashes to windows slashes for further processing.
+  // also we convert linux backslashes to BackslashReplacement character.
+  #define REPLACE_SLASHES_from_Linux_to_Sys(s) \
+    { NArchive::NItemName::ReplaceToWinSlashes(s, true); }  // useBackslashReplacement
+      // { s.Replace(L'/', WCHAR_PATH_SEPARATOR); }
+#else
+  #define REPLACE_SLASHES_from_Linux_to_Sys(s)
+#endif
 #endif
 
 #ifndef Z7_SFX
@@ -144,7 +161,9 @@ static const char * const k_ZoneId_StreamName_With_Colon_Prefix = ":Zone.Identif
 
 bool Is_ZoneId_StreamName(const wchar_t *s)
 {
-  return StringsAreEqualNoCase_Ascii(s, k_ZoneId_StreamName_With_Colon_Prefix + 1);
+  UString s2 = s;
+  Correct_AltStream_Name(s2);
+  return StringsAreEqualNoCase_Ascii(s2, k_ZoneId_StreamName_With_Colon_Prefix + 1);
 }
 
 void ReadZoneFile_Of_BaseFile(CFSTR fileName, CByteBuffer &buf)
@@ -217,7 +236,7 @@ HRESULT CArchiveExtractCallback::PrepareHardLinks(const CRecordVector<UInt32> *r
   if (!_arc->Ask_INode)
     return S_OK;
   
-  IInArchive *archive = _arc->Archive;
+  IInArchive * const archive = _arc->Archive;
   CRecordVector<CHardLinkNode> &hardIDs = _hardLinks.IDs;
 
   {
@@ -313,13 +332,14 @@ void CArchiveExtractCallback::Init(
   _outFileStream.Release();
   _bufPtrSeqOutStream.Release();
   
-  #ifdef SUPPORT_LINKS
+#ifdef SUPPORT_LINKS
   _hardLinks.Clear();
-  #endif
+  _postLinks.Clear();
+#endif
 
-  #ifdef SUPPORT_ALT_STREAMS
+#ifdef SUPPORT_ALT_STREAMS
   _renamedFiles.Clear();
-  #endif
+#endif
 
   _ntOptions = ntOptions;
   _wildcardCensor = wildcardCensor;
@@ -340,31 +360,25 @@ void CArchiveExtractCallback::Init(
   _folderArchiveExtractCallback2.Release();
   _extractCallback2.QueryInterface(IID_IFolderArchiveExtractCallback2, &_folderArchiveExtractCallback2);
 
-  #ifndef Z7_SFX
-
+#ifndef Z7_SFX
+  _baseParentFolder = (UInt32)(Int32)-1;
+  _use_baseParentFolder_mode = false;
   ExtractToStreamCallback.Release();
   _extractCallback2.QueryInterface(IID_IFolderExtractToStreamCallback, &ExtractToStreamCallback);
   if (ExtractToStreamCallback)
   {
     Int32 useStreams = 0;
-    if (ExtractToStreamCallback->UseExtractToStream(&useStreams) != S_OK)
-      useStreams = 0;
-    if (useStreams == 0)
+    if (ExtractToStreamCallback->UseExtractToStream(&useStreams) != S_OK
+        || useStreams == 0)
       ExtractToStreamCallback.Release();
   }
-  
-  #endif
+#endif
 
   LocalProgressSpec->Init(extractCallback2, true);
   LocalProgressSpec->SendProgress = false;
  
   _removePathParts = removePathParts;
   _removePartsForAltStreams = removePartsForAltStreams;
-
-  #ifndef Z7_SFX
-  _baseParentFolder = (UInt32)(Int32)-1;
-  _use_baseParentFolder_mode = false;
-  #endif
 
   _arc = arc;
   _dirPathPrefix = directoryPath;
@@ -442,24 +456,20 @@ Z7_COM7F_IMF(CArchiveExtractCallback::SetRatioInfo(const UInt64 *inSize, const U
 }
 
 
-void CArchiveExtractCallback::CreateComplexDirectory(const UStringVector &dirPathParts, FString &fullPath)
+void CArchiveExtractCallback::CreateComplexDirectory(
+    const UStringVector &dirPathParts, bool isFinal, FString &fullPath)
 {
   // we use (_item.IsDir) in this function
-
   bool isAbsPath = false;
-  
   if (!dirPathParts.IsEmpty())
   {
     const UString &s = dirPathParts[0];
     if (s.IsEmpty())
       isAbsPath = true;
-    #if defined(_WIN32) && !defined(UNDER_CE)
-    else
-    {
-      if (NName::IsDrivePath2(s))
-        isAbsPath = true;
-    }
-    #endif
+#if defined(_WIN32) && !defined(UNDER_CE)
+    else if (NName::IsDrivePath2(s))
+      isAbsPath = true;
+#endif
   }
   
   if (_pathMode == NExtract::NPathMode::kAbsPaths && isAbsPath)
@@ -474,39 +484,75 @@ void CArchiveExtractCallback::CreateComplexDirectory(const UStringVector &dirPat
     const UString &s = dirPathParts[i];
     fullPath += us2fs(s);
 
-    const bool isFinalDir = (i == dirPathParts.Size() - 1 && _item.IsDir);
+    const bool isFinalDir = (i == dirPathParts.Size() - 1 && isFinal && _item.IsDir);
     
-    if (fullPath.IsEmpty())
+    if (fullPath.IsEmpty()
+#if defined(_WIN32) && !defined(UNDER_CE)
+          || (_pathMode == NExtract::NPathMode::kAbsPaths
+              && i == 0 && s.Len() == 2 && NName::IsDrivePath2(s))
+#endif
+        )
     {
       if (isFinalDir)
-        _itemFailure = true;
+        _itemFailure = true; // we don't want to set attributes for root (or root drive) path
       continue;
     }
 
-    #if defined(_WIN32) && !defined(UNDER_CE)
-    if (_pathMode == NExtract::NPathMode::kAbsPaths)
-      if (i == 0 && s.Len() == 2 && NName::IsDrivePath2(s))
+    // bool need_SetAttrib = isFinalDir;
+    if (!isFinalDir || !NFile::NFind::DoesDirExist(fullPath))
+    {
+      HRESULT hres = S_OK;
+#ifdef _WIN32
+      if (!CreateDir(fullPath))
+        hres = GetLastError_noZero_HRESULT();
+#else
+      mode_t mode = g_umask.mask;
+      if (isFinalDir && _fi.Attrib_Defined)
+      {
+        const UInt32 attrib = _fi.Attrib;
+        if (attrib & FILE_ATTRIBUTE_UNIX_EXTENSION)
+        {
+          mode = attrib >> 16;
+          if (S_ISDIR(mode))
+            mode |= (S_IRUSR | S_IWUSR | S_IXUSR); // user/7z must be able to create files in this directory
+          else
+          {
+            // we do not want to use attributes, if it's not directory type.
+            // SendMessageError("is not directory type in metadata", fullPath);
+            mode = g_umask.mask;
+          }
+          mode &= g_umask.mask;
+        }
+      }
+      // printf("\n mkdir mode = %o\n", (unsigned)mode);
+      if (mkdir(fullPath, mode) == 0)
       {
         if (isFinalDir)
-        {
-          // we don't want to call SetAttrib() for root drive path
-          _itemFailure = true;
-        }
-        continue;
+          _dirAttrib_wasSet = true;
+        // printf("\n mkdir OK\n");
+        // need_SetAttrib = false;
       }
-    #endif
+      else
+        hres = GetLastError_noZero_HRESULT();
+#endif
 
-    HRESULT hres = S_OK;
-    if (!CreateDir(fullPath))
-      hres = GetLastError_noZero_HRESULT();
-    if (isFinalDir)
-    {
-      if (!NFile::NFind::DoesDirExist(fullPath))
+      if (isFinalDir && !NFile::NFind::DoesDirExist(fullPath))
       {
         _itemFailure = true;
         SendMessageError_with_Error(hres, "Cannot create folder", fullPath);
+        // need_SetAttrib = false;
       }
     }
+    /*
+    // this code doesn't process item excluded by "Eliminate duplication of root folder"
+    // so we will set attributes later
+    if (need_SetAttrib)
+    {
+      // printf("\n SetAttrib \n");
+      SetAttrib(fullPath);
+      _dirAttrib_wasSet = true;
+    }
+    */
   }
 }
 
@@ -535,7 +581,7 @@ static void AddPathToMessage(UString &s, const FString &path)
   s += fs2us(path);
 }
 
-HRESULT CArchiveExtractCallback::SendMessageError(const char *message, const FString &path)
+HRESULT CArchiveExtractCallback::SendMessageError(const char *message, const FString &path) const
 {
   UString s (message);
   AddPathToMessage(s, path);
@@ -543,7 +589,7 @@ HRESULT CArchiveExtractCallback::SendMessageError(const char *message, const FSt
 }
 
 
-HRESULT CArchiveExtractCallback::SendMessageError_with_Error(HRESULT errorCode, const char *message, const FString &path)
+HRESULT CArchiveExtractCallback::SendMessageError_with_Error(HRESULT errorCode, const char *message, const FString &path) const
 {
   UString s (message);
   if (errorCode != S_OK)
@@ -555,13 +601,13 @@ HRESULT CArchiveExtractCallback::SendMessageError_with_Error(HRESULT errorCode, 
   return _extractCallback2->MessageError(s);
 }
 
-HRESULT CArchiveExtractCallback::SendMessageError_with_LastError(const char *message, const FString &path)
+HRESULT CArchiveExtractCallback::SendMessageError_with_LastError(const char *message, const FString &path) const
 {
   const HRESULT errorCode = GetLastError_noZero_HRESULT();
   return SendMessageError_with_Error(errorCode, message, path);
 }
 
-HRESULT CArchiveExtractCallback::SendMessageError2(HRESULT errorCode, const char *message, const FString &path1, const FString &path2)
+HRESULT CArchiveExtractCallback::SendMessageError2(HRESULT errorCode, const char *message, const FString &path1, const FString &path2) const
 {
   UString s (message);
   if (errorCode != 0)
@@ -572,6 +618,13 @@ HRESULT CArchiveExtractCallback::SendMessageError2(HRESULT errorCode, const char
   AddPathToMessage(s, path1);
   AddPathToMessage(s, path2);
   return _extractCallback2->MessageError(s);
+}
+
+HRESULT CArchiveExtractCallback::SendMessageError2_with_LastError(
+    const char *message, const FString &path1, const FString &path2) const
+{
+  const HRESULT errorCode = GetLastError_noZero_HRESULT();
+  return SendMessageError2(errorCode, message, path1, path2);
 }
 
 #ifndef Z7_SFX
@@ -604,38 +657,25 @@ Z7_COM7F_IMF(CGetProp::GetProp(PROPID propID, PROPVARIANT *value))
 #endif // Z7_SFX
 
 
-#ifdef SUPPORT_LINKS
-
-static UString GetDirPrefixOf(const UString &src)
-{
-  UString s (src);
-  if (!s.IsEmpty())
-  {
-    if (IsPathSepar(s.Back()))
-      s.DeleteBack();
-    int pos = s.ReverseFind_PathSepar();
-    s.DeleteFrom((unsigned)(pos + 1));
-  }
-  return s;
-}
-
-#endif // SUPPORT_LINKS
-
 struct CLinkLevelsInfo
 {
   bool IsAbsolute;
+  bool ParentDirDots_after_NonParent;
   int LowLevel;
   int FinalLevel;
 
-  void Parse(const UString &path);
+  void Parse(const UString &path, bool isWSL);
 };
 
-void CLinkLevelsInfo::Parse(const UString &path)
+void CLinkLevelsInfo::Parse(const UString &path, bool isWSL)
 {
-  IsAbsolute = NName::IsAbsolutePath(path);
-
+  IsAbsolute = isWSL ?
+      IS_PATH_SEPAR(path[0]) :
+      NName::IsAbsolutePath(path);
   LowLevel = 0;
   FinalLevel = 0;
+  ParentDirDots_after_NonParent = false;
+  bool nonParentDir = false;
 
   UStringVector parts;
   SplitPathToParts(path, parts);
@@ -650,32 +690,41 @@ void CLinkLevelsInfo::Parse(const UString &path)
         IsAbsolute = true;
       continue;
     }
-    if (s == L".")
+    if (s.IsEqualTo("."))
       continue;
-    if (s == L"..")
+    if (s.IsEqualTo(".."))
     {
+      if (IsAbsolute || nonParentDir)
+        ParentDirDots_after_NonParent = true;
       level--;
       if (LowLevel > level)
-        LowLevel = level;
+          LowLevel = level;
     }
     else
+    {
+      nonParentDir = true;
       level++;
+    }
   }
   
   FinalLevel = level;
 }
 
 
-bool IsSafePath(const UString &path);
-bool IsSafePath(const UString &path)
+static bool IsSafePath(const UString &path, bool isWSL)
 {
   CLinkLevelsInfo levelsInfo;
-  levelsInfo.Parse(path);
+  levelsInfo.Parse(path, isWSL);
   return !levelsInfo.IsAbsolute
       && levelsInfo.LowLevel >= 0
       && levelsInfo.FinalLevel > 0;
 }
 
+bool IsSafePath(const UString &path);
+bool IsSafePath(const UString &path)
+{
+  return IsSafePath(path, false); // isWSL
+}
 
 bool CensorNode_CheckPath2(const NWildcard::CCensorNode &node, const CReadArcItem &item, bool &include);
 bool CensorNode_CheckPath2(const NWildcard::CCensorNode &node, const CReadArcItem &item, bool &include)
@@ -791,169 +840,154 @@ HRESULT CArchiveExtractCallback::MyCopyFile(ISequentialOutStream *outStream)
 
 HRESULT CArchiveExtractCallback::ReadLink()
 {
-  IInArchive *archive = _arc->Archive;
+  IInArchive * const archive = _arc->Archive;
   const UInt32 index = _index;
-  _link.Clear();
-
+  // _link.Clear(); // _link.Clear() was called already.
   {
     NCOM::CPropVariant prop;
     RINOK(archive->GetProperty(index, kpidHardLink, &prop))
     if (prop.vt == VT_BSTR)
     {
-      _link.isHardLink = true;
-      // _link.isCopyLink = false;
+      _link.LinkType = k_LinkType_HardLink;
       _link.isRelative = false; // RAR5, TAR: hard links are from root folder of archive
-      _link.linkPath.SetFromBstr(prop.bstrVal);
+      _link.LinkPath.SetFromBstr(prop.bstrVal);
+      // 7-Zip 24-: tar handler returned original path (with linux slash in most case)
+      // 7-Zip 24-: rar5 handler returned path with system slash.
+      // 7-Zip 25+: tar/rar5 handlers return linux path in most cases.
     }
     else if (prop.vt != VT_EMPTY)
       return E_FAIL;
   }
-  
   /*
   {
     NCOM::CPropVariant prop;
     RINOK(archive->GetProperty(index, kpidCopyLink, &prop));
     if (prop.vt == VT_BSTR)
     {
-      _link.isHardLink = false;
-      _link.isCopyLink = true;
+      _link.LinkType = k_LinkType_CopyLink;
       _link.isRelative = false; // RAR5: copy links are from root folder of archive
-      _link.linkPath.SetFromBstr(prop.bstrVal);
+      _link.LinkPath.SetFromBstr(prop.bstrVal);
     }
     else if (prop.vt != VT_EMPTY)
       return E_FAIL;
   }
   */
-
   {
     NCOM::CPropVariant prop;
     RINOK(archive->GetProperty(index, kpidSymLink, &prop))
     if (prop.vt == VT_BSTR)
     {
-      _link.isHardLink = false;
-      // _link.isCopyLink = false;
-      _link.isRelative = true; // RAR5, TAR: symbolic links can be relative
-      _link.linkPath.SetFromBstr(prop.bstrVal);
+      _link.LinkType = k_LinkType_PureSymLink;
+      _link.isRelative = true; // RAR5, TAR: symbolic links are relative by default
+      _link.LinkPath.SetFromBstr(prop.bstrVal);
+      // 7-Zip 24-: (tar, cpio, xar, ext, iso) handlers returned returned original path (with linux slash in most case)
+      // 7-Zip 24-: rar5 handler returned path with system slash.
+      // 7-Zip 25+: all handlers return linux path in most cases.
     }
     else if (prop.vt != VT_EMPTY)
       return E_FAIL;
   }
 
-  NtReparse_Data = NULL;
-  NtReparse_Size = 0;
-
-  if (_link.linkPath.IsEmpty() && _arc->GetRawProps)
+  // linux path separator in (_link.LinkPath) is expected for most cases,
+  // if new handler code is used, and if data in archive is correct.
+  // NtReparse_Data = NULL;
+  // NtReparse_Size = 0;
+  if (!_link.LinkPath.IsEmpty())
+  {
+    REPLACE_SLASHES_from_Linux_to_Sys(_link.LinkPath)
+  }
+  else if (_arc->GetRawProps)
   {
     const void *data;
-    UInt32 dataSize;
-    UInt32 propType;
-    
-    _arc->GetRawProps->GetRawProp(_index, kpidNtReparse, &data, &dataSize, &propType);
-    
-    // if (dataSize == 1234567) // for debug: unpacking without reparse
-    if (dataSize != 0)
+    UInt32 dataSize, propType;
+    if (_arc->GetRawProps->GetRawProp(_index, kpidNtReparse, &data, &dataSize, &propType) == S_OK
+        // && dataSize == 1234567 // for debug: unpacking without reparse
+        && dataSize)
     {
       if (propType != NPropDataType::kRaw)
         return E_FAIL;
-  
       // 21.06: we need kpidNtReparse in linux for wim archives created in Windows
-      // #ifdef _WIN32
-
-      NtReparse_Data = data;
-      NtReparse_Size = dataSize;
-
-      CReparseAttr reparse;
-      bool isOkReparse = reparse.Parse((const Byte *)data, dataSize);
-      if (isOkReparse)
-      {
-        _link.isHardLink = false;
-        // _link.isCopyLink = false;
-        _link.linkPath = reparse.GetPath();
-        _link.isJunction = reparse.IsMountPoint();
-
-        if (reparse.IsSymLink_WSL())
-        {
-          _link.isWSL = true;
-          _link.isRelative = reparse.IsRelative_WSL();
-        }
-        else
-          _link.isRelative = reparse.IsRelative_Win();
-
-        // const AString s = GetAnsiString(_link.linkPath);
-        // printf("\n_link.linkPath: %s\n", s.Ptr());
-
-        #ifndef _WIN32
-        _link.linkPath.Replace(L'\\', WCHAR_PATH_SEPARATOR);
-        #endif
-      }
-      // #endif
+      // NtReparse_Data = data;
+      // NtReparse_Size = dataSize;
+      // we ignore error code here, if there is failure of parsing:
+      _link.Parse_from_WindowsReparseData((const Byte *)data, dataSize);
     }
   }
 
-  if (_link.linkPath.IsEmpty())
+  if (_link.LinkPath.IsEmpty())
     return S_OK;
-
+  // (_link.LinkPath) uses system path separator.
+  // windows: (_link.LinkPath) doesn't contain linux separator (slash).
   {
-    #ifdef _WIN32
-    _link.linkPath.Replace(L'/', WCHAR_PATH_SEPARATOR);
-    #endif
-
-    // rar5 uses "\??\" prefix for absolute links
-    if (_link.linkPath.IsPrefixedBy(WSTRING_PATH_SEPARATOR L"??" WSTRING_PATH_SEPARATOR))
+    // _link.LinkPath = "\\??\\r:\\1\\2"; // for debug
+    // rar5+ returns kpidSymLink absolute link path with "\??\" prefix.
+    // we normalize such prefix:
+    if (_link.LinkPath.IsPrefixedBy(STRING_PATH_SEPARATOR "??" STRING_PATH_SEPARATOR))
     {
       _link.isRelative = false;
-      _link.linkPath.DeleteFrontal(4);
-    }
-    
-    for (;;)
-    // while (NName::IsAbsolutePath(linkPath))
-    {
-      unsigned n = NName::GetRootPrefixSize(_link.linkPath);
-      if (n == 0)
-        break;
-      _link.isRelative = false;
-      _link.linkPath.DeleteFrontal(n);
-    }
-  }
-
-  if (_link.linkPath.IsEmpty())
-    return S_OK;
-
-  if (!_link.isRelative && _removePathParts.Size() != 0)
-  {
-    UStringVector pathParts;
-    SplitPathToParts(_link.linkPath, pathParts);
-    bool badPrefix = false;
-    FOR_VECTOR (i, _removePathParts)
-    {
-      if (CompareFileNames(_removePathParts[i], pathParts[i]) != 0)
+       // we normalize prefix from "\??\" to "\\?\":
+      _link.LinkPath.ReplaceOneCharAtPos(1, WCHAR_PATH_SEPARATOR);
+      _link.isWindowsPath = true;
+      if (_link.LinkPath.IsPrefixedBy_Ascii_NoCase(
+          STRING_PATH_SEPARATOR
+          STRING_PATH_SEPARATOR "?"
+          STRING_PATH_SEPARATOR "UNC"
+          STRING_PATH_SEPARATOR))
       {
-        badPrefix = true;
-        break;
+         // we normalize prefix from "\\?\UNC\path" to "\\path":
+        _link.LinkPath.DeleteFrontal(6);
+        _link.LinkPath.ReplaceOneCharAtPos(0, WCHAR_PATH_SEPARATOR);
+      }
+      else
+      {
+        const unsigned k_prefix_Size = 4;
+        if (NName::IsDrivePath(_link.LinkPath.Ptr(k_prefix_Size)))
+          _link.LinkPath.DeleteFrontal(k_prefix_Size);
       }
     }
-    if (!badPrefix)
-      pathParts.DeleteFrontal(_removePathParts.Size());
-    _link.linkPath = MakePathFromParts(pathParts);
   }
-
-  /*
-  if (!_link.linkPath.IsEmpty())
-  {
-    printf("\n_link %s to -> %s\n", GetOemString(_item.Path).Ptr(), GetOemString(_link.linkPath).Ptr());
-  }
-  */
-
+  _link.Normalize_to_RelativeSafe(_removePathParts);
   return S_OK;
 }
 
 #endif // SUPPORT_LINKS
 
 
-#ifndef _WIN32
+#ifdef _WIN32
+
+#define SET_OWNER
+#define SET_NEED_SET_OWNER
+
+#else
+
+#define SET_OWNER  { SetOwner(); }
+#define SET_NEED_SET_OWNER { _needSetOwner = true; }
+
+void CArchiveExtractCallback::SetOwner()
+{
+  if (!_needSetOwner)
+    return;
+  _needSetOwner = false;
+  // we want to call chown() only for file itself.
+  // we don't want to follow link.
+  // if (_isSymLinkCreated) return;
+  const FString &path = _diskFilePath;
+  if (_itemFailure
+      || path.IsEmpty()
+      || _stdOutMode
+      || !_extractMode)
+    return;
+  if (_fi.Owner.Id_Defined &&
+      _fi.Group.Id_Defined)
+  {
+    // printf("\n SetOwner() %s\n", path.Ptr());
+    if (my_chown(path, _fi.Owner.Id, _fi.Group.Id) != 0)
+      SendMessageError_with_LastError("Cannot set owner", path);
+  }
+}
 
 static HRESULT GetOwner(IInArchive *archive,
-    UInt32 index, UInt32 pidName, UInt32 pidId, COwnerInfo &res)
+    UInt32 index, UInt32 pidName, UInt32 pidId, CProcessedFileInfo::COwnerInfo &res)
 {
   {
     NWindows::NCOM::CPropVariant prop;
@@ -961,7 +995,7 @@ static HRESULT GetOwner(IInArchive *archive,
     if (prop.vt == VT_UI4)
     {
       res.Id_Defined = true;
-      res.Id = prop.ulVal; // for debug
+      res.Id = prop.ulVal;
       // res.Id++; // for debug
       // if (pidId == kpidGroupId) res.Id += 7; // for debug
       // res.Id = 0; // for debug
@@ -993,7 +1027,7 @@ static HRESULT GetOwner(IInArchive *archive,
 
 HRESULT CArchiveExtractCallback::Read_fi_Props()
 {
-  IInArchive *archive = _arc->Archive;
+  IInArchive * const archive = _arc->Archive;
   const UInt32 index = _index;
 
   _fi.Attrib_Defined = false;
@@ -1033,7 +1067,7 @@ HRESULT CArchiveExtractCallback::Read_fi_Props()
  #ifndef _WIN32
   if (_ntOptions.ExtractOwner)
   {
-    // SendMessageError_with_LastError("_ntOptions.ExtractOwner", _diskFilePath);
+    // SendMessageError("_ntOptions.ExtractOwner", _diskFilePath);
     GetOwner(archive, index, kpidUser, kpidUserId, _fi.Owner);
     GetOwner(archive, index, kpidGroup, kpidGroupId, _fi.Group);
   }
@@ -1067,7 +1101,11 @@ void CArchiveExtractCallback::CorrectPathParts()
     {
       pathParts.AddNew();
       if (_removePartsForAltStreams || _pathMode == NExtract::NPathMode::kNoPathsAlt)
+      {
+        const UString s2 = Get_Correct_FsFile_Name(s);
+        s = s2;
         needColon = false;
+      }
     }
     #ifdef _WIN32
     else if (_pathMode == NExtract::NPathMode::kAbsPaths &&
@@ -1085,7 +1123,7 @@ void CArchiveExtractCallback::CorrectPathParts()
 }
 
 
-void CArchiveExtractCallback::GetFiTimesCAM(CFiTimesCAM &pt)
+static void GetFiTimesCAM(const CProcessedFileInfo &fi, CFiTimesCAM &pt, const CArc &arc)
 {
   pt.CTime_Defined = false;
   pt.ATime_Defined = false;
@@ -1093,27 +1131,27 @@ void CArchiveExtractCallback::GetFiTimesCAM(CFiTimesCAM &pt)
 
   // if (Write_MTime)
   {
-    if (_fi.MTime.Def)
+    if (fi.MTime.Def)
     {
-      _fi.MTime.Write_To_FiTime(pt.MTime);
+      fi.MTime.Write_To_FiTime(pt.MTime);
       pt.MTime_Defined = true;
     }
-    else if (_arc->MTime.Def)
+    else if (arc.MTime.Def)
     {
-      _arc->MTime.Write_To_FiTime(pt.MTime);
+      arc.MTime.Write_To_FiTime(pt.MTime);
       pt.MTime_Defined = true;
     }
   }
 
-  if (/* Write_CTime && */ _fi.CTime.Def)
+  if (/* Write_CTime && */ fi.CTime.Def)
   {
-    _fi.CTime.Write_To_FiTime(pt.CTime);
+    fi.CTime.Write_To_FiTime(pt.CTime);
     pt.CTime_Defined = true;
   }
 
-  if (/* Write_ATime && */ _fi.ATime.Def)
+  if (/* Write_ATime && */ fi.ATime.Def)
   {
-    _fi.ATime.Write_To_FiTime(pt.ATime);
+    fi.ATime.Write_To_FiTime(pt.ATime);
     pt.ATime_Defined = true;
   }
 }
@@ -1124,6 +1162,7 @@ void CArchiveExtractCallback::CreateFolders()
   // 21.04 : we don't change original (_item.PathParts) here
   UStringVector pathParts = _item.PathParts;
 
+  bool isFinal = true;
   // bool is_DirOp = false;
   if (!pathParts.IsEmpty())
   {
@@ -1133,12 +1172,15 @@ void CArchiveExtractCallback::CreateFolders()
                  but if we create dir item here, it's not problem. */
     if (!_item.IsDir
         #ifdef SUPPORT_LINKS
-        #ifndef WIN32
-          || !_link.linkPath.IsEmpty()
-        #endif
+        // #ifndef WIN32
+          || !_link.LinkPath.IsEmpty()
+        // #endif
         #endif
        )
+    {
       pathParts.DeleteBack();
+      isFinal = false; // last path part was excluded
+    }
     // else is_DirOp = true;
   }
     
@@ -1162,7 +1204,7 @@ void CArchiveExtractCallback::CreateFolders()
   */
 
   FString fullPathNew;
-  CreateComplexDirectory(pathParts, fullPathNew);
+  CreateComplexDirectory(pathParts, isFinal, fullPathNew);
 
   /*
   if (is_DirOp)
@@ -1183,12 +1225,12 @@ void CArchiveExtractCallback::CreateFolders()
     return;
 
   CDirPathTime pt;
-  GetFiTimesCAM(pt);
+  GetFiTimesCAM(_fi, pt, *_arc);
  
   if (pt.IsSomeTimeDefined())
   {
     pt.Path = fullPathNew;
-    pt.SetDirTime();
+    pt.SetDirTime_to_FS_2();
     _extractedFolders.Add(pt);
   }
 }
@@ -1273,8 +1315,7 @@ HRESULT CArchiveExtractCallback::CheckExistFile(FString &fullProcessedPath, bool
       // MyMoveFile can rename folders. So it's OK to use it for folders too
       if (!MyMoveFile(fullProcessedPath, existPath))
       {
-        HRESULT errorCode = GetLastError_noZero_HRESULT();
-        RINOK(SendMessageError2(errorCode, kCantRenameFile, existPath, fullProcessedPath))
+        RINOK(SendMessageError2_with_LastError(kCantRenameFile, existPath, fullProcessedPath))
         return E_FAIL;
       }
     }
@@ -1331,9 +1372,11 @@ HRESULT CArchiveExtractCallback::CheckExistFile(FString &fullProcessedPath, bool
 
 
 
-
-
-
+/*
+return:
+  needExit = false: caller will     use (outStreamLoc) and _hashStreamSpec
+  needExit = true : caller will not use (outStreamLoc) and _hashStreamSpec.
+*/
 HRESULT CArchiveExtractCallback::GetExtractStream(CMyComPtr<ISequentialOutStream> &outStreamLoc, bool &needExit)
 {
   needExit = true;
@@ -1341,7 +1384,7 @@ HRESULT CArchiveExtractCallback::GetExtractStream(CMyComPtr<ISequentialOutStream
   RINOK(Read_fi_Props())
 
   #ifdef SUPPORT_LINKS
-  IInArchive *archive = _arc->Archive;
+  IInArchive * const archive = _arc->Archive;
   #endif
 
   const UInt32 index = _index;
@@ -1387,11 +1430,19 @@ HRESULT CArchiveExtractCallback::GetExtractStream(CMyComPtr<ISequentialOutStream
     if (isAnti)
       RemoveDir(_diskFilePath);
     #ifdef SUPPORT_LINKS
-    if (_link.linkPath.IsEmpty())
+    if (_link.LinkPath.IsEmpty())
     #endif
     {
+      /* here we can set directory attributes for usual any items and for
+         root directory excluded from processing by "Eliminate duplication of root folder" feature. */
       if (!isAnti)
-        SetAttrib();
+      {
+        if (!_dirAttrib_wasSet)
+          SetAttrib(_diskFilePath);
+        SET_NEED_SET_OWNER
+        SET_OWNER
+      }
+      needExit = false; // v26.04 : we want (_hashStreamWasUsed = true) for dir items.
       return S_OK;
     }
   }
@@ -1416,18 +1467,21 @@ HRESULT CArchiveExtractCallback::GetExtractStream(CMyComPtr<ISequentialOutStream
 
   #ifdef SUPPORT_LINKS
   
-  if (!_link.linkPath.IsEmpty())
+  if (!_link.LinkPath.IsEmpty())
   {
     #ifndef UNDER_CE
     {
       bool linkWasSet = false;
-      RINOK(SetFromLinkPath(fullProcessedPath, _link, linkWasSet))
+      RINOK(SetLink(fullProcessedPath, _link, linkWasSet))
+/*
+      // we don't set attributes for placeholder.
       if (linkWasSet)
       {
-        _isSymLinkCreated = _link.IsSymLink();
+        _isSymLinkCreated = _link.Is_AnySymLink();
         SetAttrib();
         // printf("\nlinkWasSet %s\n", GetAnsiString(_diskFilePath));
       }
+*/
     }
     #endif // UNDER_CE
 
@@ -1453,16 +1507,19 @@ HRESULT CArchiveExtractCallback::GetExtractStream(CMyComPtr<ISequentialOutStream
           hl = fullProcessedPath;
         else
         {
-          if (!MyCreateHardLink(fullProcessedPath, hl))
-          {
-            const HRESULT errorCode = GetLastError_noZero_HRESULT();
-            RINOK(SendMessageError2(errorCode, kCantCreateHardLink, fullProcessedPath, hl))
+          bool link_was_Created = false;
+          RINOK(CreateHardLink2(fullProcessedPath, hl, link_was_Created))
+          if (!link_was_Created)
             return S_OK;
-          }
-          
           // printf("\nHard linkWasSet Archive_Get_HardLinkNode %s\n", GetAnsiString(_diskFilePath));
           // _needSetAttrib = true; // do we need to set attribute ?
-          SetAttrib();
+          SetAttrib(_diskFilePath);
+          SET_NEED_SET_OWNER
+          SET_OWNER
+          /* if we set (needExit = false) here, _hashStreamSpec will be used,
+             and hash will be calulated for all hard links files (it's slower).
+             But "Test" operation also calculates hashes.
+          */
           needExit = false;
           return S_OK;
         }
@@ -1477,7 +1534,46 @@ HRESULT CArchiveExtractCallback::GetExtractStream(CMyComPtr<ISequentialOutStream
 
   _outFileStreamSpec = new COutFileStream;
   CMyComPtr<IOutStream> outFileStream_Loc(_outFileStreamSpec);
+
+  bool needSetAttrib = true;
+#ifndef _WIN32
+  if (_fi.Attrib_Defined)
+  {
+    /*
+      system open() function uses system umask.
+      our (g_umask.mask) is more restricted mask.
+      So we use (mode) parameter in open(,, mode), because our mask for (mode)
+      is more restricted than system umask.
+      If we want to set unrestricted (mode) bits for file, then we must
+      call additional fchmod() function later.
+    */
+    mode_t mode = NWindows::NFile::NIO::k_OutFile_mode_default; // 0666
+    const UInt32 attrib = _fi.Attrib;
+    if (attrib & FILE_ATTRIBUTE_UNIX_EXTENSION)
+    {
+      mode = (attrib >> 16);
+      // mode &= 07777; // for debug
+      if (!S_ISREG(mode))
+      {
+        // printf("\n !S_ISREG(mode) = %o\n", (unsigned)mode);
+        needSetAttrib = false;
+      }
+    }
+    else if (attrib & FILE_ATTRIBUTE_READONLY)
+      mode &= (mode_t)~(mode_t)(S_IWUSR | S_IWGRP | S_IWOTH); // octal: ~0222; // disable write permissions
+    if (needSetAttrib)
+    {
+       // printf("\n File.mode_for_Create = %o\n", (unsigned)mode);
+       mode &= g_umask.mask;
+       // mode = 0777; // for debug
+       // mode |= S_ISUID | S_ISGID | S_ISVTX; // for debug
+      _outFileStreamSpec->File.mode_for_Create = mode;
+    }
+    needSetAttrib = false;
+  }
+#endif
   
+  // printf("\n GetExtractStream Create_ALWAYS_or_Open_ALWAYS : %s\n", fullProcessedPath.Ptr());
   if (!_outFileStreamSpec->Create_ALWAYS_or_Open_ALWAYS(fullProcessedPath, !_isSplit))
   {
     // if (::GetLastError() != ERROR_FILE_EXISTS || !isSplit)
@@ -1487,11 +1583,12 @@ HRESULT CArchiveExtractCallback::GetExtractStream(CMyComPtr<ISequentialOutStream
     }
   }
   
-  _needSetAttrib = true;
+  SET_NEED_SET_OWNER
+  _needSetAttrib = needSetAttrib;
 
   bool is_SymLink_in_Data = false;
 
-  if (_curSize_Defined && _curSize > 0 && _curSize < (1 << 12))
+  if (_curSize_Defined && _curSize && _curSize < k_LinkDataSize_LIMIT)
   {
     if (_fi.IsLinuxSymLink())
     {
@@ -1513,7 +1610,7 @@ HRESULT CArchiveExtractCallback::GetExtractStream(CMyComPtr<ISequentialOutStream
     _bufPtrSeqOutStream_Spec->Init(_outMemBuf, _outMemBuf.Size());
     outStreamLoc = _bufPtrSeqOutStream;
   }
-  else // not reprase
+  else // not reparse
   {
     if (_ntOptions.PreAllocateOutFile && !_isSplit && _curSize_Defined && _curSize > (1 << 12))
     {
@@ -1568,7 +1665,7 @@ HRESULT CArchiveExtractCallback::GetExtractStream(CMyComPtr<ISequentialOutStream
       RINOK(outFileStream_Loc->Seek((Int64)_position, STREAM_SEEK_SET, NULL))
     }
     outStreamLoc = outFileStream_Loc;
-  } // if not reprase
+  } // if not reparse
 
   _outFileStream = outFileStream_Loc;
       
@@ -1599,7 +1696,7 @@ HRESULT CArchiveExtractCallback::GetItem(UInt32 index)
 }
 
 
-Z7_COM7F_IMF(CArchiveExtractCallback::GetStream(UInt32 index, ISequentialOutStream **outStream, Int32 askExtractMode))
+Z7_COM7F_IMF(CArchiveExtractCallback::GetStream(const UInt32 index, ISequentialOutStream **outStream, const Int32 askExtractMode))
 {
   COM_TRY_BEGIN
 
@@ -1620,11 +1717,14 @@ Z7_COM7F_IMF(CArchiveExtractCallback::GetStream(UInt32 index, ISequentialOutStre
   _fileLength_WasSet = false;
   _isRenamed = false;
   // _fi.Clear();
- _extractMode = false;
-  // _is_SymLink_in_Data = false;
+  _extractMode = false;
   _is_SymLink_in_Data_Linux = false;
   _needSetAttrib = false;
-  _isSymLinkCreated = false;
+  _dirAttrib_wasSet = false;
+#ifndef _WIN32
+  _needSetOwner = false;
+#endif
+  // _isSymLinkCreated = false;
   _itemFailure = false;
   _some_pathParts_wereRemoved = false;
   // _op_WasReported = false;
@@ -1661,7 +1761,7 @@ Z7_COM7F_IMF(CArchiveExtractCallback::GetStream(UInt32 index, ISequentialOutStre
   }
 
 
-  IInArchive *archive = _arc->Archive;
+  IInArchive * const archive = _arc->Archive;
 
   RINOK(GetItem(index))
 
@@ -1677,10 +1777,9 @@ Z7_COM7F_IMF(CArchiveExtractCallback::GetStream(UInt32 index, ISequentialOutStre
     }
   }
 
-  #ifdef SUPPORT_LINKS
+#ifdef SUPPORT_LINKS
   RINOK(ReadLink())
-  #endif // SUPPORT_LINKS
-  
+#endif
   
   RINOK(Archive_GetItemBoolProp(archive, index, kpidEncrypted, _encrypted))
 
@@ -1859,6 +1958,11 @@ Z7_COM7F_IMF(CArchiveExtractCallback::GetStream(UInt32 index, ISequentialOutStre
       outStreamLoc = new CStdOutFileStream;
     else
     {
+      if (_isSplit)
+      {
+        RINOK(PrepareOperation(askExtractMode))
+        return SetOperationResult(NArchive::NExtract::NOperationResult::kUnsupportedMethod);
+      }
       bool needExit = true;
       RINOK(GetExtractStream(outStreamLoc, needExit))
       if (needExit)
@@ -1989,15 +2093,50 @@ HRESULT CArchiveExtractCallback::CloseFile()
  #endif
 
   CFiTimesCAM t;
-  GetFiTimesCAM(t);
+  GetFiTimesCAM(_fi, t, *_arc);
 
-  // #ifdef _WIN32
-  if (t.IsSomeTimeDefined())
-    _outFileStreamSpec->SetTime(
+  const bool needSetAttrib = (_needSetAttrib && _fi.Attrib_Defined);
+  if (t.IsSomeTimeDefined() || needSetAttrib)
+  {
+    bool needSetTime = true;
+    if (needSetAttrib)
+    {
+      /*
+      in Linux: { this code branch is not used,
+        because (mode) was set in open() function in COutFile open function.
+        If we call Set_Time_and_WinAttrib(), then later COutFile::Close() will call fchmod().
+        So we need Set_Time_and_WinAttrib() in linux only if we need insecure nonrestricted (mode) bits with fchmod().
+      }
+      
+      win10: if (attrib & FILE_ATTRIBUTE_DIRECTORY)
+      {
+        NtSetInformationFile() returns (STATUS_INVALID_PARAMETER)
+        SetFileAttributes() just ignores FILE_ATTRIBUTE_DIRECTORY()
+      }
+      */
+      // _fi.Attrib |= 0xfffffff; // FOR DEBUG
+      if (_outFileStreamSpec->File.Set_Time_and_WinAttrib(
+          t.CTime_Defined ? &t.CTime : NULL,
+          t.ATime_Defined ? &t.ATime : NULL,
+          t.MTime_Defined ? &t.MTime : NULL,
+          (DWORD)_fi.Attrib & ~(DWORD)FILE_ATTRIBUTE_DIRECTORY))
+      {
+        needSetTime = false;
+        _needSetAttrib = false;
+      }
+      else
+      {
+        // it's unexpected case.
+        // we will set timestamp/attributes with another code later
+        // SendMessageError_with_LastError("Cannot set timestamp and file attribute", _diskFilePath);
+      }
+    }
+    if (needSetTime)
+      _outFileStreamSpec->SetTime(
         t.CTime_Defined ? &t.CTime : NULL,
         t.ATime_Defined ? &t.ATime : NULL,
         t.MTime_Defined ? &t.MTime : NULL);
-  // #endif
+  }
 
   RINOK(_outFileStreamSpec->Close())
   _outFileStream.Release();
@@ -2016,88 +2155,275 @@ HRESULT CArchiveExtractCallback::CloseFile()
 
 #ifdef SUPPORT_LINKS
 
+static bool CheckLinkPath_in_FS_for_pathParts(const FString &path, const UStringVector &v)
+{
+  FString path2 = path;
+  FOR_VECTOR (i, v)
+  {
+    // if (i == v.Size() - 1) path = path2; // we don't need last part in returned path
+    path2 += us2fs(v[i]);
+    NFind::CFileInfo fi;
+    // printf("\nCheckLinkPath_in_FS_for_pathParts(): %s\n", GetOemString(path2).Ptr());
+    if (fi.Find(path2) && fi.IsOsSymLink())
+      return false;
+    path2.Add_PathSepar();
+  }
+  return true;
+}
 
-HRESULT CArchiveExtractCallback::SetFromLinkPath(
-    const FString &fullProcessedPath,
-    const CLinkInfo &linkInfo,
-    bool &linkWasSet)
+/*
+link.isRelative / relative_item_PathPrefix
+   false        / empty
+   true         / item path without last part
+*/
+static bool CheckLinkPath_in_FS(
+    const FString &pathPrefix_in_FS,
+    const CPostLink &postLink,
+    const UString &relative_item_PathPrefix)
+{
+  const CLinkInfo &link = postLink.LinkInfo;
+  if (postLink.item_PathParts.IsEmpty() || link.LinkPath.IsEmpty())
+    return false;
+  FString path;
+  {
+    const UString &s = postLink.item_PathParts[0];
+    if (!s.IsEmpty() && !NName::IsAbsolutePath(s))
+      path = pathPrefix_in_FS; // item_PathParts is relative. So we use absolutre prefix
+  }
+  if (!CheckLinkPath_in_FS_for_pathParts(path, postLink.item_PathParts))
+    return false;
+  path += us2fs(relative_item_PathPrefix);
+  UStringVector v;
+  SplitPathToParts(link.LinkPath, v);
+  // we check target paths:
+  return CheckLinkPath_in_FS_for_pathParts(path, v);
+}
+
+static const unsigned k_DangLevel_MAX_for_Link_over_Link = 9;
+
+HRESULT CArchiveExtractCallback::CreateHardLink2(
+    const FString &newFilePath, const FString &existFilePath, bool &link_was_Created) const
+{
+  link_was_Created = false;
+  if (_ntOptions.SymLinks_DangerousLevel <= k_DangLevel_MAX_for_Link_over_Link)
+  {
+    NFind::CFileInfo fi;
+    if (fi.Find(existFilePath) && fi.IsOsSymLink())
+      return SendMessageError2(0, k_HardLink_to_SymLink_Ignored, newFilePath, existFilePath);
+  }
+  if (!MyCreateHardLink(newFilePath, existFilePath))
+    return SendMessageError2_with_LastError(kCantCreateHardLink, newFilePath, existFilePath);
+  link_was_Created = true;
+  return S_OK;
+}
+
+
+
+HRESULT CArchiveExtractCallback::SetLink(
+    const FString &fullProcessedPath_from,
+    const CLinkInfo &link,
+    bool &linkWasSet) // placeholder was created
 {
   linkWasSet = false;
-  if (!_ntOptions.SymLinks.Val && !linkInfo.isHardLink)
+  if (link.LinkPath.IsEmpty())
     return S_OK;
-
-  UString relatPath;
-
-  /* if (linkInfo.isRelative)
-       linkInfo.linkPath is final link path that must be stored to file link field
-     else
-       linkInfo.linkPath is path from root of archive. So we must add _dirPathPrefix_Full before linkPath.
-  */
-     
-  if (linkInfo.isRelative)
-    relatPath = GetDirPrefixOf(_item.Path);
-  relatPath += linkInfo.linkPath;
+  if (!_ntOptions.SymLinks.Val && link.Is_AnySymLink())
+    return S_OK;
+  CPostLink postLink;
+  postLink.Index_in_Arc = _index;
+  postLink.item_IsDir = _item.IsDir;
+  postLink.item_Path = _item.Path;
+  postLink.item_PathParts = _item.PathParts;
+  postLink.item_FileInfo = _fi;
+  postLink.fullProcessedPath_from = fullProcessedPath_from;
+  postLink.LinkInfo = link;
+  _postLinks.Add(postLink);
   
-  if (!IsSafePath(relatPath))
+  // file doesn't exist in most cases. So we don't check for error.
+  DeleteLinkFileAlways_or_RemoveEmptyDir(fullProcessedPath_from, false); // checkThatFileIsEmpty = false
+
+  NIO::COutFile outFile;
+  if (!outFile.Create_NEW(fullProcessedPath_from))
+    return SendMessageError("Cannot create temporary link file", fullProcessedPath_from);
+#if 0 // 1 for debug
+  // here we can write link path to temporary link file placeholder,
+  // but empty placeholder is better, because we don't want to get any non-empty data instead of link file.
+  AString s;
+  ConvertUnicodeToUTF8(link.LinkPath, s);
+  outFile.WriteFull(s, s.Len());
+#endif
+  linkWasSet = true;
+  return S_OK;
+}
+
+
+// if file/dir is symbolic link it will remove only link itself
+HRESULT CArchiveExtractCallback::DeleteLinkFileAlways_or_RemoveEmptyDir(
+    const FString &path, bool checkThatFileIsEmpty) const
+{
+  NFile::NFind::CFileInfo fi;
+  if (fi.Find(path)) // followLink = false
   {
-    return SendMessageError2(
-          0, // errorCode
-          "Dangerous link path was ignored",
-          us2fs(_item.Path),
-          us2fs(linkInfo.linkPath)); // us2fs(relatPath)
+    if (fi.IsDir())
+    {
+      if (RemoveDirAlways_if_Empty(path))
+        return S_OK;
+    }
+    else
+    {
+      // link file placeholder must be empty
+      if (checkThatFileIsEmpty && !fi.IsOsSymLink() && fi.Size != 0)
+        return SendMessageError("Temporary link file is not empty", path);
+      if (DeleteFileAlways(path))
+        return S_OK;
+    }
+    if (GetLastError() != ERROR_FILE_NOT_FOUND)
+      return SendMessageError_with_LastError(
+          fi.IsDir() ?
+            k_CantDelete_Dir_for_SymLink:
+            k_CantDelete_File_for_SymLink,
+          path);
+  }
+  return S_OK;
+}
+
+
+/*
+in:
+  link.LinkPath : must be relative (non-absolute) path in any case !!!
+  link.isRelative / target path that must stored as created link:
+       == false   / _dirPathPrefix_Full + link.LinkPath
+       == true    / link.LinkPath
+*/
+static HRESULT SetLink2(const CArchiveExtractCallback &callback,
+    const CPostLink &postLink, bool &linkWasSet)
+{
+  const CLinkInfo &link = postLink.LinkInfo;
+  const FString &fullProcessedPath_from = postLink.fullProcessedPath_from; // full file path in FS (fullProcessedPath_from)
+
+  const unsigned level = callback._ntOptions.SymLinks_DangerousLevel;
+  if (level < 20)
+  {
+    /*
+    We want to use additional check for links that can link to directory.
+      - linux: all symbolic links are files.
+      - windows: we can have file/directory symbolic link,
+        but file symbolic link works like directory link in windows.
+    So we use additional check for all relative links.
+
+    We don't allow decreasing of final level of link.
+    So if some another extracted file will use this link,
+    then number of real path parts (after link redirection) cannot be
+    smaller than number of requested path parts from archive records.
+    
+    here we check only (link.LinkPath) without (_item.PathParts).
+    */
+    CLinkLevelsInfo li;
+    li.Parse(link.LinkPath, link.Is_WSL());
+    bool isDang;
+    UString relativePathPrefix;
+    if (li.IsAbsolute // unexpected
+        || li.ParentDirDots_after_NonParent
+        || (level <= 5 && link.isRelative && li.FinalLevel < 1) // final level lower
+        || (level <= 5 && link.isRelative && li.LowLevel < 0)   // negative temporary levels
+       )
+      isDang = true;
+    else // if (!isDang)
+    {
+      UString path;
+      if (link.isRelative)
+      {
+        // item_PathParts : parts that will be created in output folder.
+        // we want to get directory prefix of link item.
+        // so we remove file name (last non-empty part) from PathParts:
+        UStringVector v = postLink.item_PathParts;
+        while (!v.IsEmpty())
+        {
+          const unsigned len = v.Back().Len();
+          v.DeleteBack();
+          if (len)
+            break;
+        }
+        path = MakePathFromParts(v);
+        NName::NormalizeDirPathPrefix(path);
+        relativePathPrefix = path;
+      }
+      path += link.LinkPath;
+      /*
+      path is calculated virtual target path of link
+      path is relative to root folder of extracted items
+      if (!link.isRelative), then (path == link.LinkPath)
+      */
+      isDang = false;
+      if (!IsSafePath(path, link.Is_WSL()))
+        isDang = true;
+    }
+    const char *message = NULL;
+    if (isDang)
+      message = "Dangerous link path was ignored";
+    else if (level <= k_DangLevel_MAX_for_Link_over_Link
+        && !CheckLinkPath_in_FS(callback._dirPathPrefix_Full,
+            postLink, relativePathPrefix))
+      message = "Dangerous link via another link was ignored";
+    if (message)
+       return callback.SendMessageError2(0, // errorCode
+            message, us2fs(postLink.item_Path), us2fs(link.LinkPath));
   }
 
-  FString existPath;
-  if (linkInfo.isHardLink /* || linkInfo.IsCopyLink */ || !linkInfo.isRelative)
+  FString target; // target path that will be stored to link field
+  if (link.Is_HardLink() /* || link.IsCopyLink */ || !link.isRelative)
   {
-    if (!NName::GetFullPath(_dirPathPrefix_Full, us2fs(relatPath), existPath))
-    {
-      RINOK(SendMessageError("Incorrect path", us2fs(relatPath)))
-    }
+    // isRelative == false
+    // all hard links and absolute symbolic links
+    // relatPath == link.LinkPath
+    // we get absolute link path for target:
+    if (!NName::GetFullPath(callback._dirPathPrefix_Full, us2fs(link.LinkPath), target))
+      return callback.SendMessageError("Incorrect link path", us2fs(link.LinkPath));
+    // (target) is (_dirPathPrefix_Full + relatPath)
   }
   else
   {
-    existPath = us2fs(linkInfo.linkPath);
-    // printf("\nlinkPath = : %s\n", GetOemString(linkInfo.linkPath).Ptr());
+    // link.isRelative == true
+    // relative symbolic links only
+    target = us2fs(link.LinkPath);
   }
-    
-  if (existPath.IsEmpty())
-    return SendMessageError("Empty link", fullProcessedPath);
+  if (target.IsEmpty())
+    return callback.SendMessageError("Empty link", fullProcessedPath_from);
 
-  if (linkInfo.isHardLink /* || linkInfo.IsCopyLink */)
+  if (link.Is_HardLink() /* || link.IsCopyLink */)
   {
-    // if (linkInfo.isHardLink)
+    // if (link.isHardLink)
     {
-      if (!MyCreateHardLink(fullProcessedPath, existPath))
+      RINOK(callback.DeleteLinkFileAlways_or_RemoveEmptyDir(fullProcessedPath_from, true)) // checkThatFileIsEmpty
       {
-        const HRESULT errorCode = GetLastError_noZero_HRESULT();
-        RINOK(SendMessageError2(errorCode, kCantCreateHardLink, fullProcessedPath, existPath))
+        // RINOK(SendMessageError_with_LastError(k_Cant_DeleteTempLinkFile, fullProcessedPath_from))
       }
+      return callback.CreateHardLink2(fullProcessedPath_from, target, linkWasSet);
       /*
       RINOK(PrepareOperation(NArchive::NExtract::NAskMode::kExtract))
       _op_WasReported = true;
       RINOK(SetOperationResult(NArchive::NExtract::NOperationResult::kOK))
-      */
       linkWasSet = true;
       return S_OK;
+      */
     }
     /*
     // IsCopyLink
     {
       NFind::CFileInfo fi;
-      if (!fi.Find(existPath))
+      if (!fi.Find(target))
       {
-        RINOK(SendMessageError2("Cannot find the file for copying", existPath, fullProcessedPath));
+        RINOK(SendMessageError2("Cannot find the file for copying", target, fullProcessedPath));
       }
       else
       {
         if (_curSize_Defined && _curSize == fi.Size)
-          _copyFile_Path = existPath;
+          _copyFile_Path = target;
         else
         {
-          RINOK(SendMessageError2("File size collision for file copying", existPath, fullProcessedPath));
+          RINOK(SendMessageError2("File size collision for file copying", target, fullProcessedPath));
         }
-        // RINOK(MyCopyFile(existPath, fullProcessedPath));
+        // RINOK(MyCopyFile(target, fullProcessedPath));
       }
     }
     */
@@ -2111,127 +2437,227 @@ HRESULT CArchiveExtractCallback::SetFromLinkPath(
     // Windows before Vista doesn't support symbolic links.
     // we could convert such symbolic links to Junction Points
     // isJunction = true;
-    // convertToAbs = true;
   }
   */
 
-  if (!_ntOptions.SymLinks_AllowDangerous.Val)
-  {
-    #ifdef _WIN32
-    if (_item.IsDir)
-    #endif
-    if (linkInfo.isRelative)
-      {
-        CLinkLevelsInfo levelsInfo;
-        levelsInfo.Parse(linkInfo.linkPath);
-        if (levelsInfo.FinalLevel < 1 || levelsInfo.IsAbsolute)
-        {
-          return SendMessageError2(
-            0, // errorCode
-            "Dangerous symbolic link path was ignored",
-            us2fs(_item.Path),
-            us2fs(linkInfo.linkPath));
-        }
-      }
-  }
+#ifdef _WIN32
+  const bool isDir = (postLink.item_IsDir || link.LinkType == k_LinkType_Junction);
+#endif
 
-  
-  #ifdef _WIN32
-  
+ 
+#ifdef _WIN32
   CByteBuffer data;
-  // printf("\nFillLinkData(): %s\n", GetOemString(existPath).Ptr());
-  if (!FillLinkData(data, fs2us(existPath), !linkInfo.isJunction, linkInfo.isWSL))
-    return SendMessageError("Cannot fill link data", us2fs(_item.Path));
-
+  // printf("\nFillLinkData(): %s\n", GetOemString(target).Ptr());
+  if (link.Is_WSL())
+  {
+    Convert_WinPath_to_WslLinuxPath(target, !link.isRelative);
+    FillLinkData_WslLink(data, fs2us(target));
+  }
+  else
+    FillLinkData_WinLink(data, fs2us(target), link.LinkType != k_LinkType_Junction);
+  if (data.Size() == 0)
+    return callback.SendMessageError("Cannot fill link data", us2fs(postLink.item_Path));
   /*
   if (NtReparse_Size != data.Size() || memcmp(NtReparse_Data, data, data.Size()) != 0)
-  {
-    SendMessageError("reconstructed Reparse is different", fs2us(existPath));
-  }
+    SendMessageError("reconstructed Reparse is different", fs2us(target));
   */
-  
-  CReparseAttr attr;
-  if (!attr.Parse(data, data.Size()))
   {
-    RINOK(SendMessageError("Internal error for symbolic link file", us2fs(_item.Path)))
-    return S_OK;
+    // we check that reparse data is correct, but we ignore attr.MinorError.
+    CReparseAttr attr;
+    if (!attr.Parse(data, data.Size()))
+      return callback.SendMessageError("Internal error for symbolic link file", us2fs(postLink.item_Path));
   }
-  if (!NFile::NIO::SetReparseData(fullProcessedPath, _item.IsDir, data, (DWORD)data.Size()))
-  {
-    RINOK(SendMessageError_with_LastError(kCantCreateSymLink, fullProcessedPath))
-    return S_OK;
-  }
-  linkWasSet = true;
+#endif
 
-  return S_OK;
-  
-  
-  #else // ! _WIN32
-
-  if (!NFile::NIO::SetSymLink(fullProcessedPath, existPath))
+  RINOK(callback.DeleteLinkFileAlways_or_RemoveEmptyDir(fullProcessedPath_from, true)) // checkThatFileIsEmpty
+#ifdef _WIN32
+  if (!NFile::NIO::SetReparseData(fullProcessedPath_from, isDir, data, (DWORD)data.Size()))
+#else // ! _WIN32
+  if (!NFile::NIO::SetSymLink(fullProcessedPath_from, target))
+#endif // ! _WIN32
   {
-    RINOK(SendMessageError_with_LastError(kCantCreateSymLink, fullProcessedPath))
-    return S_OK;
+    return callback.SendMessageError_with_LastError(kCantCreateSymLink, fullProcessedPath_from);
   }
   linkWasSet = true;
-
   return S_OK;
-
-  #endif // ! _WIN32
 }
 
 
-bool CLinkInfo::Parse(const Byte *data, size_t dataSize, bool isLinuxData)
-{
-  Clear();
-  // this->isLinux = isLinuxData;
-  
-  if (isLinuxData)
-  {
-    isJunction = false;
-    isHardLink = false;
-    AString utf;
-    if (dataSize >= (1 << 12))
-      return false;
-    utf.SetFrom_CalcLen((const char *)data, (unsigned)dataSize);
-    UString u;
-    if (!ConvertUTF8ToUnicode(utf, u))
-      return false;
-    linkPath = u;
-    
-    // in linux symbolic data: we expect that linux separator '/' is used
-    // if windows link was created, then we also must use linux separator
-    if (u.IsEmpty())
-      return false;
-    const wchar_t c = u[0];
-    isRelative = !IS_PATH_SEPAR(c);
-    return true;
-  }
 
+bool CLinkInfo::Parse_from_WindowsReparseData(const Byte *data, size_t dataSize)
+{
   CReparseAttr reparse;
   if (!reparse.Parse(data, dataSize))
     return false;
-  isHardLink = false;
-  // isCopyLink = false;
-  linkPath = reparse.GetPath();
-  isJunction = reparse.IsMountPoint();
-  
+  // const AString s = GetAnsiString(LinkPath);
+  // printf("\nlinkPath: %s\n", s.Ptr());
+  LinkPath = reparse.GetPath();
   if (reparse.IsSymLink_WSL())
   {
-    isWSL = true;
-    isRelative = reparse.IsRelative_WSL();
+    LinkType = k_LinkType_WSL;
+    isRelative = reparse.IsRelative_WSL(); // detected from LinkPath[0]
+    // LinkPath is original raw name converted to UString from AString
+    // Linux separator '/' is expected here.
+    REPLACE_SLASHES_from_Linux_to_Sys(LinkPath)
   }
   else
-    isRelative = reparse.IsRelative_Win();
-    
-  // FIXME !!!
-  #ifndef _WIN32
-  linkPath.Replace(L'\\', WCHAR_PATH_SEPARATOR);
-  #endif
-  
+  {
+    LinkType = reparse.IsMountPoint() ? k_LinkType_Junction : k_LinkType_PureSymLink;
+    isRelative = reparse.IsRelative_Win(); // detected by (Flags == Z7_WIN_SYMLINK_FLAG_RELATIVE)
+    isWindowsPath = true;
+    // LinkPath is original windows link path from raparse data with \??\ prefix removed.
+    // windows '\\' separator is expected here.
+    // linux '/' separator is not expected here.
+    // we translate both types of separators to system separator.
+    LinkPath.Replace(
+#if WCHAR_PATH_SEPARATOR == L'\\'
+        L'/'
+#else
+        L'\\'
+#endif
+        , WCHAR_PATH_SEPARATOR);
+  }
+  // (LinkPath) uses system path separator.
+  // windows: (LinkPath) doesn't contain linux separator (slash).
+  return true;
+}
+
+
+bool CLinkInfo::Parse_from_LinuxData(const Byte *data, size_t dataSize)
+{
+  // Clear(); // *this object was cleared by constructor already.
+  LinkType = k_LinkType_PureSymLink;
+  AString utf;
+  if (dataSize >= k_LinkDataSize_LIMIT)
+    return false;
+  utf.SetFrom_CalcLen((const char *)data, (unsigned)dataSize);
+  UString u;
+  if (!ConvertUTF8ToUnicode(utf, u))
+    return false;
+  if (u.IsEmpty())
+    return false;
+  const wchar_t c = u[0];
+  isRelative = (c != L'/');
+  // linux path separator is expected
+  REPLACE_SLASHES_from_Linux_to_Sys(u)
+  LinkPath = u;
+  // (LinkPath) uses system path separator.
+  // windows: (LinkPath) doesn't contain linux separator (slash).
   return true;
 }
     
+
+// in/out:          (LinkPath) uses system path separator
+// in/out: windows: (LinkPath) doesn't contain linux separator (slash).
+// out: (LinkPath) is relative path, and LinkPath[0] is not path separator
+// out: isRelative changed to false, if any prefix was removed.
+// note: absolute windows links "c:\" to root will be reduced to empty string:
+void CLinkInfo::Remove_AbsPathPrefixes()
+{
+  while (!LinkPath.IsEmpty())
+  {
+    unsigned n = 0;
+    if (!Is_WSL())
+    {
+      n =
+#ifndef _WIN32
+      isWindowsPath ?
+        NName::GetRootPrefixSize_WINDOWS(LinkPath) :
+#endif
+        NName::GetRootPrefixSize(LinkPath);
+/*
+      // "c:path" will be ignored later as "Dangerous absolute path"
+      // so check is not required
+      if (n == 0
+#ifndef _WIN32
+          && isWindowsPath
+#endif
+          && NName::IsDrivePath2(LinkPath))
+        n = 2;
+*/
+    }
+    if (n == 0)
+    {
+      if (!IS_PATH_SEPAR(LinkPath[0]))
+        break;
+      n = 1;
+    }
+    isRelative = false; // (LinkPath) will be treated as relative to root folder of archive
+    LinkPath.DeleteFrontal(n);
+  }
+}
+
+
+/*
+  it removes redundant separators, if there are double separators,
+  but it keeps double separators at start of string //name/.
+  in/out:    system path separator is used
+    windows: slash character (linux separator) is not treated as separator
+    windows: (path) doesn't contain linux separator (slash).
+*/
+static void RemoveRedundantPathSeparators(UString &path)
+{
+  wchar_t *dest = path.GetBuf();
+  const wchar_t * const start = dest;
+  const wchar_t *src = dest;
+  for (;;)
+  {
+    wchar_t c = *src++;
+    if (c == 0)
+      break;
+    // if (IS_PATH_SEPAR(c)) // for Windows: we can change (/) to (\).
+    if (c == WCHAR_PATH_SEPARATOR)
+    {
+      if (dest - start >= 2 && dest[-1] == WCHAR_PATH_SEPARATOR)
+        continue;
+      // c = WCHAR_PATH_SEPARATOR; // for Windows: we can change (/) to (\).
+    }
+    *dest++ = c;
+  }
+  *dest = 0;
+  path.ReleaseBuf_SetLen((unsigned)(dest - path.Ptr()));
+}
+
+
+// in/out: (LinkPath) uses system path separator
+// in/out: windows: (LinkPath) doesn't contain linux separator (slash).
+// out: (LinkPath) is relative path, and LinkPath[0] is not path separator
+void CLinkInfo::Normalize_to_RelativeSafe(UStringVector &removePathParts)
+{
+  // We WILL NOT WRITE original absolute link path from archive to filesystem.
+  // So here we remove all root prefixes from (LinkPath).
+  // If we see any absolute root prefix, then we suppose that this prefix is virtual prefix
+  // that shows that link is relative to root folder of archive
+  RemoveRedundantPathSeparators(LinkPath);
+  // LinkPath = "\\\\?\\r:test\\test2"; // for debug
+  Remove_AbsPathPrefixes();
+  // (LinkPath) now is relative:
+  //  if (isRelative == false), then (LinkPath) is relative to root folder of archive
+  //  if (isRelative == true ), then (LinkPath) is relative to current item
+  if (LinkPath.IsEmpty() || isRelative || removePathParts.Size() == 0)
+    return;
+
+  // if LinkPath is prefixed by _removePathParts, we remove these paths
+  UStringVector pathParts;
+  SplitPathToParts(LinkPath, pathParts);
+  bool badPrefix = false;
+  {
+    FOR_VECTOR (i, removePathParts)
+    {
+      if (i >= pathParts.Size()
+        || CompareFileNames(removePathParts[i], pathParts[i]) != 0)
+      {
+        badPrefix = true;
+        break;
+      }
+    }
+  }
+  if (!badPrefix)
+    pathParts.DeleteFrontal(removePathParts.Size());
+  LinkPath = MakePathFromParts(pathParts);
+  Remove_AbsPathPrefixes();
+}
+
 #endif // SUPPORT_LINKS
 
 
@@ -2239,12 +2665,12 @@ HRESULT CArchiveExtractCallback::CloseReparseAndFile()
 {
   HRESULT res = S_OK;
 
-  #ifdef SUPPORT_LINKS
+#ifdef SUPPORT_LINKS
 
   size_t reparseSize = 0;
   bool repraseMode = false;
   bool needSetReparse = false;
-  CLinkInfo linkInfo;
+  CLinkInfo link;
   
   if (_bufPtrSeqOutStream)
   {
@@ -2258,19 +2684,23 @@ HRESULT CArchiveExtractCallback::CloseReparseAndFile()
       needSetReparse = reparse.Parse(_outMemBuf, reparseSize, errorCode);
       if (needSetReparse)
       {
-        UString linkPath = reparse.GetPath();
+        UString LinkPath = reparse.GetPath();
         #ifndef _WIN32
-        linkPath.Replace(L'\\', WCHAR_PATH_SEPARATOR);
+        LinkPath.Replace(L'\\', WCHAR_PATH_SEPARATOR);
         #endif
       }
       */
-      needSetReparse = linkInfo.Parse(_outMemBuf, reparseSize, _is_SymLink_in_Data_Linux);
+      needSetReparse = _is_SymLink_in_Data_Linux ?
+          link.Parse_from_LinuxData(_outMemBuf, reparseSize) :
+          link.Parse_from_WindowsReparseData(_outMemBuf, reparseSize);
       if (!needSetReparse)
-        res = SendMessageError_with_LastError("Incorrect reparse stream", us2fs(_item.Path));
+        res = SendMessageError("Incorrect reparse stream", us2fs(_item.Path));
+      // (link.LinkPath) uses system path separator.
+      // windows: (link.LinkPath) doesn't contain linux separator (slash).
     }
     else
     {
-      res = SendMessageError_with_LastError("Unknown reparse stream", us2fs(_item.Path));
+      res = SendMessageError("Unknown reparse stream", us2fs(_item.Path));
     }
     if (!needSetReparse && _outFileStream)
     {
@@ -2281,25 +2711,21 @@ HRESULT CArchiveExtractCallback::CloseReparseAndFile()
     _bufPtrSeqOutStream.Release();
   }
 
-  #endif // SUPPORT_LINKS
-
+#endif // SUPPORT_LINKS
 
   const HRESULT res2 = CloseFile();
-
   if (res == S_OK)
     res = res2;
-
   RINOK(res)
 
-  #ifdef SUPPORT_LINKS
+#ifdef SUPPORT_LINKS
   if (repraseMode)
   {
     _curSize = reparseSize;
     _curSize_Defined = true;
-    
-    #ifdef SUPPORT_LINKS
     if (needSetReparse)
     {
+      // empty file was created so we must delete it.
       // in Linux   : we must delete empty file before symbolic link creation
       // in Windows : we can create symbolic link even without file deleting
       if (!DeleteFileAlways(_diskFilePath))
@@ -2307,78 +2733,101 @@ HRESULT CArchiveExtractCallback::CloseReparseAndFile()
         RINOK(SendMessageError_with_LastError("can't delete file", _diskFilePath))
       }
       {
-        /*
-        // for DEBUG ONLY: we can extract sym links as WSL links
-        // to eliminate (non-admin) errors for sym links.
-        #ifdef _WIN32
-        if (!linkInfo.isHardLink && !linkInfo.isJunction)
-          linkInfo.isWSL = true;
-        #endif
-        */
         bool linkWasSet = false;
-        RINOK(SetFromLinkPath(_diskFilePath, linkInfo, linkWasSet))
+        // link.LinkPath = "r:\\1\\2"; // for debug
+        // link.isJunction = true; // for debug
+        link.Normalize_to_RelativeSafe(_removePathParts);
+        RINOK(SetLink(_diskFilePath, link, linkWasSet))
+/*  DOCs:
+    posix: permissions are ignored for access via link.
+    Linux: the permissions of an ordinary symbolic link are not
+        used in any operations; the permissions are always 0777 (read,
+        write, and execute for all user categories), and can't be changed.
+    So we don't set attributes for placeholder.
+*/
+/*
         if (linkWasSet)
-          _isSymLinkCreated = linkInfo.IsSymLink();
+          _isSymLinkCreated = true; // link.IsSymLink();
         else
+*/
           _needSetAttrib = false;
       }
-      /*
-      if (!NFile::NIO::SetReparseData(_diskFilePath, _item.IsDir, ))
-      {
-        res = SendMessageError_with_LastError(kCantCreateSymLink, _diskFilePath);
-      }
-      */
     }
-    #endif
   }
-  #endif
+#endif // SUPPORT_LINKS
   return res;
 }
 
 
-void CArchiveExtractCallback::SetAttrib()
+static void SetAttrib_Base(const FString &path, const CProcessedFileInfo &fi,
+    const CArchiveExtractCallback &callback)
 {
- #ifndef _WIN32
+  if (fi.Attrib_Defined)
+  {
+    // const AString s = GetAnsiString(_diskFilePath);
+    // printf("\nSetFileAttrib_PosixHighDetect: %s: hex:%x\n", s.Ptr(), _fi.Attrib);
+    if (!SetFileAttrib_PosixHighDetect(path, fi.Attrib))
+    {
+      // do we need error message here in Windows and in posix?
+      callback.SendMessageError_with_LastError("Cannot set file attribute", path);
+    }
+  }
+}
+
+void CArchiveExtractCallback::SetAttrib(const FString &path) const
+{
+#ifndef _WIN32
   // Linux now doesn't support permissions for symlinks
-  if (_isSymLinkCreated)
-    return;
- #endif
+  // if (_isSymLinkCreated) return;
+#endif
+  // printf("\n SetAttrib %s, \n", path.Ptr());
 
   if (_itemFailure
-      || _diskFilePath.IsEmpty()
+      || path.IsEmpty()
       || _stdOutMode
       || !_extractMode)
     return;
 
- #ifndef _WIN32
-  if (_fi.Owner.Id_Defined &&
-      _fi.Group.Id_Defined)
-  {
-    if (my_chown(_diskFilePath, _fi.Owner.Id, _fi.Group.Id) != 0)
-    {
-      SendMessageError_with_LastError("Cannot set owner", _diskFilePath);
-    }
-  }
- #endif
-
-  if (_fi.Attrib_Defined)
-  {
-    // const AString s = GetAnsiString(_diskFilePath);
-    // printf("\nSetFileAttrib_PosixHighDetect: %s: hex:%x\n", s.Ptr(), _fi.Attrib);
-    bool res = SetFileAttrib_PosixHighDetect(_diskFilePath, _fi.Attrib);
-    if (!res)
-    {
-      // do we need error message here in Windows and in posix?
-      SendMessageError_with_LastError("Cannot set file attribute", _diskFilePath);
-    }
-  }
+  SetAttrib_Base(path, _fi, *this);
 }
+
+
+#ifdef Z7_USE_SECURITY_CODE
+HRESULT CArchiveExtractCallback::SetSecurityInfo(UInt32 indexInArc, const FString &path) const
+{
+  if (!_stdOutMode && _extractMode && _ntOptions.NtSecurity.Val && _arc->GetRawProps)
+  {
+    const void *data;
+    UInt32 dataSize;
+    UInt32 propType;
+    _arc->GetRawProps->GetRawProp(indexInArc, kpidNtSecure, &data, &dataSize, &propType);
+    if (dataSize != 0)
+    {
+      if (propType != NPropDataType::kRaw)
+        return E_FAIL;
+      if (CheckNtSecure((const Byte *)data, dataSize))
+      {
+        SECURITY_INFORMATION securInfo = DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION;
+        if (_saclEnabled)
+          securInfo |= SACL_SECURITY_INFORMATION;
+        // if (!
+        ::SetFileSecurityW(fs2us(path), securInfo, (PSECURITY_DESCRIPTOR)(void *)(const Byte *)(data));
+        {
+          // RINOK(SendMessageError_with_LastError("SetFileSecurity FAILS", path))
+        }
+      }
+    }
+  }
+  return S_OK;
+}
+#endif // Z7_USE_SECURITY_CODE
 
 
 Z7_COM7F_IMF(CArchiveExtractCallback::SetOperationResult(Int32 opRes))
 {
   COM_TRY_BEGIN
 
+  // if (_isSplit) opRes = NArchive::NExtract::NOperationResult::kUnsupportedMethod;
   // printf("\nCArchiveExtractCallback::SetOperationResult: %d %s\n", opRes, GetAnsiString(_diskFilePath));
 
   #ifndef Z7_SFX
@@ -2387,9 +2836,6 @@ Z7_COM7F_IMF(CArchiveExtractCallback::SetOperationResult(Int32 opRes))
     GetUnpackSize();
     return ExtractToStreamCallback->SetOperationResult8(opRes, BoolToInt(_encrypted), _curSize);
   }
-  #endif
-
-  #ifndef Z7_SFX
 
   if (_hashStreamWasUsed)
   {
@@ -2410,27 +2856,9 @@ Z7_COM7F_IMF(CArchiveExtractCallback::SetOperationResult(Int32 opRes))
 
   RINOK(CloseReparseAndFile())
   
-  #ifdef Z7_USE_SECURITY_CODE
-  if (!_stdOutMode && _extractMode && _ntOptions.NtSecurity.Val && _arc->GetRawProps)
-  {
-    const void *data;
-    UInt32 dataSize;
-    UInt32 propType;
-    _arc->GetRawProps->GetRawProp(_index, kpidNtSecure, &data, &dataSize, &propType);
-    if (dataSize != 0)
-    {
-      if (propType != NPropDataType::kRaw)
-        return E_FAIL;
-      if (CheckNtSecure((const Byte *)data, dataSize))
-      {
-        SECURITY_INFORMATION securInfo = DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION;
-        if (_saclEnabled)
-          securInfo |= SACL_SECURITY_INFORMATION;
-        ::SetFileSecurityW(fs2us(_diskFilePath), securInfo, (PSECURITY_DESCRIPTOR)(void *)(const Byte *)(data));
-      }
-    }
-  }
-  #endif // Z7_USE_SECURITY_CODE
+#ifdef Z7_USE_SECURITY_CODE
+  RINOK(SetSecurityInfo(_index, _diskFilePath))
+#endif
 
   if (!_curSize_Defined)
     GetUnpackSize();
@@ -2455,11 +2883,11 @@ Z7_COM7F_IMF(CArchiveExtractCallback::SetOperationResult(Int32 opRes))
     NumFiles++;
 
   if (_needSetAttrib)
-    SetAttrib();
-  
-  RINOK(_extractCallback2->SetOperationResult(opRes, BoolToInt(_encrypted)))
-  
-  return S_OK;
+    SetAttrib(_diskFilePath);
+
+  SET_OWNER
+
+  return _extractCallback2->SetOperationResult(opRes, BoolToInt(_encrypted));
   
   COM_TRY_END
 }
@@ -2674,13 +3102,71 @@ void CDirPathSortPair::SetNumSlashes(const FChar *s)
 }
 
 
-bool CDirPathTime::SetDirTime() const
+bool CFiTimesCAM::SetDirTime_to_FS(CFSTR path) const
 {
-  return NDir::SetDirTime(Path,
+  // it's same function for dir and for file
+  return NDir::SetDirTime(path,
       CTime_Defined ? &CTime : NULL,
       ATime_Defined ? &ATime : NULL,
       MTime_Defined ? &MTime : NULL);
 }
+
+
+#ifdef SUPPORT_LINKS
+
+bool CFiTimesCAM::SetLinkFileTime_to_FS(CFSTR path) const
+{
+  // it's same function for dir and for file
+  return NDir::SetLinkFileTime(path,
+      CTime_Defined ? &CTime : NULL,
+      ATime_Defined ? &ATime : NULL,
+      MTime_Defined ? &MTime : NULL);
+}
+
+HRESULT CArchiveExtractCallback::SetPostLinks() const
+{
+  FOR_VECTOR (i, _postLinks)
+  {
+    const CPostLink &link = _postLinks[i];
+    bool linkWasSet = false;
+    RINOK(SetLink2(*this, link, linkWasSet))
+    if (linkWasSet)
+    {
+      // we set timestamps before SetAttrib(),
+      // because windows doesn't set timestamps, if file has read-only attribute
+      CFiTimesCAM pt;
+      GetFiTimesCAM(link.item_FileInfo, pt, *_arc);
+      if (pt.IsSomeTimeDefined())
+        if (!pt.SetLinkFileTime_to_FS(link.fullProcessedPath_from))
+        {
+          // SendMessageError_with_LastError("cannot set timestamp", link.fullProcessedPath_from);
+        }
+
+#ifdef _WIN32
+      SetAttrib_Base(link.fullProcessedPath_from, link.item_FileInfo, *this);
+#else
+      // Linux now doesn't support permissions for symlinks.
+      // We set only owner
+      {
+        const CProcessedFileInfo &fi = link.item_FileInfo;
+        if (fi.Owner.Id_Defined && fi.Group.Id_Defined)
+        {
+          if (my_chown_Link(link.fullProcessedPath_from, fi.Owner.Id, fi.Group.Id) != 0)
+            SendMessageError_with_LastError("Cannot set owner", link.fullProcessedPath_from);
+        }
+      }
+#endif
+
+#ifdef Z7_USE_SECURITY_CODE
+      // we set security information after timestamps setting
+      RINOK(SetSecurityInfo(link.Index_in_Arc, link.fullProcessedPath_from))
+#endif
+    }
+  }
+  return S_OK;
+}
+
+#endif
 
 
 HRESULT CArchiveExtractCallback::SetDirsTimes()
@@ -2706,7 +3192,7 @@ HRESULT CArchiveExtractCallback::SetDirsTimes()
   for (i = 0; i < pairs.Size(); i++)
   {
     const CDirPathTime &dpt = _extractedFolders[pairs[i].Index];
-    if (!dpt.SetDirTime())
+    if (!dpt.SetDirTime_to_FS_2())
     {
       // result = E_FAIL;
       // do we need error message here in Windows and in posix?
@@ -2738,10 +3224,20 @@ HRESULT CArchiveExtractCallback::SetDirsTimes()
 
 HRESULT CArchiveExtractCallback::CloseArc()
 {
+  // we call CloseReparseAndFile() here because we can have non-closed file in some cases?
   HRESULT res = CloseReparseAndFile();
-  const HRESULT res2 = SetDirsTimes();
-  if (res == S_OK)
-    res = res2;
+#ifdef SUPPORT_LINKS
+  {
+    const HRESULT res2 = SetPostLinks();
+    if (res == S_OK)
+      res = res2;
+  }
+#endif
+  {
+    const HRESULT res2 = SetDirsTimes();
+    if (res == S_OK)
+      res = res2;
+  }
   _arc = NULL;
   return res;
 }

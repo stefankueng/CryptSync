@@ -54,19 +54,27 @@ static HRESULT DecompressArchive(
   UStringVector removePathParts;
 
   FString outDir = options.OutputDir;
-  UString replaceName = arc.DefaultName;
-  
-  if (arcLink.Arcs.Size() > 1)
+  if (options.OutDirMode != NExtractOutDirMode::k_Direct)
   {
-    // Most "pe" archives have same name of archive subfile "[0]" or ".rsrc_1".
-    // So it extracts different archives to one folder.
-    // We will use top level archive name
-    const CArc &arc0 = arcLink.Arcs[0];
-    if (arc0.FormatIndex >= 0 && StringsAreEqualNoCase_Ascii(codecs->Formats[(unsigned)arc0.FormatIndex].Name, "pe"))
-      replaceName = arc0.DefaultName;
+    UString replaceName = arc.DefaultName;
+    if (arcLink.Arcs.Size() > 1)
+    {
+      // Most "pe" archives have same name of archive subfile "[0]" or ".rsrc_1".
+      // So it extracts different archives to one folder.
+      // We will use top level archive name
+      const CArc &arc0 = arcLink.Arcs[0];
+      if (arc0.FormatIndex >= 0 && StringsAreEqualNoCase_Ascii(codecs->Formats[(unsigned)arc0.FormatIndex].Name, "pe"))
+        replaceName = arc0.DefaultName;
+    }
+    const FString correctedName = us2fs(Get_Correct_FsFile_Name(replaceName));
+    if (options.OutDirMode == NExtractOutDirMode::k_AddArcName)
+    {
+      outDir += correctedName;
+      NFile::NName::NormalizeDirPathPrefix(outDir);
+    }
+    else // eo.OutDirMode == NExtractOutDirMode::k_ReplaceAsterisk;
+      outDir.Replace(FString("*"), correctedName);
   }
-
-  outDir.Replace(FString("*"), us2fs(Get_Correct_FsFile_Name(replaceName)));
 
   bool elimIsPossible = false;
   UString elimPrefix; // only pure name without dir delimiter
@@ -152,6 +160,16 @@ static HRESULT DecompressArchive(
         if (!CensorNode_CheckPath(wildcardCensor, item))
           continue;
       }
+
+#if 1 // 1 : v24.06 : to exclude AUX items from processing
+      if (arc.Ask_Aux)
+      {
+        bool isAux;
+        RINOK(Archive_IsItem_Aux(archive, i, isAux))
+        if (isAux)
+          continue;
+      }
+#endif
 
       realIndices.Add(i);
     }
@@ -389,7 +407,7 @@ HRESULT Extract(
       {
         UString s = arcPath.Ptr(pos + 1);
         int index = codecs->FindFormatForExtension(s);
-        if (index >= 0 && s == L"001")
+        if (index >= 0 && s.IsEqualTo("001"))
         {
           s = arcPath.Left(pos);
           pos = s.ReverseFind(L'.');

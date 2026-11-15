@@ -8,6 +8,7 @@
 #include "../../../Common/ComTry.h"
 #include "../../../Common/IntToString.h"
 #include "../../../Common/MyBuffer2.h"
+#include "../../../Common/MyLinux.h"
 #include "../../../Common/UTFConvert.h"
 
 #include "../../../Windows/PropVariantUtils.h"
@@ -393,6 +394,7 @@ void CItem::Link_to_Prop(unsigned linkType, NWindows::NCOM::CPropVariant &prop) 
   if (!FindExtra_Link(link))
     return;
 
+  bool isWindows = (HostOS == kHost_Windows);
   if (link.Type != linkType)
   {
     if (linkType != NLinkType::kUnixSymLink)
@@ -400,8 +402,11 @@ void CItem::Link_to_Prop(unsigned linkType, NWindows::NCOM::CPropVariant &prop) 
     switch ((unsigned)link.Type)
     {
       case NLinkType::kUnixSymLink:
+        isWindows = false;
+        break;
       case NLinkType::kWinSymLink:
       case NLinkType::kWinJunction:
+        isWindows = true;
         break;
       default: return;
     }
@@ -409,10 +414,15 @@ void CItem::Link_to_Prop(unsigned linkType, NWindows::NCOM::CPropVariant &prop) 
 
   AString s;
   s.SetFrom_CalcLen((const char *)(Extra + link.NameOffset), link.NameLen);
-
   UString unicode;
   ConvertUTF8ToUnicode(s, unicode);
-  prop = NItemName::GetOsPath(unicode);
+  // rar5.0  used '\\' separator for windows symlinks and \??\ prefix for abs paths.
+  // rar5.1+ uses '/'  separator for windows symlinks and /??/ prefix for abs paths.
+  // v25.00: we convert Windows slashes to Linux slashes:
+  if (isWindows)
+    unicode.Replace(L'\\', L'/');
+  prop = unicode;
+  // prop = NItemName::GetOsPath(unicode);
 }
 
 bool CItem::GetAltStreamName(AString &name) const
@@ -1175,7 +1185,15 @@ HRESULT CUnpacker::Code(const CItem &item, const CItem &lastItem, UInt64 packSiz
 
   const UInt64 processedSize = outStream->GetPos();
   if (res == S_OK && !lastItem.Is_UnknownSize() && processedSize != lastItem.Size)
-    res = S_FALSE;
+  {
+    // rar_v7.13-: linux archive contains symLink with (packSize == 0 && lastItem.Size != 0)
+    // v25.02: we ignore such record in rar headers:
+    if (packSize != 0
+        || method != 0
+        || lastItem.HostOS != kHost_Unix
+        || !MY_LIN_S_ISLNK(lastItem.Attrib))
+      res = S_FALSE;
+  }
 
   // if (res == S_OK)
   {
@@ -1395,7 +1413,7 @@ UInt64 CHandler::GetPackSize(unsigned refIndex) const
   }
 }
 
-static char *PrintDictSize(char *s, UInt64 w)
+static char *PrintDictSize(char *s Z7_lifetimebound, UInt64 w)
 {
   char                               c = 'K'; w >>= 10;
   if ((w & ((1 << 10) - 1)) == 0)  { c = 'M'; w >>= 10;
@@ -1655,7 +1673,7 @@ Z7_COM7F_IMF(CHandler::GetArchiveProperty(PROPID propID, PROPVARIANT *value))
     case kpidExtension:
       if (_arcs.Size() == 1)
       {
-        if (arcInfo->IsVolume())
+        if (arcInfo && arcInfo->IsVolume())
         {
           AString s ("part");
           UInt32 v = (UInt32)arcInfo->GetVolIndex() + 1;
@@ -1791,14 +1809,14 @@ static void TimeRecordToProp(const CItem &item, unsigned stampIndex, NCOM::CProp
     size -= num;
   }
 
-  if ((flags & (NTimeRecord::NFlags::kMTime << stampIndex)) == 0)
+  if (((UInt32)flags & (NTimeRecord::NFlags::kMTime << stampIndex)) == 0)
     return;
   
   unsigned numStamps = 0;
   unsigned curStamp = 0;
 
   for (unsigned i = 0; i < 3; i++)
-    if ((flags & (NTimeRecord::NFlags::kMTime << i)) != 0)
+    if (((UInt32)flags & (NTimeRecord::NFlags::kMTime << i)) != 0)
     {
       if (i == stampIndex)
         curStamp = numStamps;
@@ -3038,9 +3056,10 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
       totalUnpacked += curUnpackSize,
       totalPacked += curPackSize)
   {
-    lps->InSize = totalPacked;
-    lps->OutSize = totalUnpacked;
-    RINOK(lps->SetCur())
+    CLocalProgress *lps2 = lps.ClsPtr();
+    lps2->InSize = totalPacked;
+    lps2->OutSize = totalUnpacked;
+    RINOK(lps2->SetCur())
     {
       const unsigned num = _refs.Size();
       if (i >= num)

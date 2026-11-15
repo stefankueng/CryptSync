@@ -45,6 +45,26 @@ typedef struct _IO_STATUS_BLOCK {
 
 #include "SysIconUtils.h"
 
+EXTERN_C_BEGIN
+
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0500) && !defined(_M_IA64)
+#define Z7_WIN_NTSTATUS  NTSTATUS
+#define Z7_WIN_IO_STATUS_BLOCK  IO_STATUS_BLOCK
+#else
+typedef LONG Z7_WIN_NTSTATUS;
+typedef struct
+{
+  union
+  {
+    Z7_WIN_NTSTATUS Status;
+    PVOID Pointer;
+  } DUMMYUNIONNAME;
+  ULONG_PTR Information;
+} Z7_WIN_IO_STATUS_BLOCK;
+#endif
+
+EXTERN_C_END
+
 #if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0501
 #ifdef _APISETFILE_
 // Windows SDK 8.1 defines in fileapi.h the function GetCompressedFileSizeW only if _WIN32_WINNT >= 0x0501
@@ -445,46 +465,6 @@ bool CFSFolder::ReadFileInfo(CDirItem &di)
 
 
 EXTERN_C_BEGIN
-
-typedef struct
-{
-  LARGE_INTEGER CreationTime;
-  LARGE_INTEGER LastAccessTime;
-  LARGE_INTEGER LastWriteTime;
-  LARGE_INTEGER ChangeTime;
-  ULONG FileAttributes;
-  UInt32 Reserved; // it's expected for alignment
-}
-Z7_WIN_FILE_BASIC_INFORMATION;
-
-
-typedef enum
-{
-  Z7_WIN_FileDirectoryInformation = 1,
-  Z7_WIN_FileFullDirectoryInformation,
-  Z7_WIN_FileBothDirectoryInformation,
-  Z7_WIN_FileBasicInformation
-}
-Z7_WIN_FILE_INFORMATION_CLASS;
-
-
-#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0500) && !defined(_M_IA64)
-#define Z7_WIN_NTSTATUS  NTSTATUS
-#define Z7_WIN_IO_STATUS_BLOCK  IO_STATUS_BLOCK
-#else
-typedef LONG Z7_WIN_NTSTATUS;
-typedef struct
-{
-  union
-  {
-    Z7_WIN_NTSTATUS Status;
-    PVOID Pointer;
-  } DUMMYUNIONNAME;
-  ULONG_PTR Information;
-} Z7_WIN_IO_STATUS_BLOCK;
-#endif
-
-
 typedef Z7_WIN_NTSTATUS (WINAPI * Func_NtQueryInformationFile)(
     HANDLE handle, Z7_WIN_IO_STATUS_BLOCK *io,
     void *ptr, LONG len, Z7_WIN_FILE_INFORMATION_CLASS cls);
@@ -748,8 +728,8 @@ Z7_COM7F_IMF2(Int32, CFSFolder::CompareItems(UInt32 index1, UInt32 index2, PROPI
     case kpidMTime: return CompareFileTime(&fi1.MTime, &fi2.MTime);
     case kpidIsDir:
     {
-      bool isDir1 = /* ss1 ? false : */ fi1.IsDir();
-      bool isDir2 = /* ss2 ? false : */ fi2.IsDir();
+      const bool isDir1 = /* ss1 ? false : */ fi1.IsDir();
+      const bool isDir2 = /* ss2 ? false : */ fi2.IsDir();
       if (isDir1 == isDir2)
         return 0;
       return isDir1 ? -1 : 1;
@@ -798,7 +778,9 @@ Z7_COM7F_IMF2(Int32, CFSFolder::CompareItems(UInt32 index1, UInt32 index2, PROPI
       return MyStringCompareNoCase(comment1, comment2);
     }
     case kpidPrefix:
-      if (fi1.Parent < 0) return (fi2.Parent < 0) ? 0 : -1;
+      if (fi1.Parent == fi2.Parent)
+        return 0;
+      if (fi1.Parent < 0) return -1;
       if (fi2.Parent < 0) return 1;
       return CompareFileNames_ForFolderList(
           Folders[fi1.Parent],

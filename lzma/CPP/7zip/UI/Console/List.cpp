@@ -201,8 +201,8 @@ static const CFieldInfoInit kStandardFieldTable[] =
   { kpidPath, "Name", kLeft, kLeft, 2, 24 }
 };
 
-const unsigned kNumSpacesMax = 32; // it must be larger than max CFieldInfoInit.Width
-static const char *g_Spaces =
+static const unsigned kNumSpacesMax = 32; // it must be larger than max CFieldInfoInit.Width
+static const char * const g_Spaces =
 "                                " ;
 
 static void PrintSpaces(unsigned numSpaces)
@@ -363,7 +363,7 @@ struct CListStat2
     NumDirs += st.NumDirs;
   }
   UInt64 GetNumStreams() const { return MainFiles.NumFiles + AltStreams.NumFiles; }
-  CListStat &GetStat(bool altStreamsMode) { return altStreamsMode ? AltStreams : MainFiles; }
+  CListStat &GetStat(bool altStreamsMode) Z7_lifetimebound { return altStreamsMode ? AltStreams : MainFiles; }
 };
 
 class CFieldPrinter

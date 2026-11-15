@@ -12,9 +12,11 @@ CCoder::CCoder(bool deflate64Mode):
     _deflateNSIS(false),
     _deflate64Mode(deflate64Mode),
     _keepHistory(false),
+    _outWasInit(false),
     _needFinishInput(false),
     _needInitInStream(true),
     _outSizeDefined(false),
+    _remainLen(kLenIdNeedInit), // optional
     _outStartPos(0)
     {}
 
@@ -117,15 +119,13 @@ bool CCoder::ReadTables(void)
       if (_numDistLevels > kDistTableSize32)
         return false;
     
-    Byte levelLevels[kLevelTableSize];
-    for (unsigned i = 0; i < kLevelTableSize; i++)
-    {
-      const unsigned position = kCodeLengthAlphabetOrder[i];
-      if (i < numLevelCodes)
-        levelLevels[position] = (Byte)ReadBits(kLevelFieldSize);
-      else
-        levelLevels[position] = 0;
-    }
+    const unsigned kLevelTableSize_aligned4 = kLevelTableSize + 1;
+    Byte levelLevels[kLevelTableSize_aligned4];
+    memset (levelLevels, 0, sizeof(levelLevels));
+    unsigned i = 0;
+    do
+      levelLevels[kCodeLengthAlphabetOrder[i++]] = (Byte)ReadBits(kLevelFieldSize);
+    while (i != numLevelCodes);
     
     if (m_InBitStream.ExtraBitsWereRead())
       return false;
@@ -171,11 +171,18 @@ HRESULT CCoder::CodeSpec(UInt32 curSize, bool finishInputStream, UInt32 inputPro
   
   if (_remainLen == kLenIdNeedInit)
   {
-    if (!_keepHistory)
+    if (!_outWasInit)
+    {
+      /*
+      if (_keepHistory)
+        return S_FALSE; // actually it's incorrect (_keepHistory)
+      */
       if (!m_OutWindowStream.Create(_deflate64Mode ? kHistorySize64: kHistorySize32))
         return E_OUTOFMEMORY;
+    }
+    m_OutWindowStream.Init(_outWasInit & _keepHistory);
+    _outWasInit = true;
     RINOK(InitInStream(_needInitInStream))
-    m_OutWindowStream.Init(_keepHistory);
   
     m_FinalBlock = false;
     _remainLen = 0;
@@ -496,9 +503,12 @@ void CCoder::SetOutStreamSizeResume(const UInt64 *outSize)
   _outSize = 0;
   if (_outSizeDefined)
     _outSize = *outSize;
-  m_OutWindowStream.Init(_keepHistory);
-  _outStartPos = m_OutWindowStream.GetProcessedSize();
   _remainLen = kLenIdNeedInit;
+  /* we need m_OutWindowStream.Init() here because
+      - we must process (_keepHistory == false) case at start of Code()
+      - we need correct (_outStartPos) */
+  m_OutWindowStream.Init(_outWasInit & _keepHistory);
+  _outStartPos = m_OutWindowStream.GetProcessedSize();
 }
 
 

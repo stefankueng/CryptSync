@@ -36,13 +36,6 @@ struct CFilterMode
   UInt32 Offset; // for k_ARM64 / k_RISCV
   // UInt32 AlignSizeOpt; // for k_ARM64
 
-  CFilterMode():
-    Id(0),
-    Delta(0),
-    Offset(0)
-    // , AlignSizeOpt(0)
-    {}
-
   void ClearFilterMode()
   {
     Id = 0;
@@ -437,7 +430,11 @@ struct CFilterMode2: public CFilterMode
   bool Encrypted;
   unsigned GroupIndex;
   
-  CFilterMode2(): Encrypted(false) {}
+  void Construct()
+  {
+    ClearFilterMode();
+    Encrypted = false;
+  }
 
   int Compare(const CFilterMode2 &m) const
   {
@@ -546,6 +543,7 @@ static unsigned Get_FilterGroup_for_Folder(
     CRecordVector<CFilterMode2> &filters, const CFolderEx &f, bool extractFilter)
 {
   CFilterMode2 m;
+  m.Construct();
   // m.Id = 0;
   // m.Delta = 0;
   // m.Offset = 0;
@@ -586,12 +584,7 @@ static HRESULT WriteRange(IInStream *inStream, ISequentialOutStream *outStream,
     UInt64 position, UInt64 size, ICompressProgressInfo *progress)
 {
   RINOK(InStream_SeekSet(inStream, position))
-  CMyComPtr2_Create<ISequentialInStream, CLimitedSequentialInStream> streamSpec;
-  streamSpec->SetStream(inStream);
-  streamSpec->Init(size);
-  CMyComPtr2_Create<ICompressCoder, NCompress::CCopyCoder> copyCoder;
-  RINOK(copyCoder.Interface()->Code(streamSpec, outStream, NULL, NULL, progress))
-  return (copyCoder->TotalSize == size ? S_OK : E_FAIL);
+  return NCompress::CopyStream_ExactSize(inStream, outStream, size, progress);
 }
 
 /*
@@ -721,7 +714,7 @@ static int CompareEmptyItems(const unsigned *p1, const unsigned *p2, void *param
   return (u1.IsDir && u1.IsAnti) ? -n : n;
 }
 
-static const char *g_Exts =
+static const char * const g_Exts =
   " 7z xz lzma ace arc arj bz tbz bz2 tbz2 cab deb gz tgz ha lha lzh lzo lzx pak rar rpm sit zoo"
   " zip jar ear war msi"
   " 3gp avi mov mpeg mpg mpe wmv"
@@ -795,14 +788,14 @@ struct CRefItem
   unsigned NamePos;
   unsigned ExtensionIndex;
   
-  CRefItem() {}
-  CRefItem(UInt32 index, const CUpdateItem &ui, bool sortByType):
-    UpdateItem(&ui),
-    Index(index),
-    ExtensionPos(0),
-    NamePos(0),
-    ExtensionIndex(0)
+  void Construct(UInt32 index, const CUpdateItem &ui, bool sortByType)
   {
+    UpdateItem = &ui;
+    Index = index;
+    ExtensionPos = 0;
+    NamePos = 0;
+    ExtensionIndex = 0;
+
     if (sortByType)
     {
       const int slashPos = ui.Name.ReverseFind_PathSepar();
@@ -2154,6 +2147,7 @@ HRESULT Update(
         continue;
 
       CFilterMode2 fm;
+      fm.Construct();
       if (useFilters)
       {
         // analysis.ATime_Defined = false;
@@ -2710,7 +2704,7 @@ HRESULT Update(
     unsigned i;
 
     for (i = 0; i < numFiles; i++)
-      refItems[i] = CRefItem(group.Indices[i], updateItems[group.Indices[i]], sortByType);
+      refItems[i].Construct(group.Indices[i], updateItems[group.Indices[i]], sortByType);
 
     CSortParam sortParam;
     // sortParam.TreeFolders = &treeFolders;

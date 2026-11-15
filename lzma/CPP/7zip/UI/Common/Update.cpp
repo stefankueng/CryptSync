@@ -253,9 +253,9 @@ struct CUpdateProduceCallbackImp Z7_final: public IUpdateProduceCallback
   IUpdateCallbackUI *_callback;
   
   CUpdateProduceCallbackImp(
-      const CObjectVector<CArcItem> *a,
-      CDirItemsStat *stat,
-      IUpdateCallbackUI *callback):
+      const CObjectVector<CArcItem> *a Z7_lifetimebound,
+      CDirItemsStat *stat Z7_lifetimebound,
+      IUpdateCallbackUI *callback Z7_lifetimebound):
     _arcItems(a),
     _stat(stat),
     _callback(callback) {}
@@ -474,7 +474,7 @@ static HRESULT Compress(
 
   CArcToDoStat stat2;
 
-  if (options.RenamePairs.Size() != 0)
+  if (options.RenameMode || options.RenamePairs.Size() != 0)
   {
     FOR_VECTOR (i, arcItems)
     {
@@ -1112,7 +1112,7 @@ struct C_CopyFileProgress_to_IUpdateCallbackUI2 Z7_final:
   }
 
   C_CopyFileProgress_to_IUpdateCallbackUI2(
-      IUpdateCallbackUI2 *callback) :
+      IUpdateCallbackUI2 *callback Z7_lifetimebound) :
     Callback(callback),
     CallbackResult(S_OK)
     // , Disable_Break(false)
@@ -1920,7 +1920,7 @@ Z7_DIAGNOSTIC_IGNORE_CAST_FUNCTION
       if (NFind::DoesDirExist(phyPath))
       {
         RINOK(callback->DeletingAfterArchiving(phyPath, true))
-        RemoveDir(phyPath);
+        RemoveDirAlways_if_Empty(phyPath);
       }
     }
 

@@ -250,13 +250,26 @@ struct CThreadInfo
   
   HRESULT CreateEvents()
   {
-    WRes wres = CompressEvent.CreateIfNotCreated_Reset();
+    const WRes wres = CompressEvent.CreateIfNotCreated_Reset();
     return HRESULT_FROM_WIN32(wres);
   }
   
-  HRESULT CreateThread()
+  // (group < 0) means no_group.
+  HRESULT CreateThread_with_group(
+#ifdef _WIN32
+      int group
+#endif
+      )
   {
-    WRes wres = Thread.Create(CoderThread, this);
+    // tested in win10: If thread is created by another thread,
+    // child thread probably uses same group as parent thread.
+    // So we don't need to send (group) to encoder in created thread.
+    const WRes wres =
+#ifdef _WIN32
+      group >= 0 ?
+        Thread.Create_With_Group(CoderThread, this, (unsigned)group) :
+#endif
+        Thread.Create(CoderThread, this);
     return HRESULT_FROM_WIN32(wres);
   }
 
@@ -329,7 +342,7 @@ class CMemRefs
 public:
   CMemBlockManagerMt *Manager;
   CObjectVector<CMemBlocks2> Refs;
-  CMemRefs(CMemBlockManagerMt *manager): Manager(manager) {}
+  CMemRefs(CMemBlockManagerMt *manager Z7_lifetimebound): Manager(manager) {}
   ~CMemRefs()
   {
     FOR_VECTOR (i, Refs)
@@ -450,8 +463,12 @@ static HRESULT UpdateItemOldData(
   if (ui.NewProps)
   {
     if (item.HasDescriptor())
-      return E_NOTIMPL;
-    
+    {
+      // we know compressed / uncompressed sizes and crc.
+      // so we remove descriptor here
+      item.Flags = (UInt16)(item.Flags & ~NFileHeader::NFlags::kDescriptorUsedMask);
+      // return E_NOTIMPL;
+    }
     // we keep ExternalAttrib and some another properties from old archive
     // item.ExternalAttrib = ui.Attrib;
     // if we don't change Comment, we keep Comment from OldProperties
@@ -635,8 +652,7 @@ static HRESULT Update2St(
     // , IArchiveUpdateCallbackArcProp *reportArcProp
     )
 {
-  CLocalProgress *lps = new CLocalProgress;
-  CMyComPtr<ICompressProgressInfo> progress = lps;
+  CMyComPtr2_Create<ICompressProgressInfo, CLocalProgress> lps;
   lps->Init(updateCallback, true);
 
   CAddCommon compressor;
@@ -647,9 +663,10 @@ static HRESULT Update2St(
 
   FOR_VECTOR (itemIndex, updateItems)
   {
-    lps->InSize = unpackSizeTotal;
-    lps->OutSize = packSizeTotal;
-    RINOK(lps->SetCur())
+    CLocalProgress *lps2 = lps.ClsPtr();
+    lps2->InSize = unpackSizeTotal;
+    lps2->OutSize = packSizeTotal;
+    RINOK(lps2->SetCur())
     CUpdateItem &ui = updateItems[itemIndex];
     CItemEx itemEx;
     CItemOut item;
@@ -723,7 +740,7 @@ static HRESULT Update2St(
             inSeqMode, outSeqMode,
             ui.Time,
             ui.Size, ui.Size_WasSetFromStream,
-            progress, compressingResult))
+            lps, compressingResult))
         
         if (item.HasDescriptor() != compressingResult.DescriptorMode)
           return E_FAIL;
@@ -743,7 +760,7 @@ static HRESULT Update2St(
       UInt64 complexity = 0;
       lps->SendRatio = false;
 
-      RINOK(UpdateItemOldData(archive, inArchive, itemEx, ui, item, progress, opCallback, complexity))
+      RINOK(UpdateItemOldData(archive, inArchive, itemEx, ui, item, lps, opCallback, complexity))
 
       lps->SendRatio = true;
       lps->ProgressOffset += complexity;
@@ -753,9 +770,10 @@ static HRESULT Update2St(
     lps->ProgressOffset += kLocalHeaderSize;
   }
 
-  lps->InSize = unpackSizeTotal;
-  lps->OutSize = packSizeTotal;
-  RINOK(lps->SetCur())
+  CLocalProgress *lps2 = lps.ClsPtr();
+  lps2->InSize = unpackSizeTotal;
+  lps2->OutSize = packSizeTotal;
+  RINOK(lps2->SetCur())
 
   RINOK(archive.WriteCentralDir(items, comment))
 
@@ -767,8 +785,9 @@ static HRESULT Update2St(
     RINOK(ReportArcProps(reportArcProp, stat))
   */
 
-  lps->ProgressOffset += kCentralHeaderSize * updateItems.Size() + 1;
-  return lps->SetCur();
+  lps2 = lps.ClsPtr();
+  lps2->ProgressOffset += kCentralHeaderSize * updateItems.Size() + 1;
+  return lps2->SetCur();
 }
 
 #ifndef Z7_ST
@@ -1000,6 +1019,9 @@ static HRESULT Update2(
   #ifndef Z7_ST
 
   UInt32 numThreads = options._numThreads;
+#ifdef _WIN32
+  const UInt32 numThreadGroups = options._numThreadGroups;
+#endif
 
   UInt32 numZipThreads_limit = numThreads;
   if (numZipThreads_limit > numFilesToCompress)
@@ -1014,12 +1036,10 @@ static HRESULT Update2(
   }
 
   {
+    // we reduce number of threads for 32-bit to reduce memory usege to 256 MB
     const UInt32 kNumMaxThreads =
-      #ifdef _WIN32
-        64; // _WIN32 supports only 64 threads in one group. So no need for more threads here
-      #else
-        128;
-      #endif
+        // _WIN32 (64-bit) supports only 64 threads in one group.
+        8 << (sizeof(size_t) / 2); // 32 threads for 32-bit : 128 threads for 64-bit
     if (numThreads > kNumMaxThreads)
       numThreads = kNumMaxThreads;
   }
@@ -1264,7 +1284,14 @@ static HRESULT Update2(
       threadInfo.Progress = threadInfo.ProgressSpec;
       threadInfo.ProgressSpec->Init(&mtCompressProgressMixer, i);
       threadInfo.MtSem = &mtSem;
-      RINOK(threadInfo.CreateThread())
+      const HRESULT hres =
+        threadInfo.CreateThread_with_group(
+#ifdef _WIN32
+          (numThreadGroups > 1 && numThreads > 1) ?
+            (int)(i % numThreadGroups) : -1
+#endif
+        );
+      RINOK(hres)
     }
   }
 

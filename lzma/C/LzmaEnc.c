@@ -62,7 +62,9 @@ void LzmaEncProps_Init(CLzmaEncProps *p)
   p->lc = p->lp = p->pb = p->algo = p->fb = p->btMode = p->numHashBytes = p->numThreads = -1;
   p->numHashOutBits = 0;
   p->writeEndMark = 0;
+  p->affinityGroup = -1;
   p->affinity = 0;
+  p->affinityInGroup = 0;
 }
 
 void LzmaEncProps_Normalize(CLzmaEncProps *p)
@@ -598,6 +600,10 @@ SRes LzmaEnc_SetProps(CLzmaEncHandle p, const CLzmaEncProps *props2)
   p->multiThread = (props.numThreads > 1);
   p->matchFinderMt.btSync.affinity =
   p->matchFinderMt.hashSync.affinity = props.affinity;
+  p->matchFinderMt.btSync.affinityGroup =
+  p->matchFinderMt.hashSync.affinityGroup = props.affinityGroup;
+  p->matchFinderMt.btSync.affinityInGroup =
+  p->matchFinderMt.hashSync.affinityInGroup = props.affinityInGroup;
   #endif
 
   return SZ_OK;
@@ -686,7 +692,10 @@ Z7_NO_INLINE static void Z7_FASTCALL RangeEnc_ShiftLow(CRangeEnc *p)
 {
   UInt32 low = (UInt32)p->low;
   unsigned high = (unsigned)(p->low >> 32);
-  p->low = (UInt32)(low << 8);
+  {
+    const UInt32 low2 = low << 8;
+    p->low = low2;
+  }
   if (low < (UInt32)0xFF000000 || high != 0)
   {
     {
@@ -952,7 +961,8 @@ static void LenEnc_Encode(CLenEnc *p, CRangeEnc *rc, unsigned sym, unsigned posS
     unsigned m;
     unsigned bit;
     RC_BIT_0(rc, probs)
-    probs += (posState << (1 + kLenNumLowBits));
+    posState <<= (1 + kLenNumLowBits);
+    probs += posState;
     bit = (sym >> 2)    ; RC_BIT(rc, probs + 1, bit)  m = (1 << 1) + bit;
     bit = (sym >> 1) & 1; RC_BIT(rc, probs + m, bit)  m = (m << 1) + bit;
     bit =  sym       & 1; RC_BIT(rc, probs + m, bit)
@@ -994,7 +1004,8 @@ Z7_NO_INLINE static void Z7_FASTCALL LenPriceEnc_UpdateTables(
     for (posState = 0; posState < numPosStates; posState++)
     {
       UInt32 *prices = p->prices[posState];
-      const CLzmaProb *probs = enc->low + (posState << (1 + kLenNumLowBits));
+      const unsigned posState2 = posState << (1 + kLenNumLowBits);
+      const CLzmaProb *probs = enc->low + posState2;
       SetPrices_3(probs, a, prices, ProbPrices);
       SetPrices_3(probs + kLenNumLowSymbols, c, prices + kLenNumLowSymbols, ProbPrices);
     }
@@ -2214,7 +2225,7 @@ Z7_NO_INLINE static void FillAlignPrices(CLzmaEnc *p)
     UInt32 prob;
     bit = sym & 1; sym >>= 1; price += GET_PRICEa(probs[m], bit); m = (m << 1) + bit;
     bit = sym & 1; sym >>= 1; price += GET_PRICEa(probs[m], bit); m = (m << 1) + bit;
-    bit = sym & 1; sym >>= 1; price += GET_PRICEa(probs[m], bit); m = (m << 1) + bit;
+    bit = sym & 1;            price += GET_PRICEa(probs[m], bit); m = (m << 1) + bit;
     prob = probs[m];
     p->alignPrices[i    ] = price + GET_PRICEa_0(prob);
     p->alignPrices[i + 8] = price + GET_PRICEa_1(prob);
@@ -2345,10 +2356,9 @@ static void LzmaEnc_Construct(CLzmaEnc *p)
 
 CLzmaEncHandle LzmaEnc_Create(ISzAllocPtr alloc)
 {
-  void *p;
-  p = ISzAlloc_Alloc(alloc, sizeof(CLzmaEnc));
+  CLzmaEncHandle p = (CLzmaEncHandle)ISzAlloc_Alloc(alloc, sizeof(CLzmaEnc));
   if (p)
-    LzmaEnc_Construct((CLzmaEnc *)p);
+    LzmaEnc_Construct(p);
   return p;
 }
 

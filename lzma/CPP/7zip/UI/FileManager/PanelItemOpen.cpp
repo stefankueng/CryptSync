@@ -441,7 +441,7 @@ class CTmpProcessInfoRelease
   CTmpProcessInfo *_tmpProcessInfo;
 public:
   bool _needDelete;
-  CTmpProcessInfoRelease(CTmpProcessInfo &tpi):
+  CTmpProcessInfoRelease(CTmpProcessInfo &tpi Z7_lifetimebound):
       _tmpProcessInfo(&tpi), _needDelete(true) {}
   ~CTmpProcessInfoRelease()
   {
@@ -825,7 +825,10 @@ void CPanel::EditItem(unsigned index, bool useEditor)
     return;
   }
   CProcess process;
-  StartEditApplication(GetItemFullPath(index), useEditor, (HWND)*this, process);
+  StartEditApplication(GetItemFullPath(index), useEditor,
+      // (HWND)*this,
+      GetParent(),
+      process);
 }
 
 
@@ -854,7 +857,10 @@ void CPanel::OpenFolderExternal(unsigned index)
     path.Add_PathSepar();
   }
 
-  StartApplicationDontWait(prefix, path, (HWND)*this);
+  StartApplicationDontWait(prefix, path,
+      // (HWND)*this
+      GetParent()
+      );
 }
 
 
@@ -865,26 +871,49 @@ bool CPanel::IsVirus_Message(const UString &name)
   const wchar_t cRLO = (wchar_t)0x202E;
   bool isVirus = false;
   bool isSpaceError = false;
-  name2 = name;
-  
+  {
+    unsigned numSpaces = 0;
+    for (unsigned i = 0; i < name.Len(); i++)
+    {
+      const wchar_t c = name[i];
+      switch (c)
+      {
+        case ' ':
+        case '\t':
+        case 0x00A0: // Non-Breaking Space
+        case 0x2002: // En Space
+        case 0x2003: // Em Space
+        case 0x2004: // Three-Per-Em Space
+        case 0x2005: // Four-Per-Em Space
+        case 0x2006: // Six-Per-Em Space
+        case 0x2007: // Figure Space
+        case 0x2008: // Punctuation Space
+        case 0x2009: // Thin Space
+        case 0x200A: // Hair Space
+        case 0x200B: // Zero Width Space
+        case 0x202F: // Narrow Non-Breaking Space
+        case 0x205F: // Medium Mathematical Space
+        case 0x3000: // Ideographic Space
+          numSpaces++;
+          break;
+        default:
+          numSpaces = 0;
+          break;
+      }
+      if (numSpaces <= 1)
+        name2 += c;
+      if (numSpaces >= 5)
+      {
+        isVirus = true;
+        isSpaceError = true;
+      }
+    }
+  }
   if (name2.Find(cRLO) >= 0)
   {
     const UString badString(cRLO);
     name2.Replace(badString, L"[RLO]");
     isVirus = true;
-  }
-  {
-    const wchar_t * const kVirusSpaces = L"     ";
-    // const unsigned kNumSpaces = strlen(kVirusSpaces);
-    for (;;)
-    {
-      int pos = name2.Find(kVirusSpaces);
-      if (pos < 0)
-        break;
-      isVirus = true;
-      isSpaceError = true;
-      name2.Replace(kVirusSpaces, L" ");
-    }
   }
 
   #ifdef _WIN32
@@ -981,7 +1010,10 @@ void CPanel::OpenItem(unsigned index, bool tryInternal, bool tryExternal, const 
   {
     // SetCurrentDirectory opens HANDLE to folder!!!
     // NDirectory::MySetCurrentDirectory(prefix);
-    StartApplicationDontWait(prefix, fullPath, (HWND)*this);
+    StartApplicationDontWait(prefix, fullPath,
+        // (HWND)*this
+        GetParent()
+        );
   }
 }
 
@@ -1732,9 +1764,15 @@ void CPanel::OpenItemInArchive(unsigned index, bool tryInternal, bool tryExterna
   CProcess process;
   HRESULT res;
   if (editMode)
-    res = StartEditApplication(fs2us(tempFilePath), useEditor, (HWND)*this, process);
+    res = StartEditApplication(fs2us(tempFilePath), useEditor,
+      // (HWND)*this,
+      GetParent(),
+      process);
   else
-    res = StartApplication(fs2us(tempDirNorm), fs2us(tempFilePath), (HWND)*this, process);
+    res = StartApplication(fs2us(tempDirNorm), fs2us(tempFilePath),
+      // (HWND)*this,
+      GetParent(),
+      process);
 
   if ((HANDLE)process == NULL)
   {

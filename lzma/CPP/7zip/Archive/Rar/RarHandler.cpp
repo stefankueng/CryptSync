@@ -7,6 +7,7 @@
 #include "../../../Common/ComTry.h"
 #include "../../../Common/IntToString.h"
 #include "../../../Common/MyBuffer2.h"
+#include "../../../Common/MyLinux.h"
 #include "../../../Common/UTFConvert.h"
 
 #include "../../../Windows/PropVariantUtils.h"
@@ -70,8 +71,14 @@ bool CItem::IsDir() const
     case NHeader::NFile::kHostMSDOS:
     case NHeader::NFile::kHostOS2:
     case NHeader::NFile::kHostWin32:
-      if ((Attrib & FILE_ATTRIBUTE_DIRECTORY) != 0)
+      if (Attrib & FILE_ATTRIBUTE_DIRECTORY)
         return true;
+      break;
+    case NHeader::NFile::kHostUnix:
+    case NHeader::NFile::kHostBeOS:
+      if (MY_LIN_S_ISDIR(Attrib))
+        return true;
+      break;
   }
   return false;
 }
@@ -86,11 +93,20 @@ UInt32 CItem::GetWinAttrib() const
     case NHeader::NFile::kHostWin32:
       a = Attrib;
       break;
+    case NHeader::NFile::kHostUnix:
+    case NHeader::NFile::kHostBeOS:
+      a = Attrib << 16;
+      a |= 0x8000; // add posix mode marker
+      break;
+    // case NHeader::NFile::kHostMacOS:
+    // kHostMacOS was used only by some very old rare case rar.
+    // New rar4-rar7 for macos probably uses kHostUnix.
+    // So we process kHostMacOS without attribute parsing:
     default:
-      a = 0; // must be converted from unix value;
+      a = 0;
   }
   if (IsDir())
-    a |= NHeader::NFile::kWinFileDirectoryAttributeMask;
+    a |= FILE_ATTRIBUTE_DIRECTORY;
   return a;
 }
   
@@ -134,8 +150,7 @@ class CInArchive
   CByteBuffer _comment;
   CByteBuffer m_FileHeaderData;
   NHeader::NBlock::CBlock m_BlockHeader;
-  NCrypto::NRar3::CDecoder *m_RarAESSpec;
-  CMyComPtr<ICompressFilter> m_RarAES;
+  CMyComPtr2<ICompressFilter, NCrypto::NRar3::CDecoder> m_RarAES;
   CAlignedBuffer m_DecryptedDataAligned;
   UInt32 m_DecryptedDataSize;
   bool m_CryptoMode;
@@ -435,13 +450,13 @@ bool CInArchive::ReadHeaderReal(const Byte *p, unsigned size, CItem &item)
       size -= sizeof(item.Salt);
       p += sizeof(item.Salt);
     }
-    if (item.Name == "ACL" && size == 0)
+    if (item.Name.IsEqualTo("ACL") && size == 0)
     {
       item.IsAltStream = true;
       item.Name.Empty();
       item.UnicodeName.SetFromAscii(".ACL");
     }
-    else if (item.Name == "STM" && size != 0 && (size & 1) == 0)
+    else if (item.Name.IsEqualTo("STM") && size != 0 && (size & 1) == 0)
     {
       item.IsAltStream = true;
       item.Name.Empty();
@@ -516,12 +531,8 @@ HRESULT CInArchive::GetNextItem(CItem &item, ICryptoGetTextPassword *getTextPass
         error = k_ErrorType_DecryptionError;
         return S_OK; // return S_FALSE;
       }
-      if (!m_RarAES)
-      {
-        m_RarAESSpec = new NCrypto::NRar3::CDecoder;
-        m_RarAES = m_RarAESSpec;
-      }
-      // m_RarAESSpec->SetRar350Mode(ArcInfo.IsEncryptOld());
+      m_RarAES.Create_if_Empty();
+      // m_RarAES->SetRar350Mode(ArcInfo.IsEncryptOld());
 
       {
         // Salt
@@ -530,7 +541,7 @@ HRESULT CInArchive::GetNextItem(CItem &item, ICryptoGetTextPassword *getTextPass
         if (!ReadBytesAndTestSize(salt, kSaltSize))
           return S_FALSE;
         m_Position += kSaltSize;
-        RINOK(m_RarAESSpec->SetDecoderProperties2(salt, kSaltSize))
+        RINOK(m_RarAES->SetDecoderProperties2(salt, kSaltSize))
       }
 
       {
@@ -551,7 +562,7 @@ HRESULT CInArchive::GetNextItem(CItem &item, ICryptoGetTextPassword *getTextPass
           ((Byte *)buffer)[i * 2 + 1] = (Byte)(c >> 8);
         }
         
-        m_RarAESSpec->SetPassword((const Byte *)buffer, len * 2);
+        m_RarAES->SetPassword((const Byte *)buffer, len * 2);
       }
 
       const UInt32 kDecryptedBufferSize = (1 << 12);
@@ -1461,22 +1472,17 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
 
   CObjectVector<CMethodItem> methodItems;
 
-  NCompress::CCopyCoder *copyCoderSpec = new NCompress::CCopyCoder;
-  CMyComPtr<ICompressCoder> copyCoder = copyCoderSpec;
+  CMyComPtr2_Create<ICompressCoder, NCompress::CCopyCoder> copyCoder;
 
   CFilterCoder *filterStreamSpec = new CFilterCoder(false);
   CMyComPtr<ISequentialInStream> filterStream = filterStreamSpec;
 
-  NCrypto::NRar2::CDecoder *rar20CryptoDecoderSpec = NULL;
-  CMyComPtr<ICompressFilter> rar20CryptoDecoder;
-  NCrypto::NRar3::CDecoder *rar3CryptoDecoderSpec = NULL;
-  CMyComPtr<ICompressFilter> rar3CryptoDecoder;
+  CMyComPtr2<ICompressFilter, NCrypto::NRar2::CDecoder> rar20CryptoDecoder;
+  CMyComPtr2<ICompressFilter, NCrypto::NRar3::CDecoder> rar3CryptoDecoder;
 
-  CVolsInStream *volsInStreamSpec = NULL;
-  CMyComPtr<ISequentialInStream> volsInStream;
+  CMyComPtr2<ISequentialInStream, CVolsInStream> volsInStream;
 
-  CLocalProgress *lps = new CLocalProgress;
-  CMyComPtr<ICompressProgressInfo> progress = lps;
+  CMyComPtr2_Create<ICompressProgressInfo, CLocalProgress> lps;
   lps->Init(extractCallback, false);
 
   bool solidStart = true;
@@ -1486,9 +1492,10 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
       currentImportantTotalUnPacked += currentUnPackSize,
       currentImportantTotalPacked += currentPackSize)
   {
-    lps->InSize = currentImportantTotalPacked;
-    lps->OutSize = currentImportantTotalUnPacked;
-    RINOK(lps->SetCur())
+    CLocalProgress *lps2 = lps.ClsPtr();
+    lps2->InSize = currentImportantTotalPacked;
+    lps2->OutSize = currentImportantTotalUnPacked;
+    RINOK(lps2->SetCur())
 
     if (i >= importantIndexes.Size())
       break;
@@ -1556,13 +1563,8 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     outStreamSpec->Init();
     realOutStream.Release();
     
-    if (!volsInStream)
-    {
-      volsInStreamSpec = new CVolsInStream;
-      volsInStream = volsInStreamSpec;
-    }
-
-    volsInStreamSpec->Init(&_arcs, &_items, refItem);
+    volsInStream.Create_if_Empty();
+    volsInStream->Init(&_arcs, &_items, refItem);
 
     UInt64 packSize = currentPackSize;
 
@@ -1577,27 +1579,19 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
       
       if (item.UnPackVersion >= 29)
       {
-        if (!rar3CryptoDecoder)
-        {
-          rar3CryptoDecoderSpec = new NCrypto::NRar3::CDecoder;
-          rar3CryptoDecoder = rar3CryptoDecoderSpec;
-        }
-        // rar3CryptoDecoderSpec->SetRar350Mode(item.UnPackVersion < 36);
+        rar3CryptoDecoder.Create_if_Empty();
+        // rar3CryptoDecoder->SetRar350Mode(item.UnPackVersion < 36);
         /*
         CMyComPtr<ICompressSetDecoderProperties2> cryptoProperties;
         RINOK(rar3CryptoDecoder.QueryInterface(IID_ICompressSetDecoderProperties2,
             &cryptoProperties));
         */
-        RINOK(rar3CryptoDecoderSpec->SetDecoderProperties2(item.Salt, item.HasSalt() ? sizeof(item.Salt) : 0))
+        RINOK(rar3CryptoDecoder->SetDecoderProperties2(item.Salt, item.HasSalt() ? sizeof(item.Salt) : 0))
         filterStreamSpec->Filter = rar3CryptoDecoder;
       }
       else if (item.UnPackVersion >= 20)
       {
-        if (!rar20CryptoDecoder)
-        {
-          rar20CryptoDecoderSpec = new NCrypto::NRar2::CDecoder;
-          rar20CryptoDecoder = rar20CryptoDecoderSpec;
-        }
+        rar20CryptoDecoder.Create_if_Empty();
         filterStreamSpec->Filter = rar20CryptoDecoder;
       }
       else
@@ -1638,7 +1632,7 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
             ((Byte *)buffer)[k * 2] = (Byte)c;
             ((Byte *)buffer)[k * 2 + 1] = (Byte)(c >> 8);
           }
-          rar3CryptoDecoderSpec->SetPassword((const Byte *)buffer, len * 2);
+          rar3CryptoDecoder->SetPassword((const Byte *)buffer, len * 2);
         }
         else
         {
@@ -1651,7 +1645,7 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
               unicode.DeleteFrom(kPasswordLen_MAX);
             UnicodeStringToMultiByte2(oemPassword, unicode, CP_OEMCP);
           }
-          rar20CryptoDecoderSpec->SetPassword((const Byte *)(const char *)oemPassword, oemPassword.Len());
+          rar20CryptoDecoder->SetPassword((const Byte *)(const char *)oemPassword, oemPassword.Len());
         }
       }
       /*
@@ -1741,7 +1735,7 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
         continue;
     }
     
-    HRESULT result = commonCoder->Code(inStream, outStream, &packSize, &outSize, progress);
+    HRESULT result = commonCoder->Code(inStream, outStream, &packSize, &outSize, lps);
     
     if (item.IsEncrypted())
       filterStreamSpec->ReleaseInStream();
@@ -1749,7 +1743,7 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     if (outSize == (UInt64)(Int64)-1)
       currentUnPackSize = outStreamSpec->GetSize();
 
-    int opRes = (volsInStreamSpec->CrcIsOK && outStreamSpec->GetCRC() == lastItem.FileCRC) ?
+    int opRes = (volsInStream->CrcIsOK && outStreamSpec->GetCRC() == lastItem.FileCRC) ?
         NExtract::NOperationResult::kOK:
         NExtract::NOperationResult::kCRCError;
     outStream.Release();

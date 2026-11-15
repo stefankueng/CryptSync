@@ -60,7 +60,9 @@ bool g_LargePagesMode;
 bool g_LargePagesMode = false;
 // static bool g_OpenArchive = false;
 
+#ifdef UNDER_CE
 static bool g_Maximized = false;
+#endif
 
 extern
 size_t g_RAM_Size;
@@ -404,8 +406,10 @@ static BOOL InitInstance(int nCmdShow)
       nCmdShow = SW_SHOWNORMAL;
   }
 
+#ifdef UNDER_CE
   if (nCmdShow == SW_SHOWMAXIMIZED)
     g_Maximized = true;
+#endif
 
   #ifndef UNDER_CE
   WINDOWPLACEMENT placement;
@@ -457,6 +461,7 @@ bool g_Is_Wow64;
 bool g_Is_Wow64;
 
 typedef BOOL (WINAPI *Func_IsWow64Process)(HANDLE, PBOOL);
+Z7_DIAGNOSTIC_IGNORE_CAST_FUNCTION
 
 static void Set_Wow64()
 {
@@ -606,7 +611,7 @@ static int WINAPI WinMain2(int nCmdShow)
 
   NT_CHECK
   #ifdef Z7_LARGE_PAGES
-  SetLargePageSize();
+  z7_LargePage_Set(0, 0, 0);
   #endif
 
   #endif
@@ -651,7 +656,7 @@ static int WINAPI WinMain2(int nCmdShow)
   SplitStringToTwoStrings(commandsString, paramString, tailString);
   paramString.Trim();
   tailString.Trim();
-  if (tailString.IsPrefixedBy(L"-t"))
+  if (tailString.IsPrefixedBy("-t"))
     g_ArcFormat = tailString.Ptr(2);
 
   /*
@@ -1088,7 +1093,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_CanChangeSplitter = true;
       }
       
+#ifdef UNDER_CE
       g_Maximized = (wParam == SIZE_MAXIMIZED) || (wParam == SIZE_MAXSHOW);
+#endif
 
       g_App.MoveSubWindows();
       /*

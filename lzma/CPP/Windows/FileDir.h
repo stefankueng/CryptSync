@@ -18,8 +18,19 @@ bool GetSystemDir(FString &path);
 WIN32 API : SetFileTime() doesn't allow to set zero timestamps in file
 but linux : allows unix time = 0 in filesystem
 */
-
+/*
+SetDirTime() can be used to set time for file or for dir.
+If path is symbolic link, SetDirTime() will follow symbolic link,
+and it will set timestamps of symbolic link's target file or dir.
+*/
 bool SetDirTime(CFSTR path, const CFiTime *cTime, const CFiTime *aTime, const CFiTime *mTime);
+
+/*
+SetLinkFileTime() doesn't follow symbolic link,
+and it sets timestamps for symbolic link file itself.
+If (path) is not symbolic link, it still can work (at least in some new OS versions).
+*/
+bool SetLinkFileTime(CFSTR path, const CFiTime *cTime, const CFiTime *aTime, const CFiTime *mTime);
 
 
 #ifdef _WIN32
@@ -35,6 +46,7 @@ bool SetFileAttrib(CFSTR path, DWORD attrib);
 #else
 
 int my_chown(CFSTR path, uid_t owner, gid_t group);
+int my_chown_Link(CFSTR path, uid_t owner, gid_t group);
 
 #endif
 
@@ -78,6 +90,11 @@ bool CreateComplexDir(CFSTR path);
 
 bool DeleteFileAlways(CFSTR name);
 bool RemoveDirWithSubItems(const FString &path);
+#ifdef _WIN32
+bool RemoveDirAlways_if_Empty(const FString &path);
+#else
+#define RemoveDirAlways_if_Empty RemoveDir
+#endif
 
 bool MyGetFullPathName(CFSTR path, FString &resFullPath);
 bool GetFullPathAndSplit(CFSTR path, FString &resDirPrefix, FString &resFileName);
@@ -102,7 +119,7 @@ class CTempFile  MY_UNCOPYABLE
 public:
   CTempFile(): _mustBeDeleted(false) {}
   ~CTempFile() { Remove(); }
-  const FString &GetPath() const { return _path; }
+  const FString &GetPath() const Z7_lifetimebound { return _path; }
   bool Create(CFSTR pathPrefix, NIO::COutFile *outFile); // pathPrefix is not folder prefix
   bool CreateRandomInTempFolder(CFSTR namePrefix, NIO::COutFile *outFile);
   bool Remove();
@@ -120,7 +137,7 @@ class CTempDir  MY_UNCOPYABLE
 public:
   CTempDir(): _mustBeDeleted(false) {}
   ~CTempDir() { Remove();  }
-  const FString &GetPath() const { return _path; }
+  const FString &GetPath() const Z7_lifetimebound { return _path; }
   void DisableDeleting() { _mustBeDeleted = false; }
   bool Create(CFSTR namePrefix) ;
   bool Remove();

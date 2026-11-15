@@ -150,6 +150,7 @@ struct CLocator
     G32(12, NumDisks);
   }
 
+  bool Is_Ecd64Offset_Overflow() const { return Ecd64Offset >= (UInt64)1 << 63; }
   bool IsEmptyArc() const
   {
     return Ecd64Disk == 0 && NumDisks == 0 && Ecd64Offset == 0;
@@ -562,7 +563,7 @@ static UInt32 IsArc_Zip_2(const Byte *p, size_t size, bool isFinal)
     (return_ptr >= limit) : limit was reached or crossed. So no "PK" found before limit
 */
 Z7_NO_INLINE
-static const Byte *FindPK_4(const Byte *p, const Byte *limit)
+static const Byte *FindPK_4(const Byte *p Z7_lifetimebound, const Byte *limit Z7_lifetimebound)
 {
   for (;;)
   {
@@ -1705,10 +1706,12 @@ HRESULT CInArchive::TryEcd64(UInt64 offset, CCdInfo &cdInfo)
 
   if (Get32(buf) != NSignature::kEcd64)
     return S_FALSE;
-  UInt64 mainSize = Get64(buf + 4);
+  const UInt64 mainSize = Get64(buf + 4);
   if (mainSize < kEcd64_MainSize || mainSize > ((UInt64)1 << 40))
     return S_FALSE;
   cdInfo.ParseEcd64e(buf + 12);
+  if (cdInfo.AreOverflowValues())
+    return S_FALSE;
   return S_OK;
 }
 
@@ -1718,61 +1721,49 @@ HRESULT CInArchive::TryEcd64(UInt64 offset, CCdInfo &cdInfo)
 
 HRESULT CInArchive::FindCd(bool checkOffsetMode)
 {
-  CCdInfo &cdInfo = Vols.ecd;
-
-  UInt64 endPos;
-  
   // There are no useful data in cache in most cases here.
-  // So here we don't use cache data from previous operations .
-  
+  // So here we don't use cache data from previous operations.
   InitBuf();
+  UInt64 endPos;
   RINOK(InStream_GetSize_SeekToEnd(Stream, endPos))
   _streamPos = endPos;
-  
-  // const UInt32 kBufSizeMax2 = ((UInt32)1 << 16) + kEcdSize + kEcd64Locator_Size + kEcd64_FullSize;
-  const size_t kBufSizeMax = ((size_t)1 << 17); // must be larger than kBufSizeMax2
-  
+  const size_t kBufSizeMax = (size_t)1 << 17; // must be larger than
+      // (1 << 16) + kEcdSize + kEcd64Locator_Size + kEcd64_FullSize
   const size_t bufSize = (endPos < kBufSizeMax) ? (size_t)endPos : kBufSizeMax;
   if (bufSize < kEcdSize)
     return S_FALSE;
-  // CByteArr byteBuffer(bufSize);
-
   RINOK(AllocateBuffer(kBufSizeMax))
+  {
+    RINOK(Seek_SavePos(endPos - bufSize))
+    size_t processed = bufSize;
+    const HRESULT res = ReadStream(Stream, Buffer, &processed);
+    _streamPos += processed;
+    _bufCached = processed;
+    _bufPos = 0;
+    _cnt += processed;
+    if (res != S_OK)
+      return res;
+    if (processed != bufSize)
+      return S_FALSE;
+  }
 
-  RINOK(Seek_SavePos(endPos - bufSize))
-
-  size_t processed = bufSize;
-  HRESULT res = ReadStream(Stream, Buffer, &processed);
-  _streamPos += processed;
-  _bufCached = processed;
-  _bufPos = 0;
-  _cnt += processed;
-  if (res != S_OK)
-    return res;
-  if (processed != bufSize)
-    return S_FALSE;
-
+  CCdInfo &cdInfo = Vols.ecd;
   
   for (size_t i = bufSize - kEcdSize + 1;;)
   {
-    if (i == 0)
-      return S_FALSE;
-    
     const Byte *buf = Buffer;
-
-    for (;;)
     {
-      i--;
-      if (buf[i] == 0x50)
-        break;
-      if (i == 0)
-        return S_FALSE;
-    }
-    
-    if (Get32(buf + i) != NSignature::kEcd)
-      continue;
+      const Byte *p = buf + i;
+      do
+        if (p == buf)
+          return S_FALSE;
+      while (*(--p) != 0x50);
 
-    cdInfo.ParseEcd32(buf + i);
+      i = (size_t)(p - buf);
+      if (Get32(p) != NSignature::kEcd)
+        continue;
+      cdInfo.ParseEcd32(p);
+    }
     
     if (i >= kEcd64Locator_Size)
     {
@@ -1786,36 +1777,34 @@ HRESULT CInArchive::FindCd(bool checkOffsetMode)
         if (numDisks == 0)
           numDisks = 1;
         if ((cdInfo.ThisDisk == numDisks - 1 || ZIP64_IS_16_MAX(cdInfo.ThisDisk))
-            && locator.Ecd64Disk < numDisks)
+            && locator.Ecd64Disk < numDisks
+            && !locator.Is_Ecd64Offset_Overflow())
         {
           if (locator.Ecd64Disk != cdInfo.ThisDisk && !ZIP64_IS_16_MAX(cdInfo.ThisDisk))
             return E_NOTIMPL;
           
           // Most of the zip64 use fixed size Zip64 ECD
           // we try relative backward reading.
-
-          UInt64 absEcd64 = endPos - bufSize + i - (kEcd64Locator_Size + kEcd64_FullSize);
+          const UInt64 absEcd64 = endPos - bufSize + i - (kEcd64Locator_Size + kEcd64_FullSize);
           
           if (locatorIndex >= kEcd64_FullSize)
           if (checkOffsetMode || absEcd64 == locator.Ecd64Offset)
           {
             const Byte *ecd64 = buf + locatorIndex - kEcd64_FullSize;
-            if (Get32(ecd64) == NSignature::kEcd64)
+            if (Get32(ecd64) == NSignature::kEcd64 &&
+                Get64(ecd64 + 4) == kEcd64_MainSize)
             {
-              UInt64 mainEcd64Size = Get64(ecd64 + 4);
-              if (mainEcd64Size == kEcd64_MainSize)
-              {
-                cdInfo.ParseEcd64e(ecd64 + 12);
-                ArcInfo.Base = (Int64)(absEcd64 - locator.Ecd64Offset);
-                // ArcInfo.BaseVolIndex = cdInfo.ThisDisk;
-                return S_OK;
-              }
+              cdInfo.ParseEcd64e(ecd64 + 12);
+              if (cdInfo.AreOverflowValues())
+                return S_FALSE;
+              ArcInfo.Base = (Int64)(absEcd64 - locator.Ecd64Offset);
+              // ArcInfo.BaseVolIndex = cdInfo.ThisDisk;
+              return S_OK;
             }
           }
           
           // some zip64 use variable size Zip64 ECD.
           // we try to use absolute offset from locator.
-
           if (absEcd64 != locator.Ecd64Offset)
           {
             if (TryEcd64(locator.Ecd64Offset, cdInfo) == S_OK)
@@ -1881,6 +1870,9 @@ HRESULT CInArchive::TryReadCd(CObjectVector<CItemEx> &items, const CCdInfo &cdIn
   items.Clear();
   IsCdUnsorted = false;
   
+  if ((Int64)cdOffset < 0)
+    return S_FALSE;
+
   // _startLocalFromCd_Disk = (UInt32)(Int32)-1;
   // _startLocalFromCd_Offset = (UInt64)(Int64)-1;
 
@@ -2407,10 +2399,7 @@ HRESULT CInArchive::ReadVols()
       {
         // get volumes required for cd.
         RINOK(ReadVols2(volCallback, (unsigned)cdDisk, zipDisk, zipDisk, 0, numMissingVols))
-        if (numMissingVols != 0)
-        {
-          // cdOK = false;
-        }
+        // if (numMissingVols) cdOK = false;
       }
     }
     else if (res != S_FALSE)
@@ -2595,33 +2584,27 @@ else
   {
     // UInt64 ecd64Offset = GetVirtStreamPos() - 4;
     IsZip64 = true;
-
     {
       const UInt64 recordSize = ReadUInt64();
-      if (recordSize < kEcd64_MainSize)
+      if (recordSize < kEcd64_MainSize
+          || recordSize >= ((UInt64)1 << 62))
         return S_FALSE;
-      if (recordSize >= ((UInt64)1 << 62))
-        return S_FALSE;
-      
       {
-        const unsigned kBufSize = kEcd64_MainSize;
-        Byte buf[kBufSize];
-        SafeRead(buf, kBufSize);
+        Byte buf[kEcd64_MainSize];
+        SafeRead(buf, kEcd64_MainSize);
         CCdInfo cdInfo;
         cdInfo.ParseEcd64e(buf);
         if (!cdInfo.IsEmptyArc())
           return S_FALSE;
       }
-      
       RINOK(Skip64(recordSize - kEcd64_MainSize, 0))
     }
 
     ReadSignature();
     if (_signature != NSignature::kEcd64Locator)
       return S_FALSE;
-
     {
-      const unsigned kBufSize = 16;
+      const unsigned kBufSize = kEcd64Locator_Size - 4;
       Byte buf[kBufSize];
       SafeRead(buf, kBufSize);
       CLocator locator;
@@ -2911,9 +2894,7 @@ else
   if (_signature == NSignature::kEcd64)
   {
     ecd64Disk = Vols.StreamIndex;
-
     IsZip64 = isZip64 = true;
-
     {
       const UInt64 recordSize = ReadUInt64();
       if (recordSize < kEcd64_MainSize
@@ -2922,20 +2903,18 @@ else
         HeadersError = true;
         return S_OK;
       }
-
+      Byte buf[kEcd64_MainSize];
+      SafeRead(buf, kEcd64_MainSize);
+      cdInfo.ParseEcd64e(buf);
+      if (cdInfo.AreOverflowValues())
       {
-        const unsigned kBufSize = kEcd64_MainSize;
-        Byte buf[kBufSize];
-        SafeRead(buf, kBufSize);
-        cdInfo.ParseEcd64e(buf);
+        HeadersError = true;
+        return S_OK;
       }
-      
       RINOK(Skip64(recordSize - kEcd64_MainSize, items.Size()))
     }
 
-
     ReadSignature();
-
     if (_signature != NSignature::kEcd64Locator)
     {
       HeadersError = true;
@@ -2943,10 +2922,16 @@ else
     }
   
     {
-      const unsigned kBufSize = 16;
+      const unsigned kBufSize = kEcd64Locator_Size - 4;
       Byte buf[kBufSize];
       SafeRead(buf, kBufSize);
       locator.Parse(buf);
+      if (locator.Is_Ecd64Offset_Overflow())
+      {
+        // locator.Ecd64Offset = ecd64AbsOffset; // normalize incorrect value
+        HeadersError = true;
+        return S_OK;
+      }
       // we ignore the error, where some zip creators use (NumDisks == 0)
       // if (locator.NumDisks == 0) HeadersWarning = true;
     }
@@ -3224,7 +3209,11 @@ else
     }
   }
 
-  ReadBuffer(ArcInfo.Comment, ecd.CommentSize);
+  {
+    CByteBuffer comment;
+    ReadBuffer(comment, ecd.CommentSize);
+    ArcInfo.Comment = comment;
+  }
 
   _inBufMode = false;
 

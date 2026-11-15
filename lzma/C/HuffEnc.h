@@ -1,5 +1,5 @@
 /* HuffEnc.h -- Huffman encoding
-2023-03-05 : Igor Pavlov : Public domain */
+Igor Pavlov : Public domain */
 
 #ifndef ZIP7_INC_HUFF_ENC_H
 #define ZIP7_INC_HUFF_ENC_H
@@ -8,15 +8,15 @@
 
 EXTERN_C_BEGIN
 
+#define Z7_HUFFMAN_LEN_MAX 16
+#define Z7_HUFFMAN_FREQS_SUM_MAX ((1 << 22) - 1)
 /*
 Conditions:
-  num <= 1024 = 2 ^ NUM_BITS
-  Sum(freqs) < 4M = 2 ^ (32 - NUM_BITS)
-  maxLen <= 16 = kMaxLen
-  Num_Items(p) >= HUFFMAN_TEMP_SIZE(num)
+  2 <= num <= 1024 = 2 ^ NUM_BITS
+  Sum(freqs) <= Z7_HUFFMAN_FREQS_SUM_MAX = 4M - 1 = 2 ^ (32 - NUM_BITS) - 1
+  1 <= maxLen <= 16 = Z7_HUFFMAN_LEN_MAX
 */
- 
-void Huffman_Generate(const UInt32 *freqs, UInt32 *p, Byte *lens, UInt32 num, UInt32 maxLen);
+void Huffman_Generate(const UInt32 *freqs, UInt32 *p, Byte *lens, unsigned num, unsigned maxLen);
 
 EXTERN_C_END
 
